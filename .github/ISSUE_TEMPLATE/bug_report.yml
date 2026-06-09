@@ -1,0 +1,60 @@
+name: Bug report
+description: Report a problem with Orch
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to file a bug! Please search existing issues first.
+        For security vulnerabilities, do **not** open an issue — see [SECURITY.md](../blob/master/SECURITY.md).
+  - type: textarea
+    id: description
+    attributes:
+      label: Description
+      description: A clear description of the bug.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Steps to reproduce
+      description: How can we reproduce it?
+      placeholder: |
+        1. Go to '...'
+        2. Click on '...'
+        3. See error
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+      description: What did you expect to happen?
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant logs / screenshots
+      description: Paste any relevant log output (it will be rendered as code).
+      render: shell
+  - type: dropdown
+    id: component
+    attributes:
+      label: Component
+      options:
+        - Web (Next.js)
+        - Broker (Rust)
+        - SDK
+        - Docker / infra
+        - Not sure
+    validations:
+      required: true
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: How are you running Orch? (Docker Compose, local dev, versions, OS)
+      placeholder: "e.g. docker compose, macOS 15, Docker 27.3"
+    validations:
+      required: true

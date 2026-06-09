@@ -1,0 +1,57 @@
+[package]
+name = "orch-broker"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+axum = { version = "0.7", features = ["macros"] }
+tokio = { version = "1", features = ["full"] }
+tower = { version = "0.4", features = ["full"] }
+tower-http = { version = "0.5", features = ["cors", "trace", "compression-gzip", "compression-br"] }
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+reqwest = { version = "0.11", features = ["json", "stream"] }
+regex = "1"
+chrono = { version = "0.4", features = ["serde"] }
+uuid = { version = "1.0", features = ["v4", "serde"] }
+tracing = "0.1"
+tracing-subscriber = "0.3"
+dashmap = "5"
+once_cell = "1"
+config = "0.13"
+thiserror = "1.0"
+anyhow = "1.0"
+
+# URL encoding
+urlencoding = "2"
+
+# IP address / CIDR parsing for ip_filter middleware
+ipnetwork = "0.20"
+
+# Kafka (bundled static build — Debian bookworm librdkafka is too old)
+rdkafka = { version = "0.36", features = ["cmake-build"] }
+
+# XPath for XML parsing
+sxd-document = "0.3"
+sxd-xpath = "0.4"
+
+# Security
+jsonwebtoken = "9"
+bcrypt = "0.15"
+ring = "0.17"
+base64 = "0.22"
+sha2 = "0.10"
+hex = "0.4"
+
+# Database
+sqlx = { version = "0.7", features = ["runtime-tokio", "postgres", "chrono", "json"] }
+futures = "0.3"
+
+# System monitoring
+sysinfo = "0.30"
+
+# JavaScript runtime for script execution
+rquickjs = { version = "0.6", features = ["bindgen", "parallel"] }
+
+[dev-dependencies]
+tokio-test = "0.4"

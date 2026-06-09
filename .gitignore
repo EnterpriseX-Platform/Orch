@@ -1,0 +1,65 @@
+# Dependencies
+node_modules/
+target/
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# Build outputs
+dist/
+build/
+*.wasm
+.next/
+out/
+
+# TypeScript build cache
+*.tsbuildinfo
+tsconfig.tsbuildinfo
+
+# Rust build
+target/
+*.rlib
+*.rmeta
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+# Anchor to root + allow the admin UI route — unanchored "logs/" used
+# to match apps/web/app/(dashboard)/logs/ by accident.
+/logs/
+/apps/*/logs/
+
+# Testing
+coverage/
+*.lcov
+
+# Docker
+.dockerignore
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+
+# Claude Code
+.claude/
+
+# Turbo
+.turbo/
+
+# Misc
+*.tgz
+*.tar.gz
+.claire/

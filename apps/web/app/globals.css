@@ -1,0 +1,246 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:is(.dark *));
+
+/* ==================== GLOBAL STYLES (Light Enterprise Theme) ==================== */
+
+/* React Flow Custom Styles */
+.react-flow__controls {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 2px !important;
+  background: var(--t-panel) !important;
+  border: 1px solid var(--t-border) !important;
+  border-radius: 3px !important;
+  box-shadow: 0 2px 8px var(--t-shadow) !important;
+}
+
+.react-flow__controls-button {
+  width: 28px !important;
+  height: 28px !important;
+  background: var(--t-panel) !important;
+  border: none !important;
+  border-bottom: 1px solid var(--t-border) !important;
+  color: var(--t-text-muted) !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  transition: all 0.15s ease !important;
+}
+
+.react-flow__controls-button:last-child {
+  border-bottom: none !important;
+}
+
+.react-flow__controls-button:hover {
+  background: var(--t-panel-hover) !important;
+  color: var(--t-accent) !important;
+}
+
+.react-flow__controls-button svg {
+  width: 14px !important;
+  height: 14px !important;
+}
+
+/* Handle Styles */
+.react-flow__handle {
+  width: 10px !important;
+  height: 10px !important;
+  background: var(--t-panel) !important;
+  border: 1px solid var(--t-border) !important;
+  opacity: 1 !important;
+  transition: all 0.2s ease !important;
+}
+
+.react-flow__handle:hover {
+  background: var(--t-accent) !important;
+  border-color: var(--t-accent) !important;
+  transform: scale(1.2) !important;
+}
+
+/* Connection Line */
+.react-flow__connection-line {
+  stroke: var(--t-accent) !important;
+  stroke-width: 1.5 !important;
+  stroke-dasharray: 5 4 !important;
+}
+
+/* Edge Styles */
+.react-flow__edge-path {
+  stroke: var(--t-accent-light) !important;
+  stroke-width: 1.5 !important;
+  stroke-dasharray: 6 3 !important;
+  opacity: 0.6 !important;
+}
+
+.react-flow__edge:hover .react-flow__edge-path {
+  stroke-width: 2 !important;
+  opacity: 0.8 !important;
+}
+
+/* Selection */
+.react-flow__selection {
+  background: rgba(59, 130, 246, 0.05) !important;
+  border: 1px solid rgba(59, 130, 246, 0.2) !important;
+}
+
+/* Background — color is set via ReactFlow style prop; do not override here */
+
+/* ==================== BASE STYLES ==================== */
+
+:root {
+  --font-sans: 'Prompt', sans-serif;
+  --font-mono: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
+
+  /* Default: Dark Theme */
+  --t-bg: #0F1117;
+  --t-panel: #1A1D28;
+  --t-panel-hover: #1E2132;
+  --t-border: #232736;
+  --t-border-light: #1D2130;
+  --t-text: #E2E8F0;
+  --t-text-secondary: #8B92A5;
+  --t-text-muted: #5A6178;
+  --t-accent: #3B82F6;
+  --t-accent-hover: #2563EB;
+  --t-accent-light: #60A5FA;
+  --t-input: #151821;
+  --t-header: #12141D;
+  --t-sidebar: #0B0D14;
+  --t-card-hover: #252836;
+  --t-shadow: rgba(0,0,0,0.3);
+  --t-code-bg: #151821;
+
+  /* Legacy compat */
+  --color-bg: var(--t-bg);
+  --color-panel: var(--t-panel);
+  --color-border: var(--t-border);
+  --color-text: var(--t-text);
+  --color-muted: var(--t-text-muted);
+  --color-accent: var(--t-accent);
+}
+
+/* Light Theme Override */
+[data-theme="light"] {
+  --t-bg: #EBEEF3;
+  --t-panel: #F5F6FA;
+  --t-panel-hover: #ECEEF4;
+  --t-border: #E8ECF2;
+  --t-border-light: #EFF2F7;
+  --t-text: #1A2030;
+  --t-text-secondary: #5A6578;
+  --t-text-muted: #8892A2;
+  --t-accent: #3B82F6;
+  --t-accent-hover: #2563EB;
+  --t-accent-light: #60A5FA;
+  --t-input: #E8EBF1;
+  --t-header: #F0F1F6;
+  --t-sidebar: #F0F1F6;
+  --t-card-hover: #E8EBF1;
+  --t-shadow: rgba(15,20,35,0.06);
+  --t-code-bg: #ECEEF4;
+}
+
+@theme inline {
+  --font-sans: var(--font-sans);
+  --font-mono: var(--font-mono);
+}
+
+@layer base {
+  * {
+    border-color: var(--t-border);
+  }
+  html {
+    font-size: 16px;
+  }
+  body {
+    background-color: var(--t-bg);
+    color: var(--t-text);
+    font-size: 16px;
+    transition: background-color 0.2s, color 0.2s;
+  }
+}
+
+/* Global border sharpness — override soft rounding */
+[data-theme="light"] * {
+  --tw-ring-color: var(--t-border);
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--t-bg);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--t-border);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--t-text-muted);
+}
+
+/* Light theme swagger overrides */
+[data-theme="light"] .swagger-ui-dark .swagger-ui,
+[data-theme="light"] .swagger-ui-dark .swagger-ui .scheme-container {
+  background: #FFFFFF !important;
+}
+[data-theme="light"] .swagger-ui-dark .swagger-ui .info .title,
+[data-theme="light"] .swagger-ui-dark .swagger-ui .opblock-tag {
+  color: #1E293B !important;
+}
+[data-theme="light"] .swagger-ui-dark .swagger-ui .info .description p,
+[data-theme="light"] .swagger-ui-dark .swagger-ui .info p {
+  color: #64748B !important;
+}
+[data-theme="light"] .swagger-ui-dark .swagger-ui .opblock {
+  background: #FFFFFF !important;
+  border-color: #E2E8F0 !important;
+}
+[data-theme="light"] .swagger-ui-dark .swagger-ui .opblock .opblock-summary {
+  border-color: #E2E8F0 !important;
+}
+[data-theme="light"] .swagger-ui-dark .swagger-ui .opblock .opblock-section-header {
+  background: #F8FAFC !important;
+  border-color: #E2E8F0 !important;
+}
+[data-theme="light"] .swagger-ui-dark .swagger-ui .opblock .opblock-section-header h4 {
+  color: #1E293B !important;
+}
+[data-theme="light"] .swagger-ui-dark .swagger-ui .opblock-body pre {
+  background: #F1F5F9 !important;
+  color: #1E293B !important;
+}
+[data-theme="light"] .swagger-ui-dark .swagger-ui .opblock .opblock-summary-path {
+  color: #1E293B !important;
+}
+[data-theme="light"] .swagger-ui-dark .swagger-ui .opblock .opblock-summary-description {
+  color: #64748B !important;
+}
+[data-theme="light"] .swagger-ui-dark .swagger-ui .opblock-tag-section {
+  border-color: #E2E8F0 !important;
+}
+[data-theme="light"] .swagger-ui-dark .swagger-ui select {
+  background: #FFFFFF !important;
+  color: #1E293B !important;
+  border-color: #E2E8F0 !important;
+}
+[data-theme="light"] .swagger-ui-dark .swagger-ui .servers > label {
+  color: #64748B !important;
+}
+[data-theme="light"] .swagger-ui-dark .swagger-ui .parameter__name,
+[data-theme="light"] .swagger-ui-dark .swagger-ui .parameter__type,
+[data-theme="light"] .swagger-ui-dark .swagger-ui table tbody tr td {
+  color: #1E293B !important;
+}
+[data-theme="light"] .swagger-ui-dark .swagger-ui .response-col_status {
+  color: #1E293B !important;
+}
+[data-theme="light"] .swagger-ui-dark .swagger-ui .response-col_description__inner p {
+  color: #64748B !important;
+}

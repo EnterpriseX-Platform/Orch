@@ -1,0 +1,35 @@
+name: Feature request
+description: Suggest an idea or enhancement for Orch
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem / motivation
+      description: What problem are you trying to solve? What's the use case?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed solution
+      description: What would you like to see happen?
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: Any alternative solutions or workarounds you've considered.
+  - type: dropdown
+    id: component
+    attributes:
+      label: Component
+      options:
+        - Web (Next.js)
+        - Broker (Rust)
+        - SDK
+        - Docker / infra
+        - Cross-cutting
+    validations:
+      required: true

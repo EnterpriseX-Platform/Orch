@@ -1,0 +1,1536 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ==================== USER & AUTH ====================
+model User {
+  id           String    @id @default(cuid())
+  username     String    @unique
+  email        String    @unique
+  passwordHash String    @map("password_hash")
+  firstName    String?   @map("first_name")
+  lastName     String?   @map("last_name")
+  department   String?
+  roles        String[]  @default(["user"])
+  isActive     Boolean   @default(true) @map("is_active")
+  lastLoginAt  DateTime? @map("last_login_at")
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @updatedAt @map("updated_at")
+
+  // Relations
+  auditLogs         AuditLog[]
+  createdApis       ApiRegistration[] @relation("ApiCreator")
+  createdFlows      FlowIntegration[] @relation("FlowCreator")
+  createdDatasets   DataCatalog[]     @relation("DatasetCreator")
+  createdProjects   Project[]         @relation("ProjectCreator")
+  createdMsgFormats MessageFormat[]   @relation("MessageFormatCreator")
+
+  @@map("users")
+}
+
+// ==================== DATA CATALOG (datasets) ====================
+model DataCatalog {
+  id          String       @id @default(cuid())
+  name        String
+  nameEn      String?      @map("name_en")
+  description String?
+  source      String // data source (e.g. an upstream data system)
+  category    DataCategory @default(TRANSACTIONAL)
+  subCategory String?      @map("sub_category")
+  schema      Json? // JSON Schema of the data
+  sampleData  Json?        @map("sample_data")
+
+  // Metadata
+  updateFrequency String? @map("update_frequency") // realtime, daily, weekly, monthly
+  dataOwner       String? @map("data_owner")
+  contactInfo     String? @map("contact_info")
+
+  // Status
+  status   DataStatus @default(DRAFT)
+  isPublic Boolean    @default(false) @map("is_public")
+
+  // Hierarchical structure (parent/child) + ordering
+  parentId  String?       @map("parent_id")
+  parent    DataCatalog?  @relation("DatasetHierarchy", fields: [parentId], references: [id])
+  children  DataCatalog[] @relation("DatasetHierarchy")
+  sortOrder Int           @default(0) @map("sort_order")
+
+  // Relations
+  createdBy      String            @map("created_by")
+  creator        User              @relation("DatasetCreator", fields: [createdBy], references: [id])
+  apis           ApiRegistration[]
+  // M:N — formats that read/write this dataset
+  messageFormats MessageFormat[]   @relation("MessageFormatDatasets")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([parentId])
+  @@map("data_catalogs")
+}
+
+enum DataCategory {
+  TRANSACTIONAL @map("transactional") // transactional records
+  RESERVED      @map("reserved") // reserved / held records
+  TRANSFER      @map("transfer") // transfers
+  PERFORMANCE   @map("performance") // performance results
+  EXPENDITURE   @map("expenditure") // expenditure / spending
+  PROCUREMENT   @map("procurement") // procurement
+  OPERATION     @map("operation") // operation outcomes
+  MASTER_DATA   @map("master_data") // reference / master data
+  OTHER         @map("other")
+
+  @@map("data_category")
+}
+
+enum DataStatus {
+  DRAFT
+  ACTIVE
+  DEPRECATED
+  ARCHIVED
+
+  @@map("data_status")
+}
+
+// ==================== PROJECT (replaces Application + Module) ====================
+model Project {
+  id           String  @id @default(cuid())
+  name         String
+  nameEn       String? @map("name_en")
+  slug         String  @unique
+  description  String?
+  image        String?
+  themeColor   String  @default("#60A5FA") @map("theme_color")
+  projectGroup String? @map("project_group")
+  agency       String?
+  tags         Json?
+
+  // Config
+  baseUrl        String   @map("base_url") // public-facing URL shown in UI / OpenAPI specs
+  // Internal proxy target for Level 2 fallback (project pathPrefix
+  // match → forward here). Null → fall back to baseUrl, which only
+  // routes correctly if baseUrl itself reaches a backend. Splitting
+  // them lets baseUrl stay a clean public URL while internal routing
+  // points at a cluster service DNS.
+  proxyTargetUrl String?  @map("proxy_target_url")
+  pathPrefix     String?  @map("path_prefix") // e.g. "/service-center" — for fallback proxy routing
+  authType       AuthType @default(NONE) @map("auth_type")
+  apiKey         String?  @map("api_key")
+  apiKeyHeader   String?  @map("api_key_header")
+
+  // OIDC / Keycloak Config (Project-level)
+  oidcEnabled        Boolean @default(false) @map("oidc_enabled")
+  oidcIssuerUrl      String? @map("oidc_issuer_url") // e.g. https://keycloak:8443/realms/myrealm
+  oidcClientId       String? @map("oidc_client_id") // e.g. my-app
+  oidcJwksUrl        String? @map("oidc_jwks_url") // e.g. https://keycloak:8443/realms/myrealm/protocol/openid-connect/certs
+  oidcRequiredScopes Json?   @map("oidc_required_scopes") // string array e.g. ["openid", "profile"]
+
+  // OpenAPI Spec (auto-generated)
+  openApiSpec          Json?     @map("openapi_spec")
+  openApiSpecUpdatedAt DateTime? @map("openapi_spec_updated_at")
+
+  // Ownership
+  owner        String?
+  contactEmail String? @map("contact_email")
+
+  // Status
+  status AppStatus @default(ACTIVE)
+
+  // Relations
+  apis             ApiRegistration[]
+  apiKeys          ApiKey[]
+  fieldMappings    FieldMapping[]
+  eventLogPatterns EventLogPattern[]
+  auditConfigs     AuditConfig[]
+  screens          Screen[]
+  clients          Client[]
+  createdBy        String            @map("created_by")
+  creator          User              @relation("ProjectCreator", fields: [createdBy], references: [id])
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([status])
+  @@index([projectGroup])
+  @@index([slug])
+  @@index([pathPrefix])
+  @@map("projects")
+}
+
+enum AppStatus {
+  ACTIVE
+  INACTIVE
+  DEPRECATED
+
+  @@map("app_status")
+}
+
+// ==================== API REGISTRATION ====================
+model ApiRegistration {
+  id          String  @id @default(cuid())
+  name        String
+  description String?
+
+  // Endpoint Configuration
+  endpoint   String // e.g. /payments, /payments/:id, /orders/*
+  method     HttpMethod @default(GET)
+  backendUrl String     @map("backend_url") // URL of the upstream system
+
+  // API Type (REST or MICROFLOW)
+  apiType ApiType @default(REST) @map("api_type")
+
+  // Route Type: DEDICATED = 1 URL per API (default), SHARED_ENDPOINT = 1 URL, multiple message formats
+  routeType           RouteType @default(DEDICATED) @map("route_type")
+  routingKey          String?   @map("routing_key") // JSONPath to extract the discriminator from the body, e.g. $.flowName
+  autoDiscoverFormats Boolean   @default(false) @map("auto_discover_formats") // Auto-create message formats from traffic
+
+  // Parent Project
+  projectId String  @map("project_id")
+  project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  // Authentication (null = inherit from Application)
+  authType     AuthType? @map("auth_type")
+  apiKey       String?   @map("api_key")
+  apiKeyHeader String?   @map("api_key_header")
+
+  // Data Catalog Relation (optional)
+  dataCatalogId String?      @map("data_catalog_id")
+  dataCatalog   DataCatalog? @relation(fields: [dataCatalogId], references: [id])
+
+  // Rate Limiting
+  rateLimitPerMin Int  @default(1000) @map("rate_limit_per_min")
+  quotaPerDay     Int? @map("quota_per_day")
+  quotaPerMonth   Int? @map("quota_per_month")
+
+  // Flow Integration (kept as-is)
+  flowId String?          @map("flow_id")
+  flow   FlowIntegration? @relation(fields: [flowId], references: [id])
+
+  // Connection Settings
+  timeout Int @default(30) @map("timeout") // seconds
+  retries Int @default(3) @map("retries") // retry attempts
+
+  // API Information (for OpenAPI Spec)
+  version        String? // e.g. "1.0.0"
+  tags           Json? // string array, e.g. ["payments", "orders"]
+  termsOfService String? @map("terms_of_service")
+  contactName    String? @map("contact_name")
+  contactEmail   String? @map("contact_email")
+  contactUrl     String? @map("contact_url")
+  license        String? // e.g. "MIT", "Apache-2.0"
+  deprecated     Boolean @default(false)
+
+  // Status
+  status ApiStatus @default(DRAFT)
+
+  // Relations
+  messageFormats MessageFormat[]
+  authConfig     ApiAuthConfig?
+  headerMappings ApiHeaderMapping[]
+  createdBy      String             @map("created_by")
+  creator        User               @relation("ApiCreator", fields: [createdBy], references: [id])
+  // No direct relation to ApiLog — logs are append-only and survive
+  // API deletion. Query logs via prisma.apiLog with
+  // `where: { apiId }`.
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([projectId])
+  @@index([endpoint, method])
+  @@index([status])
+  @@map("api_registrations")
+}
+
+// ==================== API AUTH CONFIG (Authentication details) ====================
+model ApiAuthConfig {
+  id String @id @default(cuid())
+
+  // Parent API (1:1)
+  apiRegistrationId String          @unique @map("api_registration_id")
+  apiRegistration   ApiRegistration @relation(fields: [apiRegistrationId], references: [id], onDelete: Cascade)
+
+  // Auth Scheme
+  authScheme AuthScheme @default(NONE) @map("auth_scheme")
+
+  // JWT Config
+  jwtIssuer    String? @map("jwt_issuer")
+  jwtAudience  String? @map("jwt_audience")
+  jwtClaims    Json?   @map("jwt_claims") // Required claims, e.g. { "role": "admin" }
+  jwtAlgorithm String? @map("jwt_algorithm") // HS256, RS256, etc.
+
+  // OAuth2 Config
+  oauth2AuthUrl  String?     @map("oauth2_auth_url")
+  oauth2TokenUrl String?     @map("oauth2_token_url")
+  oauth2Scopes   Json?       @map("oauth2_scopes") // string array
+  oauth2Flow     OAuth2Flow? @map("oauth2_flow")
+
+  // API Key Config
+  apiKeyLocation ApiKeyLocation? @map("api_key_location") // HEADER, QUERY, COOKIE
+  apiKeyName     String?         @map("api_key_name")
+  apiKeyValue    String?         @map("api_key_value")
+
+  // Basic Auth Config
+  basicUsername String? @map("basic_username")
+  basicPassword String? @map("basic_password")
+
+  // Custom Auth Config
+  customAuthConfig Json? @map("custom_auth_config")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("api_auth_configs")
+}
+
+enum AuthScheme {
+  NONE
+  JWT
+  API_KEY
+  OAUTH2
+  BASIC
+  CUSTOM
+
+  @@map("auth_scheme")
+}
+
+enum OAuth2Flow {
+  AUTHORIZATION_CODE @map("authorization_code")
+  CLIENT_CREDENTIALS @map("client_credentials")
+  IMPLICIT           @map("implicit")
+  PASSWORD           @map("password")
+
+  @@map("oauth2_flow")
+}
+
+enum ApiKeyLocation {
+  HEADER @map("header")
+  QUERY  @map("query")
+  COOKIE @map("cookie")
+
+  @@map("api_key_location")
+}
+
+// ==================== API HEADER MAPPING (Header Injection/Transform) ====================
+model ApiHeaderMapping {
+  id String @id @default(cuid())
+
+  // Parent API
+  apiRegistrationId String          @map("api_registration_id")
+  apiRegistration   ApiRegistration @relation(fields: [apiRegistrationId], references: [id], onDelete: Cascade)
+
+  // Header Config
+  direction   HeaderDirection // REQUEST = inject toward backend, RESPONSE = inject toward client
+  headerName  String          @map("header_name") // header name, e.g. "X-Api-Key", "Authorization"
+  headerValue String          @map("header_value") // header value (supports template ${variable})
+  action      HeaderAction    @default(SET) // SET, APPEND, REMOVE, PASSTHROUGH
+  condition   String? // Optional condition expression
+  order       Int             @default(0) // execution order
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([apiRegistrationId])
+  @@index([direction])
+  @@map("api_header_mappings")
+}
+
+enum HeaderDirection {
+  REQUEST  @map("request") // Inject to backend
+  RESPONSE @map("response") // Inject to client
+
+  @@map("header_direction")
+}
+
+enum HeaderAction {
+  SET         @map("set") // set a new value (overwrite)
+  APPEND      @map("append") // append to the existing value
+  REMOVE      @map("remove") // remove the header
+  PASSTHROUGH @map("passthrough") // pass through from client
+
+  @@map("header_action")
+}
+
+// ==================== MESSAGE FORMAT (register message shapes) ====================
+model MessageFormat {
+  id          String  @id @default(cuid())
+  name        String // e.g. "Payment Created Audit"
+  description String?
+
+  // Link to API
+  apiRegistrationId String          @map("api_registration_id")
+  apiRegistration   ApiRegistration @relation(fields: [apiRegistrationId], references: [id], onDelete: Cascade)
+
+  // Flow link (for SHARED_ENDPOINT — each format can link to a different flow)
+  flowId String?          @map("flow_id")
+  flow   FlowIntegration? @relation(fields: [flowId], references: [id])
+
+  // Discriminator (for multiple message formats sharing the same URL)
+  discriminatorSource DiscriminatorSource @default(NONE) @map("discriminator_source")
+  discriminatorField  String?             @map("discriminator_field") // e.g. "$.messageType" or "X-Message-Type"
+  discriminatorValue  String?             @map("discriminator_value") // e.g. "payment_created"
+  // Optional AND-rules layered on top of the primary discriminator.
+  // Used when one body field (e.g. flowName) isn't enough to tell two
+  // formats apart — for instance "saveSampleAction" with
+  // action=save_agency vs action=update_agency. Shape:
+  //   [ { source: "BODY"|"HEADER", field: "$.path | header-name",
+  //       value: "expected" } ]
+  // Match logic ANDs every rule together with the primary
+  // discriminator. Null/empty array → backward-compatible single
+  // discriminator behaviour.
+  matchRules          Json?               @map("match_rules")
+
+  // Format Type Classification
+  formatType MessageFormatType @default(STANDARD) @map("format_type")
+
+  // Audit Configuration (moved from ApiRegistration)
+  auditEnabled     Boolean @default(true) @map("audit_enabled")
+  auditFields      Json?   @map("audit_fields") // Fields to capture for audit (old/new value)
+  pkXPath          String? @map("pk_xpath") // JSONPath for the entity ID
+  extractionConfig Json?   @map("extraction_config") // XPath/JSONPath extraction config + JSON sample
+  fieldMappings    Json?   @map("field_mappings") // Field mapping config (extracted fields)
+
+  // Search Key Extraction — XPath/JSONPath to pull key fields into the audit/event log
+  refIdPath  String? @map("ref_id_path") // e.g. "$.object.input.REF_ID"
+  refNoPath  String? @map("ref_no_path") // e.g. "$.object.input.REF_NO"
+  userIdPath String? @map("user_id_path") // e.g. "$.ref_user_id"
+
+  // Source metadata — LEGACY (kept for backward compatibility; migrate to structured fields below)
+  sourcePage     String? @map("source_page") // DEPRECATED → use screenName
+  sourceFunction String? @map("source_function") // DEPRECATED → use techHints.fn
+  sourceButton   String? @map("source_button") // DEPRECATED → use techHints.btnId
+  sourceSystem   String? @map("source_system") // DEPRECATED → use system
+
+  // NEW — Structured Action Context (v2 schema)
+  code        String?     @map("format_code") // Stable business ID unique within API (e.g., "SC09-SUBMIT")
+  actionType  ActionType? @map("action_type") // READ / CREATE / UPDATE / DELETE / SUBMIT / SIGNOFF / EXPORT / ...
+  actionLabel String?     @map("action_label") // Button text the user sees (e.g., "Confirm review")
+
+  // NEW — Source identification
+  system     String? @map("system") // "APP_A" (replaces sourceSystem)
+  screenCode String? @map("screen_code") // "APP-A" (stable ID)
+  screenName String? @map("screen_name") // screen display name
+  tabName    String? @map("tab_name") // Tab label if screen has tabs (optional)
+
+  // NEW — Technical reference (debug only, JSON)
+  techHints Json? @map("tech_hints") // { fn, btnId, customData ... }
+
+  // ── Reusable library refs (each MessageFormat may inherit from a
+  //    library entry, then override individual fields below). NULL =
+  //    no library, all behaviour from MessageFormat fields.
+  fieldMappingId String?       @map("field_mapping_id")
+  fieldMapping   FieldMapping? @relation(fields: [fieldMappingId], references: [id], onDelete: SetNull)
+
+  auditConfigId String?      @map("audit_config_id")
+  auditConfig   AuditConfig? @relation(fields: [auditConfigId], references: [id], onDelete: SetNull)
+
+  // Override fields — when set, these win over the library's value.
+  // Resolution order at runtime: this field → library field → null.
+  // refIdPath/refNoPath/userIdPath/pkXPath/screenCode/screenName/tabName
+  // already exist above and double as overrides.
+  refType        String?         @map("ref_type") // e.g. "WORK_PLAN", "ITEM"
+  refNamePath    String?         @map("ref_name_path") // override library
+  usernameSource UsernameSource? @map("username_source")
+  usernameField  String?         @map("username_field")
+  usernameStatic String?         @map("username_static")
+
+  // Buttons/screens that invoke this format (M:N — many buttons can
+  // share one format, e.g. SIGNOFF used on multiple screens)
+  buttons ScreenButton[]
+
+  // ── Mapped DataCatalogs ──────────────────────────────────────
+  // M:N — one MessageFormat may touch multiple datasets (e.g. an
+  // order + its line items + a payment on one save). Each audit row
+  // tags the affected catalog ids in `changes.dataCatalogIds` so
+  // the /audit page can filter "all changes to dataset X".
+  dataCatalogs DataCatalog[] @relation("MessageFormatDatasets")
+
+  // ── Field-level masking ──────────────────────────────────────
+  // Array of JSONPath strings — values at these paths are replaced
+  // with "***" before the body is written to audit_logs (PII /
+  // password / financial data). Empty / null = no masking.
+  // Example: ["$.password", "$.creditCard", "$.id_card"]
+  maskPaths Json? @map("mask_paths")
+
+  // Per-API default fallback. Constraint: at most 1 per
+  // apiRegistrationId may be true (enforced at write time).
+  isDefault Boolean @default(false) @map("is_default")
+
+  // Status
+  status ApiStatus @default(DRAFT)
+
+  // Relations
+  createdBy String @map("created_by")
+  creator   User   @relation("MessageFormatCreator", fields: [createdBy], references: [id])
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([apiRegistrationId])
+  @@index([discriminatorSource, discriminatorField, discriminatorValue])
+  @@index([apiRegistrationId, code])
+  @@index([system, screenCode])
+  @@index([actionType])
+  @@index([fieldMappingId])
+  @@index([auditConfigId])
+  @@map("message_formats")
+}
+
+/// Reusable field-extraction template. Many MessageFormats with the
+/// same shape (e.g. all APP-A microflow actions) point at one of
+/// these instead of repeating ref/username paths each time.
+model FieldMapping {
+  id          String  @id @default(cuid())
+  name        String // "APP-A Standard"
+  description String?
+
+  // Ref tracking — entity being affected by the action
+  refType     String? @map("ref_type")
+  refIdPath   String? @map("ref_id_path")
+  refNoPath   String? @map("ref_no_path")
+  refNamePath String? @map("ref_name_path")
+  pkXPath     String? @map("pk_xpath")
+
+  // Username extraction — where the operator identity comes from.
+  // SOURCE drives interpretation of FIELD: BODY_PATH→jsonpath,
+  // HEADER→header name, JWT_CLAIM→claim name, SESSION→ignored,
+  // STATIC→use usernameStatic instead.
+  usernameSource UsernameSource? @map("username_source")
+  usernameField  String?         @map("username_field")
+  usernameStatic String?         @map("username_static")
+
+  // Transaction grouping — extracts a stable key from a stringified
+  // CLOB inside the request body so audit rows belonging to the same
+  // business transaction can be grouped in the UI even when the
+  // top-level uniqueId differs per call.
+  //
+  //   clobPath              JSONPath that points to the stringified
+  //                         CLOB (e.g. "$.object.*.request"). The
+  //                         resolver fetches the value, JSON.parses
+  //                         it, then reads transactionKeyFields.
+  //   transactionKeyFields  Array of field names within the CLOB. The
+  //                         extracted values are joined with "|" to
+  //                         form the transactionKey (e.g.
+  //                         "2569|ba0f3b93-..."). All rows that share
+  //                         the same key are one transaction.
+  clobPath             String? @map("clob_path")
+  transactionKeyFields Json?   @map("transaction_key_fields")
+
+  // Project scope (NULL = global, available to every project)
+  projectId String?  @map("project_id")
+  project   Project? @relation(fields: [projectId], references: [id], onDelete: SetNull)
+
+  messageFormats MessageFormat[]
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([projectId])
+  @@map("field_mappings_lib")
+}
+
+/// Reusable audit policy — admins create named templates ("Strict",
+/// "Default", "Off") and each MessageFormat picks one. Per-format
+/// boolean override (auditEnabled) still wins.
+model AuditConfig {
+  id          String  @id @default(cuid())
+  name        String // "Strict", "Default", "Off"
+  description String?
+
+  enabled       Boolean @default(true)
+  // Field extraction list — what to copy into audit_logs.changes
+  extractFields Json?   @map("extract_fields") // [{path, name, type, sensitive}]
+  // Audit field list — track old/new value on writes
+  auditFields   Json?   @map("audit_fields") // [{path, name, type}]
+
+  projectId String?  @map("project_id")
+  project   Project? @relation(fields: [projectId], references: [id], onDelete: SetNull)
+
+  messageFormats MessageFormat[]
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([projectId])
+  @@map("audit_configs_lib")
+}
+
+/// Client app (consumer of the API). One Project may have many client
+/// apps consuming its APIs (e.g. "APP-A Web", "APP-A Mobile",
+/// "APP-A External Partner"). Each client app has its own Screen
+/// catalog — the same MessageFormat may be invoked from different
+/// clients but the screen layout differs per client.
+///
+/// `appCode` is the stable identifier the frontend can send via
+/// X-Client-App header for explicit attribution; the gateway can use
+/// it to disambiguate when the same Screen.code exists in multiple
+/// clients.
+model Client {
+  id        String  @id @default(cuid())
+  projectId String  @map("project_id")
+  project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  name        String // "APP-A Web"
+  appCode     String? @map("app_code") // "APP-A" — for X-Client-App header
+  description String?
+
+  screens Screen[]
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@unique([projectId, appCode])
+  @@index([projectId])
+  @@map("clients")
+}
+
+/// Screen / UI page on a Client. Identified by a stable code (e.g.
+/// "APP-A"). Many ScreenButtons hang off it; each binds
+/// to a MessageFormat so the gateway can attribute audit entries to
+/// "which page + which button" without frontend changes.
+///
+/// `system` field is kept for back-compat (it acts as a tag for the
+/// client app name when clientId is null — e.g. legacy rows from
+/// before the Client model existed).
+model Screen {
+  id          String  @id @default(cuid())
+  system      String? // legacy tag, "APP-A"
+  code        String // "APP-A"
+  name        String // display name
+  description String?
+
+  // Links — projectId stays for cross-client queries / legacy data
+  projectId String?  @map("project_id")
+  project   Project? @relation(fields: [projectId], references: [id], onDelete: SetNull)
+
+  // Preferred home: a Client (which itself is project-scoped). New
+  // rows should set clientId; backfill populates from Screen.system.
+  clientId String? @map("client_id")
+  client   Client? @relation(fields: [clientId], references: [id], onDelete: SetNull)
+
+  buttons ScreenButton[]
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@unique([system, code])
+  @@index([projectId])
+  @@index([clientId])
+  @@map("screens")
+}
+
+/// One UI control on a Screen. Many ScreenButtons can map to the
+/// same MessageFormat (e.g. "Confirm" appears on three different
+/// screens, all triggering SIGNOFF). The optional detection rule
+/// lets the gateway match incoming requests to the right button
+/// without the frontend having to send explicit X-Source-Button
+/// headers — but if it does, header detection is preferred.
+model ScreenButton {
+  id       String @id @default(cuid())
+  screenId String @map("screen_id")
+  screen   Screen @relation(fields: [screenId], references: [id], onDelete: Cascade)
+
+  tabName     String? @map("tab_name")
+  buttonLabel String  @map("button_label") // "Confirm Sign-Off"
+  actionType  String? @map("action_type") // for header X-Source-Action match
+
+  // Many-to-one: many buttons may share one format
+  messageFormatId String?        @map("message_format_id")
+  messageFormat   MessageFormat? @relation(fields: [messageFormatId], references: [id], onDelete: SetNull)
+
+  // Auto-detect rule. detectionSource decides interpretation of
+  // detectionField + detectionValue:
+  //   REFERER   regex match on Referer header
+  //   HEADER    field=header name, value=expected (regex)
+  //   BODY_PATH field=jsonpath, value=expected (regex)
+  //   QUERY     field=param name, value=expected
+  //   MANUAL    documentation only — no auto-match
+  detectionSource DetectionSource? @map("detection_source")
+  detectionField  String?          @map("detection_field")
+  detectionValue  String?          @map("detection_value")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([screenId])
+  @@index([messageFormatId])
+  @@index([actionType])
+  @@map("screen_buttons")
+}
+
+enum UsernameSource {
+  BODY_PATH @map("body_path")
+  HEADER    @map("header")
+  JWT_CLAIM @map("jwt_claim")
+  SESSION   @map("session")
+  STATIC    @map("static")
+
+  @@map("username_source")
+}
+
+enum DetectionSource {
+  REFERER   @map("referer")
+  HEADER    @map("header")
+  BODY_PATH @map("body_path")
+  QUERY     @map("query")
+  MANUAL    @map("manual")
+
+  @@map("detection_source")
+}
+
+enum ActionType {
+  READ   @map("read") // auto-load, view, list, grid load
+  SEARCH @map("search") // filter, lookup, dropdown query
+
+  CREATE @map("create") // add new record
+  UPDATE @map("update") // edit / save existing
+  DELETE @map("delete") // remove record
+  CLONE  @map("clone") // copy / duplicate
+
+  SUBMIT  @map("submit") // submit for review (before approval)
+  APPROVE @map("approve") // approve / confirm review
+  REJECT  @map("reject") // reject submission
+  SIGNOFF @map("signoff") // digital sign-off (highest priority, immutable)
+
+  EXPORT   @map("export") // generate report / PDF / Excel
+  DOWNLOAD @map("download") // file download
+
+  COMMENT @map("comment") // comment CRUD
+  NOTIFY  @map("notify") // send notification
+
+  OTHER @map("other")
+
+  @@map("action_type")
+}
+
+enum DiscriminatorSource {
+  NONE   @map("none") // no discriminator (single format per API)
+  BODY   @map("body") // read from a field in the request body (JSONPath)
+  HEADER @map("header") // read from an HTTP header
+
+  @@map("discriminator_source")
+}
+
+enum MessageFormatType {
+  STANDARD     @map("standard")
+  MICROFLOW    @map("microflow")
+  BATCH        @map("batch")
+  NOTIFICATION @map("notification")
+
+  @@map("message_format_type")
+}
+
+enum HttpMethod {
+  GET
+  POST
+  PUT
+  PATCH
+  DELETE
+
+  @@map("http_method")
+}
+
+enum AuthType {
+  NONE
+  JWT
+  API_KEY
+  OAUTH2
+  BASIC
+
+  @@map("auth_type")
+}
+
+enum ApiStatus {
+  DRAFT
+  ACTIVE
+  INACTIVE
+  DEPRECATED
+
+  @@map("api_status")
+}
+
+enum RouteType {
+  DEDICATED       @map("dedicated") // 1 URL = 1 Flow (default)
+  SHARED_ENDPOINT @map("shared_endpoint") // 1 URL = N Message Formats, each format has its own flow
+
+  @@map("route_type")
+}
+
+enum ApiType {
+  REST
+  MICROFLOW
+
+  @@map("api_type")
+}
+
+// ==================== FLOW INTEGRATION ====================
+model FlowIntegration {
+  id          String  @id @default(cuid())
+  name        String
+  description String?
+
+  // Trigger Type: defines what starts the Flow
+  triggerType TriggerType @default(HTTP) @map("trigger_type")
+
+  // Execution Mode: SYNC or ASYNC
+  executionMode ExecutionMode @default(SYNC) @map("execution_mode")
+
+  // Flow Category: classifies the usage type
+  flowCategory FlowCategory @default(API_GATEWAY) @map("flow_category")
+
+  // NEW: Flow-Level Execution Strategy
+  // fast = in-memory only, reliable = all through kafka, custom = configurable
+  executionStrategy String @default("fast") @map("execution_strategy")
+
+  // NEW: Custom Queue Configuration (for executionStrategy = "custom")
+  // { "type": "kafka" | "rabbitmq" | "sqs", "config": {...} }
+  customQueueConfig Json? @map("custom_queue_config")
+
+  // Flow Configuration (ReactFlow format)
+  nodes Json // Nodes configuration
+  edges Json // Edges configuration
+
+  // Trigger Configuration (for HTTP Trigger)
+  triggerConfig Json? @map("trigger_config") // { "path": "/api/v1/payments", "method": "POST" }
+
+  // Flow Settings
+  settings Json? // additional settings depending on the Flow type
+
+  // API Relations
+  apis           ApiRegistration[]
+  messageFormats MessageFormat[]
+
+  // Execution
+  isActive       Boolean   @default(false) @map("is_active")
+  lastExecutedAt DateTime? @map("last_executed_at")
+  executionCount Int       @default(0) @map("execution_count")
+
+  // Relations
+  createdBy  String          @map("created_by")
+  creator    User            @relation("FlowCreator", fields: [createdBy], references: [id])
+  executions FlowExecution[]
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("flow_integrations")
+}
+
+enum TriggerType {
+  HTTP           @map("http") // receive an HTTP Request
+  KAFKA_CONSUMER @map("kafka_consumer") // read from Kafka
+  SCHEDULER      @map("scheduler") // Cron Job
+  WEBHOOK        @map("webhook") // receive a Webhook
+  MESSAGE_QUEUE  @map("message_queue") // receive from another Queue
+
+  @@map("trigger_type")
+}
+
+enum FlowCategory {
+  API_GATEWAY @map("api_gateway") // for the Orch Broker
+  CONSUMER    @map("consumer") // for the Background Consumer
+  HYBRID      @map("hybrid") // usable in both modes
+
+  @@map("flow_category")
+}
+
+enum ExecutionMode {
+  SYNC  @map("sync") // process immediately
+  ASYNC @map("async") // process without waiting (via a Queue)
+
+  @@map("execution_mode")
+}
+
+// ==================== FLOW EXECUTION LOG ====================
+model FlowExecution {
+  id     String          @id @default(cuid())
+  flowId String          @map("flow_id")
+  flow   FlowIntegration @relation(fields: [flowId], references: [id])
+
+  triggerApiId String? @map("trigger_api_id")
+  requestId    String? @map("request_id")
+
+  // Execution Details
+  status      ExecutionStatus
+  startedAt   DateTime        @default(now()) @map("started_at")
+  completedAt DateTime?       @map("completed_at")
+  duration    Int? // milliseconds
+
+  // Input/Output
+  inputData    Json?   @map("input_data")
+  outputData   Json?   @map("output_data")
+  errorMessage String? @map("error_message")
+
+  // Node execution details
+  nodeResults Json? @map("node_results")
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("flow_executions")
+}
+
+enum ExecutionStatus {
+  PENDING
+  RUNNING
+  SUCCESS
+  FAILED
+  PARTIAL
+
+  @@map("execution_status")
+}
+
+// ==================== API LOGS / AUDIT TRAIL ====================
+model ApiLog {
+  id String @id @default(cuid())
+
+  // Request Info
+  requestId String @unique @map("request_id")
+  // Logs reference the API by id but with NO foreign key constraint:
+  // logs are append-only history that must outlive the source API
+  // (retention ≥ 365 days). FK would also block API delete
+  // and slow down inserts on every request. apiId is still indexed
+  // for query joins; orphaned rows after API delete are intentional
+  // and queryable.
+  apiId     String @map("api_id")
+
+  // User Info
+  userId    String? @map("user_id")
+  userIp    String? @map("user_ip")
+  userAgent String? @map("user_agent")
+
+  // Request Details
+  method         String
+  path           String
+  queryParams    Json?  @map("query_params")
+  requestHeaders Json?  @map("request_headers")
+  requestBody    Json?  @map("request_body")
+
+  // Response Details
+  statusCode      Int   @map("status_code")
+  responseHeaders Json? @map("response_headers")
+  responseBody    Json? @map("response_body")
+
+  // Performance
+  duration Int // milliseconds
+
+  // Extracted Data (from XPath/JSONPath)
+  extractedData Json? @map("extracted_data")
+
+  // Timestamp
+  timestamp DateTime @default(now())
+
+  // Partition key for archiving
+  partitionKey String @default(dbgenerated("to_char(now(), 'YYYYMM')")) @map("partition_key")
+
+  @@index([apiId, timestamp])
+  @@index([userId, timestamp])
+  @@index([partitionKey])
+  @@index([timestamp])
+  @@map("api_logs")
+}
+
+// ==================== EVENT LOG PATTERNS ====================
+//
+// Admins describe URL patterns they want to capture into event_logs
+// without registering the path as a full ApiRegistration. Used for
+// observability ("log me every /payments/* call") rather than
+// audit ("record what changed").
+//
+// Match contract: pathPattern + methodMatch must hold; if bodyMatch
+// is set, every entry there must hold too (same shape as
+// MessageFormat.matchRules — JSONPath-ish field, expected value).
+//
+// On match the gateway writes an EventLog row whose `data` payload
+// depends on `capture`:
+//   SUMMARY   { method, path, status, duration }
+//   FULL_BODY SUMMARY + request body + response body
+//   NONE      no row written, but `level=warn` rules can still
+//             surface in dashboards as a "saw it pass through" mark
+//
+model EventLogPattern {
+  id String @id @default(cuid())
+
+  // Scope. Null = global (matches every project's traffic).
+  projectId String?  @map("project_id")
+  project   Project? @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  name        String // human label
+  description String?
+  pathPattern String          @map("path_pattern") // /app-a/microflow/* | /payments/:id
+  methodMatch String          @default("ANY") @map("method_match") // ANY | GET | POST | …
+  // Optional AND-rules (BODY/HEADER) — same shape as
+  // MessageFormat.matchRules so admins reuse the same mental model.
+  bodyMatch   Json?           @map("body_match")
+  capture     EventLogCapture @default(SUMMARY)
+  level       String          @default("info") // info | warn | error
+  enabled     Boolean         @default(true)
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([projectId, enabled])
+  @@map("event_log_patterns")
+}
+
+enum EventLogCapture {
+  SUMMARY
+  FULL_BODY
+  NONE
+
+  @@map("event_log_capture")
+}
+
+// ==================== EVENT LOGS (from Flow Execution) ====================
+model EventLog {
+  id        String  @id @default(cuid())
+  eventType String  @map("event_type") // external_api_called, flow_started, etc.
+  level     String  @default("info") // info, warn, error, debug
+  message   String?
+  data      Json? // additional data stored as JSON
+
+  // Flow Info
+  flowId   String? @map("flow_id")
+  flowName String? @map("flow_name")
+
+  // Request Context
+  requestId String  @map("request_id")
+  userId    String? @map("user_id")
+  userIp    String? @map("user_ip")
+
+  // Timestamp
+  timestamp DateTime @default(now())
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([eventType, timestamp])
+  @@index([flowId, timestamp])
+  @@index([requestId])
+  @@index([timestamp])
+  @@index([level])
+  @@map("event_logs")
+}
+
+// ==================== AUDIT LOG (change records) ====================
+model AuditLog {
+  id String @id @default(cuid())
+
+  // Action Info
+  action     AuditAction
+  entityType String      @map("entity_type") // api, dataset, flow, user
+  entityId   String      @map("entity_id")
+
+  // User
+  userId String  @map("user_id")
+  user   User    @relation(fields: [userId], references: [id])
+  userIp String? @map("user_ip")
+
+  // Change Details
+  oldValues Json? @map("old_values")
+  newValues Json? @map("new_values")
+  changes   Json? // the differences that occurred
+
+  // Metadata
+  description String?
+  timestamp   DateTime @default(now())
+
+  @@index([entityType, entityId])
+  @@index([userId, timestamp])
+  @@index([timestamp])
+  @@map("audit_logs")
+}
+
+enum AuditAction {
+  CREATE
+  UPDATE
+  DELETE
+  LOGIN
+  LOGOUT
+  VIEW
+  EXPORT
+  APPROVE
+  REJECT
+  API_CALL
+
+  @@map("audit_action")
+}
+
+// ==================== SYSTEM CONFIGURATION ====================
+// Admin-editable runtime configuration. Replaces env vars for values
+// that should be changeable without a redeploy (backend URLs, feature
+// flags, audit policy, alert thresholds, etc.). Secrets still live in
+// env / K8s secrets — do NOT store passwords or API keys here.
+model SystemConfig {
+  id        String          @id @default(cuid())
+  key       String // dotted path e.g. "orchBroker.url"
+  value     Json // actual value (string/number/bool/object)
+  valueType ConfigValueType @default(STRING) @map("value_type")
+  category  ConfigCategory  @default(GENERAL)
+
+  // Display
+  label       String? // human-readable label
+  description String? // longer help text
+  group       String? // sub-group e.g. "APP-A"
+
+  // Validation / flags
+  isSecret     Boolean @default(false) @map("is_secret") // mask in UI/API
+  isRequired   Boolean @default(false) @map("is_required")
+  isReadOnly   Boolean @default(false) @map("is_read_only") // system-managed
+  validation   Json? // { pattern, min, max, enum[] }
+  defaultValue Json?   @map("default_value")
+
+  // Scoping — null projectId = global, else project override
+  projectId String? @map("project_id")
+
+  // Audit
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  updatedBy String?  @map("updated_by")
+
+  @@unique([key, projectId])
+  @@index([category])
+  @@index([projectId])
+  @@map("system_configs")
+}
+
+enum ConfigValueType {
+  STRING  @map("string")
+  NUMBER  @map("number")
+  BOOLEAN @map("boolean")
+  JSON    @map("json")
+  URL     @map("url")
+  SECRET  @map("secret")
+}
+
+enum ConfigCategory {
+  GENERAL       @map("general")
+  BACKEND_URLS  @map("backend_urls")
+  KAFKA         @map("kafka")
+  AUDIT         @map("audit")
+  SECURITY      @map("security")
+  PERFORMANCE   @map("performance")
+  ALERTS        @map("alerts")
+  FEATURE_FLAGS @map("feature_flags")
+  UI_BRANDING   @map("ui_branding")
+  PROJECT       @map("project")
+}
+
+// Change history — every edit to SystemConfig writes one row here.
+model SystemConfigHistory {
+  id        String   @id @default(cuid())
+  configKey String   @map("config_key")
+  projectId String?  @map("project_id")
+  oldValue  Json?    @map("old_value")
+  newValue  Json     @map("new_value")
+  changedBy String   @map("changed_by")
+  changedAt DateTime @default(now()) @map("changed_at")
+  reason    String?
+
+  @@index([configKey])
+  @@index([changedAt])
+  @@map("system_config_history")
+}
+
+// ==================== EXECUTION LOGS (from Flow Execution) ====================
+model ExecutionLog {
+  id        String  @id @default(cuid())
+  requestId String  @map("request_id")
+  flowId    String? @map("flow_id")
+  flowName  String? @map("flow_name")
+
+  // Request Info
+  method      String
+  path        String
+  queryParams Json?  @map("query_params")
+  headers     Json?
+
+  // Response Info
+  statusCode      Int?  @map("status_code")
+  responseHeaders Json? @map("response_headers")
+  responseBody    Json? @map("response_body")
+  durationMs      Int   @default(0) @map("duration_ms")
+
+  // API Info
+  apiId       String? @map("api_id")
+  apiName     String? @map("api_name")
+  apiEndpoint String? @map("api_endpoint")
+
+  // Client Info
+  userIp    String? @map("user_ip")
+  userAgent String? @map("user_agent")
+
+  // Node Execution Info
+  nodeId          String? @map("node_id")
+  nodeType        String? @map("node_type")
+  executionStatus String  @default("SUCCESS") @map("execution_status") // SUCCESS, ERROR, TIMEOUT
+  errorMessage    String? @map("error_message")
+
+  // Metadata
+  metadata Json?
+
+  // Timestamps
+  createdAt   DateTime  @default(now()) @map("created_at")
+  completedAt DateTime? @map("completed_at")
+
+  @@index([requestId])
+  @@index([flowId])
+  @@index([createdAt])
+  @@index([method])
+  @@index([statusCode])
+  @@index([apiId])
+  @@index([userIp])
+  @@map("execution_logs")
+}
+
+// ==================== AUDIT LOGS (Enhanced for Flow) ====================
+model FlowAuditLog {
+  id String @id @default(uuid())
+
+  // Action Info
+  action     String // PROXY_CALL, EVENT_LOG, AUDIT_LOG, TRANSFORM, etc.
+  entityType String  @map("entity_type") // API, FLOW, DATASET, SYSTEM
+  entityId   String? @map("entity_id")
+  entityName String? @map("entity_name")
+
+  // Flow Context
+  flowId   String? @map("flow_id")
+  flowName String? @map("flow_name")
+  nodeId   String? @map("node_id")
+  nodeType String? @map("node_type")
+
+  // Description
+  description String?
+
+  // Data Changes
+  oldValues Json? @map("old_values")
+  newValues Json? @map("new_values")
+  changes   Json? // { field: { old: x, new: y } }
+
+  // Request Context
+  requestId String? @map("request_id")
+  method    String?
+  path      String?
+
+  // User Info
+  userId        String? @map("user_id")
+  username      String?
+  userFirstName String? @map("user_first_name")
+  userLastName  String? @map("user_last_name")
+  userIp        String? @map("user_ip")
+  userAgent     String? @map("user_agent")
+
+  // Execution Result
+  executionStatus String  @default("SUCCESS") @map("execution_status")
+  errorMessage    String? @map("error_message")
+
+  // Source
+  sourceSystem String  @default("ORCH_BROKER") @map("source_system")
+  sourceIp     String? @map("source_ip")
+
+  // Metadata
+  metadata      Json?
+  sessionId     String? @map("session_id")
+  correlationId String? @map("correlation_id")
+
+  // Timestamps
+  createdAt   DateTime  @default(now()) @map("created_at")
+  processedAt DateTime? @map("processed_at")
+
+  @@index([createdAt])
+  @@index([action])
+  @@index([entityType, entityId])
+  @@index([userId])
+  @@index([requestId])
+  @@index([flowId])
+  @@map("flow_audit_logs")
+}
+
+// ==================== WORKER JOBS (for Async Node Execution) ====================
+model WorkerJob {
+  id String @id @default(cuid())
+
+  // Job Identification
+  requestId String @map("request_id")
+  flowId    String @map("flow_id")
+  nodeId    String @map("node_id")
+  nodeType  String @map("node_type")
+
+  // Queue Configuration
+  queueName String @default("default") @map("queue_name")
+  priority  Int    @default(0)
+
+  // Job Status
+  status WorkerJobStatus @default(PENDING)
+
+  // Execution Data
+  inputData  Json  @map("input_data")
+  outputData Json? @map("output_data")
+  config     Json? // Node configuration
+
+  // Retry Configuration
+  maxRetries Int @default(3) @map("max_retries")
+  retryCount Int @default(0) @map("retry_count")
+
+  // Error Handling
+  errorMessage String? @map("error_message")
+
+  // Timestamps
+  scheduledAt DateTime? @map("scheduled_at") // for delayed execution
+  startedAt   DateTime? @map("started_at")
+  completedAt DateTime? @map("completed_at")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+
+  // Kafka Tracking
+  kafkaOffset    String? @map("kafka_offset")
+  kafkaPartition String? @map("kafka_partition")
+
+  @@index([status, queueName])
+  @@index([flowId, nodeId])
+  @@index([requestId])
+  @@index([createdAt])
+  @@index([scheduledAt])
+  @@map("worker_jobs")
+}
+
+enum WorkerJobStatus {
+  PENDING    @map("pending") // waiting to be processed
+  QUEUED     @map("queued") // in the queue
+  PROCESSING @map("processing") // currently processing
+  SUCCESS    @map("success") // succeeded
+  FAILED     @map("failed") // failed
+  RETRYING   @map("retrying") // retrying
+  CANCELLED  @map("cancelled") // cancelled
+
+  @@map("worker_job_status")
+}
+
+// ==================== API FLOW MAPPINGS (Routing Config) ====================
+model ApiFlowMapping {
+  id      String @id @default(uuid())
+  apiId   String @map("api_id")
+  apiName String @map("api_name")
+
+  // Path Matching
+  pathPattern String @map("path_pattern") // /api/v1/payments, /service-center/*
+  method      String @default("ANY") // GET, POST, PUT, DELETE, ANY
+
+  // Flow Assignment
+  flowId   String  @map("flow_id")
+  flowName String? @map("flow_name")
+
+  // Domain/Base Path Config
+  domain      String? // api.example.com
+  basePath    String? @map("base_path") // /service-center
+  upstreamUrl String? @map("upstream_url") // http://backend:8080
+
+  // Routing Config
+  stripPrefix  Boolean @default(true) @map("strip_prefix")
+  preserveHost Boolean @default(false) @map("preserve_host")
+
+  // Headers
+  addHeaders    Json?    @map("add_headers")
+  removeHeaders String[] @map("remove_headers")
+
+  // Transform
+  requestTransform  Json? @map("request_transform")
+  responseTransform Json? @map("response_transform")
+
+  // Status
+  isActive Boolean @default(true) @map("is_active")
+  priority Int     @default(0)
+
+  // Metadata
+  description String?
+  createdBy   String?  @map("created_by")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@unique([pathPattern, method], name: "unique_active_path")
+  @@index([pathPattern])
+  @@index([flowId])
+  @@index([isActive])
+  @@index([priority])
+  @@map("api_flow_mappings")
+}
+
+// ==================== WORKER CONFIGURATIONS ====================
+model WorkerConfig {
+  id         String  @id @default(cuid())
+  workerCuid String? @unique @map("worker_cuid")
+  workerId   String  @map("worker_id")
+  name       String
+  queue      String
+
+  // Configuration Settings
+  autoRestart   Boolean @default(true) @map("auto_restart")
+  enableLogging Boolean @default(true) @map("enable_logging")
+  highPriority  Boolean @default(false) @map("high_priority")
+  maxRetries    Int     @default(3) @map("max_retries")
+  timeout       Int     @default(30000) // milliseconds
+
+  // Additional Settings (JSON for extensibility)
+  settings Json?
+
+  // Metadata
+  description String?
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@index([queue])
+  @@index([workerId])
+  @@index([workerCuid])
+  @@map("worker_configs")
+}
+
+// ==================== API KEY ====================
+model ApiKey {
+  id         String    @id @default(cuid())
+  name       String
+  keyHash    String    @unique @map("key_hash")
+  prefix     String // first 8 chars for display
+  projectId  String    @map("project_id")
+  project    Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  scopes     String[]  @default([])
+  expiresAt  DateTime? @map("expires_at")
+  lastUsedAt DateTime? @map("last_used_at")
+  createdAt  DateTime  @default(now()) @map("created_at")
+  createdBy  String    @map("created_by")
+  revokedAt  DateTime? @map("revoked_at")
+
+  @@index([projectId])
+  @@index([keyHash])
+  @@map("api_keys")
+}
+
+// ==================== API QUOTA USAGE ====================
+model ApiQuotaUsage {
+  id    String @id @default(cuid())
+  apiId String @map("api_id")
+  date  String // YYYY-MM-DD
+  count Int    @default(0)
+
+  @@unique([apiId, date])
+  @@index([apiId, date])
+  @@map("api_quota_usage")
+}
+
+// ==================== IDEMPOTENCY KEY ====================
+model IdempotencyKey {
+  key          String   @id // user-provided key
+  apiId        String   @map("api_id")
+  requestHash  String   @map("request_hash") // hash of body+path
+  statusCode   Int      @map("status_code")
+  responseBody Json     @map("response_body")
+  createdAt    DateTime @default(now()) @map("created_at")
+  expiresAt    DateTime @map("expires_at") // 24h after createdAt
+
+  @@index([expiresAt])
+  @@index([apiId])
+  @@map("idempotency_keys")
+}
+
+// ──────────────── DATA REPOSITORY ────────────────
+// Catalog of physical tables managed by Orch. Each table holds
+// "transactional" data (orders, line items, payments, ...) and gets
+// CRUD APIs auto-published. Tables can be column-encrypted via the
+// existing engine-aware DDL generator.
+//
+// Design notes:
+//   - RepoTable.name maps 1:1 to a real Postgres/Oracle table that
+//     Orch owns (under the `repo_*` prefix to avoid collision).
+//   - schemaJson stores [{name,type,nullable,encrypted}] used both
+//     for UI rendering and DDL generation.
+//   - apiKey access is gated by RepoApiKey (separate from project keys).
+
+model RepoFolder {
+  id        String   @id @default(cuid())
+  name      String
+  parentId  String?  @map("parent_id")
+  sortOrder Int      @default(0) @map("sort_order")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  parent   RepoFolder?  @relation("RepoFolderTree", fields: [parentId], references: [id], onDelete: SetNull)
+  children RepoFolder[] @relation("RepoFolderTree")
+  tables   RepoTable[]
+
+  @@index([parentId])
+  @@map("repo_folders")
+}
+
+model RepoTable {
+  id                String       @id @default(cuid())
+  name              String       @unique // physical table name (becomes repo_<name>)
+  displayName       String?      @map("display_name") // friendly label
+  description       String?
+  category          DataCategory @default(OTHER) // reuse the existing enum
+  folderId          String?      @map("folder_id")
+  // Source connection — when set, this RepoTable points at a real
+  // table living in an external Postgres/MySQL/Oracle. When NULL,
+  // the table lives in Orch's own DB (prefix `repo_<name>`).
+  connectionId      String?      @map("connection_id")
+  // The actual table name in the external DB — only used when
+  // connectionId is set. For Orch-owned tables we always use
+  // physicalTableName(name) = `repo_<name>`.
+  externalTableName String?      @map("external_table_name")
+  sortOrder         Int          @default(0) @map("sort_order")
+  // [{name,type,nullable,encrypted}] — what columns the physical
+  // table has. Updated by /tables/:id/structure DDL operations.
+  schemaJson        Json         @default("[]") @map("schema_json")
+  rowCount          Int          @default(0) @map("row_count")
+  // last time we ran ALTER TABLE / DDL for this table
+  lastAlterAt       DateTime?    @map("last_alter_at")
+  createdAt         DateTime     @default(now()) @map("created_at")
+  updatedAt         DateTime     @updatedAt @map("updated_at")
+
+  folder     RepoFolder?     @relation(fields: [folderId], references: [id], onDelete: SetNull)
+  connection RepoConnection? @relation(fields: [connectionId], references: [id], onDelete: SetNull)
+
+  @@index([folderId])
+  @@index([category])
+  @@index([connectionId])
+  @@map("repo_tables")
+}
+
+// API key for external access to data-repository CRUD APIs.
+// Different from project-level ApiKey; scoped only to /api/repo/*.
+model RepoApiKey {
+  id          String    @id @default(cuid())
+  name        String
+  keyHash     String    @unique @map("key_hash") // hash of the key (never store plain)
+  keyPrefix   String    @map("key_prefix") // first 8 chars for display
+  permissions String    @default("read") // read | write | admin
+  isActive    Boolean   @default(true) @map("is_active")
+  expiresAt   DateTime? @map("expires_at")
+  lastUsedAt  DateTime? @map("last_used_at")
+  createdAt   DateTime  @default(now()) @map("created_at")
+
+  @@map("repo_api_keys")
+}
+
+// External database connections that the data-repository can browse,
+// import from, or proxy CRUD against. Mirrors a typical integration
+// platform so admins migrating between the two systems see the same
+// affordances.
+//
+// `config` is JSON: { host, port, database, username, password, ssl }
+// — kept as Json so we can add per-engine knobs later without
+// migrating again.
+model RepoConnection {
+  id           String    @id @default(cuid())
+  name         String
+  type         String // postgresql | mysql | oracle
+  config       Json      @default("{}")
+  status       String    @default("Disconnected") // Connected | Disconnected | Error
+  lastTestedAt DateTime? @map("last_tested_at")
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @updatedAt @map("updated_at")
+
+  tables RepoTable[]
+
+  @@map("repo_connections")
+}
