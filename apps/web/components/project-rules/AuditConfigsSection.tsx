@@ -40,7 +40,7 @@ export function AuditConfigsSection({ projectId }: { projectId: string }) {
   return (
     <div>
       <div className="flex items-center justify-end mb-3">
-        <button onClick={() => setShowCreate(true)} className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold text-white bg-[var(--t-accent)] hover:bg-[#2563EB]">
+        <button onClick={() => setShowCreate(true)} className="flex items-center gap-2 h-8 px-3 text-sm text-white bg-[#0f62fe] hover:bg-[#0353e9]">
           <Plus className="w-3.5 h-3.5" /> New Config
         </button>
       </div>
@@ -50,10 +50,10 @@ export function AuditConfigsSection({ projectId }: { projectId: string }) {
       ) : items.length === 0 ? (
         <Empty onCreate={() => setShowCreate(true)} />
       ) : (
-        <div className="rounded-lg bg-[var(--t-panel)] border border-[var(--t-border)] overflow-hidden">
+        <div className="rounded-none bg-[var(--t-panel)] border border-[var(--t-border)] overflow-hidden">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-[var(--t-border)] bg-[var(--t-bg)]">
+              <tr className="bg-[#e0e0e0] h-10">
                 <Th>Name</Th><Th>Status</Th><Th>Used by</Th><Th>Actions</Th>
               </tr>
             </thead>
@@ -63,10 +63,10 @@ export function AuditConfigsSection({ projectId }: { projectId: string }) {
                   <td className="px-4 py-2.5">
                     <div className="font-medium text-[var(--t-text)]">{ac.name}</div>
                     {ac.description && <div className="text-xs text-[var(--t-text-muted)]">{ac.description}</div>}
-                    {!ac.projectId && <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-400 mt-1 inline-block">global</span>}
+                    {!ac.projectId && <span className="cds-tag text-[12px] px-2 py-0.5 bg-[#fff1e6] text-[#8a3800] mt-1 inline-block">global</span>}
                   </td>
                   <td className="px-4 py-2.5">
-                    <span className={`text-xs font-semibold px-2 py-0.5 rounded ${ac.enabled ? 'bg-emerald-500/15 text-emerald-400' : 'bg-slate-500/20 text-slate-400'}`}>
+                    <span className={`text-xs px-2 py-0.5 ${ac.enabled ? 'cds-tag bg-[#a7f0ba] text-[#0e6027]' : 'cds-tag bg-[#e0e0e0] text-[#161616]'}`}>
                       {ac.enabled ? 'Enabled' : 'Disabled'}
                     </span>
                   </td>
@@ -76,11 +76,11 @@ export function AuditConfigsSection({ projectId }: { projectId: string }) {
                   </td>
                   <td className="px-4 py-2.5">
                     <div className="flex items-center gap-2">
-                      <button onClick={() => setEditing(ac)} className="p-1.5 rounded hover:bg-[var(--t-panel-hover)]">
+                      <button onClick={() => setEditing(ac)} className="p-1.5 hover:bg-[#e8e8e8]">
                         <Pencil className="w-3.5 h-3.5 text-[var(--t-text-muted)]" />
                       </button>
-                      <button onClick={async () => { if (await confirmDialog({ title: `Delete "${ac.name}"?`, variant: 'danger' })) del.mutate(ac.id) }} className="p-1.5 rounded hover:bg-red-500/10">
-                        <Trash2 className="w-3.5 h-3.5 text-red-400" />
+                      <button onClick={async () => { if (await confirmDialog({ title: `Delete "${ac.name}"?`, variant: 'danger' })) del.mutate(ac.id) }} className="p-1.5 rounded-none hover:bg-[#e8e8e8]">
+                        <Trash2 className="w-3.5 h-3.5 text-[#da1e28]" />
                       </button>
                     </div>
                   </td>
@@ -104,15 +104,15 @@ export function AuditConfigsSection({ projectId }: { projectId: string }) {
 }
 
 function Th({ children }: { children: React.ReactNode }) {
-  return <th className="text-left px-4 py-2 text-[10px] font-semibold uppercase tracking-wider text-[var(--t-text-muted)]">{children}</th>
+  return <th className="text-left px-4 py-2 text-[12px] text-[#525252]">{children}</th>
 }
 
 function Empty({ onCreate }: { onCreate: () => void }) {
   return (
-    <div className="text-center py-12 rounded-lg bg-[var(--t-panel)] border border-dashed border-[var(--t-border)]">
+    <div className="text-center py-12 rounded-none bg-[var(--t-panel)] border border-dashed border-[var(--t-border)]">
       <Shield className="w-8 h-8 text-[var(--t-text-muted)] mx-auto mb-2" />
       <p className="text-sm text-[var(--t-text)]">No audit configs yet</p>
-      <button onClick={onCreate} className="mt-3 text-xs px-3 py-1.5 rounded bg-[var(--t-accent)] text-white">Create one</button>
+      <button onClick={onCreate} className="mt-3 text-sm h-8 px-3 bg-[#0f62fe] text-white inline-flex items-center gap-2 hover:bg-[#0353e9]">Create one</button>
     </div>
   )
 }
@@ -131,27 +131,27 @@ function Editor({ item, projectId, onClose, onSaved }: { item: AC | null; projec
   })
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4" onClick={onClose}>
-      <div className="bg-[var(--t-panel)] border border-[var(--t-border)] rounded-xl w-full max-w-md" onClick={(e) => e.stopPropagation()}>
+    <div className="fixed inset-0 z-50 bg-[rgba(22,22,22,0.5)] flex items-center justify-center p-4" onClick={onClose}>
+      <div className="bg-[var(--t-panel)] border border-[var(--t-border)] rounded-none w-full max-w-md" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between px-5 py-3 border-b border-[var(--t-border)]">
-          <h2 className="text-lg font-semibold text-[var(--t-text)]">{isEdit ? 'Edit Audit Config' : 'New Audit Config'}</h2>
+          <h2 className="text-[20px] font-normal text-[var(--t-text)]">{isEdit ? 'Edit Audit Config' : 'New Audit Config'}</h2>
           <button onClick={onClose} className="text-[var(--t-text-muted)]">✕</button>
         </div>
         <div className="p-5 space-y-4">
           <Field label="Name *">
-            <input value={form.name ?? ''} onChange={(e) => set('name', e.target.value)} className="w-full px-3 py-2 text-sm rounded border border-[var(--t-border)] bg-[var(--t-input)] text-[var(--t-text)]" placeholder="Strict / Default / Off" />
+            <input value={form.name ?? ''} onChange={(e) => set('name', e.target.value)} className="w-full px-3 py-2 text-sm text-[var(--t-text)]" placeholder="Strict / Default / Off" />
           </Field>
           <Field label="Description">
-            <input value={form.description ?? ''} onChange={(e) => set('description', e.target.value)} className="w-full px-3 py-2 text-sm rounded border border-[var(--t-border)] bg-[var(--t-input)] text-[var(--t-text)]" />
+            <input value={form.description ?? ''} onChange={(e) => set('description', e.target.value)} className="w-full px-3 py-2 text-sm text-[var(--t-text)]" />
           </Field>
           <label className="flex items-center gap-2">
-            <input type="checkbox" checked={form.enabled ?? true} onChange={(e) => set('enabled', e.target.checked)} className="rounded" />
+            <input type="checkbox" checked={form.enabled ?? true} onChange={(e) => set('enabled', e.target.checked)} className="rounded-none" />
             <span className="text-sm text-[var(--t-text)]">Enabled (write to audit_logs)</span>
           </label>
         </div>
         <div className="px-5 py-3 border-t border-[var(--t-border)] flex justify-end gap-2">
-          <button onClick={onClose} className="px-4 py-2 text-sm text-[var(--t-text-secondary)]">Cancel</button>
-          <button onClick={() => save.mutate()} disabled={!form.name || save.isPending} className="px-4 py-2 text-sm rounded bg-[var(--t-accent)] text-white disabled:opacity-50">
+          <button onClick={onClose} className="h-8 px-3 text-sm inline-flex items-center gap-2 bg-[#393939] text-white hover:bg-[#474747]">Cancel</button>
+          <button onClick={() => save.mutate()} disabled={!form.name || save.isPending} className="h-8 px-3 text-sm bg-[#0f62fe] text-white disabled:opacity-50 inline-flex items-center gap-2 hover:bg-[#0353e9]">
             {save.isPending ? <Loader2 className="w-4 h-4 animate-spin inline mr-1" /> : null}Save
           </button>
         </div>
@@ -161,5 +161,5 @@ function Editor({ item, projectId, onClose, onSaved }: { item: AC | null; projec
 }
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
-  return <div><label className="block text-xs font-medium text-[var(--t-text-secondary)] mb-1">{label}</label>{children}</div>
+  return <div><label className="block text-xs text-[#525252] mb-1">{label}</label>{children}</div>
 }

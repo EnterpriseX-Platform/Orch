@@ -103,19 +103,19 @@ export function TestRequestModal({
 
   return (
     <div
-      className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4"
+      className="fixed inset-0 z-50 bg-[rgba(22,22,22,0.5)] flex items-center justify-center p-4"
       onClick={onClose}
     >
       <div
-        className="bg-[var(--t-panel)] border border-[var(--t-border)] rounded-xl w-full max-w-6xl max-h-[90vh] flex flex-col overflow-hidden"
+        className="bg-[var(--t-panel)] border border-[var(--t-border)] rounded-none w-full max-w-6xl max-h-[90vh] flex flex-col overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-3 border-b border-[var(--t-border)]">
           <div>
-            <h2 className="text-base font-semibold text-[var(--t-text)]">Test Request · {api.name}</h2>
+            <h2 className="text-[20px] font-normal text-[var(--t-text)]">Test Request · {api.name}</h2>
           </div>
-          <button onClick={onClose} className="p-1.5 rounded-md hover:bg-[var(--t-panel-hover)] text-[var(--t-text-muted)]">
+          <button onClick={onClose} className="w-8 h-8 flex items-center justify-center hover:bg-[#e8e8e8] text-[#161616]">
             <X className="w-4 h-4" />
           </button>
         </div>
@@ -128,7 +128,7 @@ export function TestRequestModal({
               <select
                 value={method}
                 onChange={(e) => setMethod(e.target.value)}
-                className="px-3 py-1.5 rounded bg-[var(--t-bg)] border border-[var(--t-border)] text-[var(--t-text)] text-xs font-semibold"
+                className="px-3 py-1.5 text-[var(--t-text)] text-xs font-semibold"
               >
                 {METHODS.map((m) => <option key={m}>{m}</option>)}
               </select>
@@ -136,48 +136,48 @@ export function TestRequestModal({
                 value={path}
                 onChange={(e) => setPath(e.target.value)}
                 placeholder="/my-api/microflow/service"
-                className="flex-1 px-3 py-1.5 rounded bg-[var(--t-bg)] border border-[var(--t-border)] text-[var(--t-text)] text-xs font-mono"
+                className="flex-1 px-3 py-1.5 text-[var(--t-text)] text-xs font-mono"
               />
               <button
                 onClick={send}
                 disabled={sending || !path}
-                className="px-4 py-1.5 rounded bg-[var(--t-accent)] text-white text-xs font-semibold flex items-center gap-1.5 disabled:opacity-50"
+                className="h-8 px-3 bg-[#0f62fe] text-white text-sm flex items-center gap-2 disabled:opacity-50 hover:bg-[#0353e9]"
               >
                 <Send className="w-3.5 h-3.5" /> {sending ? 'Sending…' : 'Send'}
               </button>
             </div>
 
             <div>
-              <label className="block text-[11px] font-semibold text-[var(--t-text-muted)] mb-1 uppercase tracking-wider">
+              <label className="block text-xs text-[#525252] mb-1">
                 Headers (JSON)
               </label>
               <textarea
                 value={headers}
                 onChange={(e) => setHeaders(e.target.value)}
                 rows={3}
-                className="w-full px-3 py-2 rounded bg-[var(--t-bg)] border border-[var(--t-border)] text-[var(--t-text)] text-xs font-mono"
+                className="w-full px-3 py-2 text-[var(--t-text)] text-xs font-mono"
               />
             </div>
 
             {method !== 'GET' && method !== 'DELETE' && (
               <div>
-                <label className="block text-[11px] font-semibold text-[var(--t-text-muted)] mb-1 uppercase tracking-wider">
+                <label className="block text-xs text-[#525252] mb-1">
                   Body (JSON)
                 </label>
                 <textarea
                   value={body}
                   onChange={(e) => setBody(e.target.value)}
                   rows={12}
-                  className="w-full px-3 py-2 rounded bg-[var(--t-bg)] border border-[var(--t-border)] text-[var(--t-text)] text-xs font-mono"
+                  className="w-full px-3 py-2 text-[var(--t-text)] text-xs font-mono"
                 />
               </div>
             )}
 
             <button
               onClick={copyCurl}
-              className="px-3 py-1.5 rounded border border-[var(--t-border)] bg-[var(--t-bg)] text-[var(--t-text-muted)] text-xs flex items-center gap-1.5 hover:bg-[var(--t-panel-hover)]"
+              className="h-8 px-3 text-sm flex items-center gap-2 border border-[#0f62fe] text-[#0f62fe] bg-transparent hover:bg-[#0f62fe] hover:text-white"
             >
-              {copied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+              {copied ? <Check className="w-3.5 h-3.5 text-[#24a148]" /> : <Copy className="w-3.5 h-3.5" />}
               Copy as cURL
             </button>
           </div>
@@ -190,10 +190,10 @@ export function TestRequestModal({
                   <span
                     className={
                       resp.status >= 200 && resp.status < 300
-                        ? 'px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-400 font-semibold'
+                        ? 'px-2 py-0.5 cds-tag bg-[#a7f0ba] text-[#0e6027]'
                         : resp.status >= 400
-                        ? 'px-2 py-0.5 rounded bg-red-500/20 text-red-400 font-semibold'
-                        : 'px-2 py-0.5 rounded bg-amber-500/20 text-amber-400 font-semibold'
+                        ? 'px-2 py-0.5 cds-tag bg-[#ffd7d9] text-[#a2191f]'
+                        : 'px-2 py-0.5 cds-tag bg-[#fff1e6] text-[#8a3800]'
                     }
                   >
                     {resp.status > 0 ? resp.status : 'ERROR'}
@@ -202,10 +202,10 @@ export function TestRequestModal({
                 </div>
 
                 <div>
-                  <label className="block text-[11px] font-semibold text-[var(--t-text-muted)] mb-1 uppercase tracking-wider">
+                  <label className="block text-xs text-[#525252] mb-1">
                     Response Body
                   </label>
-                  <pre className="w-full px-3 py-2 rounded bg-[var(--t-bg)] border border-[var(--t-border)] text-[var(--t-text-secondary)] text-[11px] font-mono whitespace-pre-wrap break-all max-h-[400px] overflow-auto">
+                  <pre className="w-full px-3 py-2 bg-[#f4f4f4] text-[#161616] text-[11px] font-mono whitespace-pre-wrap break-all max-h-[400px] overflow-auto">
                     {prettyResp || '(empty)'}
                   </pre>
                 </div>
@@ -213,7 +213,7 @@ export function TestRequestModal({
                 {Object.keys(resp.headers).length > 0 && (
                   <details>
                     <summary className="text-[11px] text-[var(--t-text-muted)] cursor-pointer">Response headers</summary>
-                    <pre className="mt-2 px-3 py-2 rounded bg-[var(--t-bg)] border border-[var(--t-border)] text-[var(--t-text-secondary)] text-[11px] font-mono">
+                    <pre className="mt-2 px-3 py-2 bg-[#f4f4f4] text-[#161616] text-[11px] font-mono">
                       {JSON.stringify(resp.headers, null, 2)}
                     </pre>
                   </details>

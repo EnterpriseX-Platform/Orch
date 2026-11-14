@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { getTenantContext, featureGuard, tenantWhere } from '@/lib/tenant'
 import { prisma } from '@/lib/prisma'
 
 export async function GET(
@@ -6,6 +7,9 @@ export async function GET(
   { params }: { params: Promise<{ requestId: string }> }
 ) {
   try {
+    const ctx = await getTenantContext(request)
+    const blocked = featureGuard(ctx, 'flows')
+    if (blocked) return blocked
     const { requestId } = await params
 
     // Find flow executions matching the requestId
@@ -14,7 +18,8 @@ export async function GET(
         inputData: {
           path: ['requestId'],
           equals: requestId
-        }
+        },
+        ...(ctx.tenantId && { flow: tenantWhere(ctx) }),
       },
       orderBy: {
         startedAt: 'desc'

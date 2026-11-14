@@ -60,7 +60,7 @@ import 'swagger-ui-react/swagger-ui.css'
 const SwaggerUI = dynamic(() => import('swagger-ui-react'), {
   ssr: false,
   loading: () => (
-    <div style={{ padding: 40, textAlign: 'center', color: 'var(--t-text-secondary)', fontFamily: "'Prompt', sans-serif" }}>
+    <div style={{ padding: 40, textAlign: 'center', color: 'var(--t-text-secondary)', fontFamily: '"IBM Plex Sans Thai", "IBM Plex Sans", "Sarabun", system-ui, sans-serif' }}>
       <Loader2 size={24} className="animate-spin" style={{ margin: '0 auto 12px' }} />
       <p style={{ fontSize: 13 }}>Loading Swagger UI...</p>
     </div>
@@ -69,7 +69,7 @@ const SwaggerUI = dynamic(() => import('swagger-ui-react'), {
 
 // ==================== CONSTANTS ====================
 
-const FONT = "'Prompt', sans-serif"
+const FONT = '"IBM Plex Sans Thai", "IBM Plex Sans", "Sarabun", system-ui, sans-serif'
 
 const THEME = {
   bg: 'var(--t-bg)',
@@ -82,18 +82,27 @@ const THEME = {
 }
 
 const METHOD_COLORS: Record<string, string> = {
-  GET: '#60A5FA',
-  POST: '#10B981',
-  PUT: '#F59E0B',
-  DELETE: '#EF4444',
-  PATCH: '#8B5CF6',
+  GET: '#0f62fe',
+  POST: '#24a148',
+  PUT: '#ba4e00',
+  DELETE: '#da1e28',
+  PATCH: '#8a3ffc',
+}
+
+// Carbon tag colour pair for a semantic hex colour (green / red / blue, else grey).
+function cdsTag(color: string): { background: string; color: string } {
+  const c = (color || '').toLowerCase()
+  if (['#24a148', '#198038', '#10b981', '#22c55e'].includes(c)) return { background: '#a7f0ba', color: '#0e6027' }
+  if (['#da1e28', '#ef4444', '#a2191f'].includes(c)) return { background: '#ffd7d9', color: '#a2191f' }
+  if (['#0f62fe', '#0043ce', '#3b82f6', '#0353e9'].includes(c)) return { background: '#d0e2ff', color: '#0043ce' }
+  return { background: '#e0e0e0', color: '#161616' }
 }
 
 const STATUS_STYLES: Record<string, { bg: string; color: string }> = {
-  ACTIVE: { bg: '#10B98118', color: '#34D399' },
+  ACTIVE: { bg: '#24a14818', color: '#24a148' },
   INACTIVE: { bg: '#5A617818', color: '#8B92A5' },
-  DRAFT: { bg: '#F59E0B18', color: '#FBBF24' },
-  DEPRECATED: { bg: '#EF444418', color: '#F87171' },
+  DRAFT: { bg: '#ba4e0018', color: '#ba4e00' },
+  DEPRECATED: { bg: '#da1e2818', color: '#da1e28' },
 }
 
 // Project page tabs — Field Mappings / Audit Configs / Clients are
@@ -156,7 +165,7 @@ function FormField({
           fontFamily: FONT,
         }}
       >
-        {label} {required && <span style={{ color: '#DC2626' }}>*</span>}
+        {label} {required && <span style={{ color: '#da1e28' }}>*</span>}
       </label>
       {children}
       {hint && (
@@ -193,7 +202,7 @@ function InputField({
         padding: '8px 12px',
         backgroundColor: 'var(--t-input)',
         border: `1px solid ${THEME.border}`,
-        borderRadius: 6,
+        borderRadius: 0,
         fontSize: 13,
         color: THEME.text.primary,
         fontFamily: FONT,
@@ -231,7 +240,7 @@ function TextareaField({
         padding: '8px 12px',
         backgroundColor: 'var(--t-input)',
         border: `1px solid ${THEME.border}`,
-        borderRadius: 6,
+        borderRadius: 0,
         fontSize: 13,
         color: THEME.text.primary,
         fontFamily: FONT,
@@ -266,15 +275,14 @@ function StatusBadge({ status }: { status: string }) {
   const style = STATUS_STYLES[status] || { bg: '#5A617818', color: '#8B92A5' }
   return (
     <span
+      className="cds-tag"
       style={{
         display: 'inline-flex',
         alignItems: 'center',
         padding: '2px 10px',
-        borderRadius: 9999,
-        fontSize: 11,
-        fontWeight: 600,
-        backgroundColor: style.bg,
-        color: style.color,
+        fontSize: 12,
+        fontWeight: 400,
+        ...cdsTag(style.color),
         fontFamily: FONT,
       }}
     >
@@ -287,19 +295,18 @@ function MethodBadge({ method }: { method: string }) {
   const color = METHOD_COLORS[method] || '#64748B'
   return (
     <span
+      className="cds-tag"
       style={{
         display: 'inline-flex',
         alignItems: 'center',
         justifyContent: 'center',
         padding: '2px 8px',
-        borderRadius: 4,
-        fontSize: 11,
-        fontWeight: 700,
+        fontSize: 12,
+        fontWeight: 400,
         fontFamily: 'monospace',
-        backgroundColor: color + '18',
-        color: color,
+        ...cdsTag(color),
         minWidth: 52,
-        letterSpacing: 0.5,
+        
       }}
     >
       {method}
@@ -314,7 +321,7 @@ function SkeletonBlock({ height = 20, width = '100%' }: { height?: number; width
         height,
         width,
         backgroundColor: THEME.borderLight,
-        borderRadius: 8,
+        borderRadius: 0,
         animation: 'pulse 1.5s ease-in-out infinite',
       }}
     />
@@ -464,7 +471,7 @@ function ApiRow({
             justifyContent: 'center',
             width: 28,
             height: 28,
-            borderRadius: 6,
+            borderRadius: 0,
             border: 'none',
             background: 'transparent',
             color: THEME.text.muted,
@@ -474,8 +481,8 @@ function ApiRow({
           }}
           onMouseEnter={(e) => {
             if (deletingId === api.id) return
-            e.currentTarget.style.backgroundColor = '#EF444418'
-            e.currentTarget.style.color = '#F87171'
+            e.currentTarget.style.backgroundColor = '#e8e8e8'
+            e.currentTarget.style.color = '#da1e28'
             e.currentTarget.style.opacity = '1'
           }}
           onMouseLeave={(e) => {
@@ -580,12 +587,12 @@ function ApisTab({ projectId }: { projectId: string }) {
               display: 'inline-flex',
               alignItems: 'center',
               gap: 6,
-              padding: '8px 16px',
+              padding: '0 12px', height: 32,
               backgroundColor: THEME.accent,
               color: '#FFFFFF',
-              borderRadius: 8,
+              borderRadius: 0,
               fontSize: 13,
-              fontWeight: 500,
+              fontWeight: 400,
               fontFamily: FONT,
               textDecoration: 'none',
               transition: 'background-color 0.15s',
@@ -616,7 +623,7 @@ function ApisTab({ projectId }: { projectId: string }) {
             textAlign: 'center',
             backgroundColor: THEME.panel,
             border: `1px solid ${THEME.border}`,
-            borderRadius: 12,
+            borderRadius: 0,
           }}
         >
           <Globe size={40} style={{ color: THEME.text.muted, margin: '0 auto 12px' }} />
@@ -640,8 +647,8 @@ function ApisTab({ projectId }: { projectId: string }) {
                 key={key}
                 style={{
                   backgroundColor: THEME.panel,
-                  border: `1px solid #3B82F625`,
-                  borderRadius: 12,
+                  border: '1px solid #e0e0e0',
+                  borderRadius: 0,
                   overflow: 'hidden',
                 }}
               >
@@ -653,10 +660,10 @@ function ApisTab({ projectId }: { projectId: string }) {
                     gap: 10,
                     padding: '12px 20px',
                     borderBottom: `1px solid ${THEME.borderLight}`,
-                    background: 'linear-gradient(135deg, #3B82F608, transparent)',
+                    background: 'transparent',
                   }}
                 >
-                  <Network size={15} style={{ color: '#60A5FA', flexShrink: 0 }} />
+                  <Network size={15} style={{ color: '#0f62fe', flexShrink: 0 }} />
                   <MethodBadge method={method} />
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -682,9 +689,9 @@ function ApisTab({ projectId }: { projectId: string }) {
                       padding: '2px 8px',
                       fontSize: 11,
                       fontWeight: 500,
-                      color: '#60A5FA',
-                      backgroundColor: '#3B82F615',
-                      borderRadius: 6,
+                      color: '#0043ce',
+                      backgroundColor: '#d0e2ff',
+                      borderRadius: 0,
                       fontFamily: FONT,
                     }}
                   >
@@ -749,8 +756,8 @@ function ApisTab({ projectId }: { projectId: string }) {
                   key={key}
                   style={{
                     backgroundColor: THEME.panel,
-                    border: `1px solid #F59E0B25`,
-                    borderRadius: 12,
+                    border: '1px solid #e0e0e0',
+                    borderRadius: 0,
                     overflow: 'hidden',
                   }}
                 >
@@ -762,7 +769,7 @@ function ApisTab({ projectId }: { projectId: string }) {
                       gap: 10,
                       padding: '10px 20px',
                       borderBottom: `1px solid ${THEME.borderLight}`,
-                      background: 'linear-gradient(135deg, #F59E0B08, transparent)',
+                      background: 'transparent',
                     }}
                   >
                     <MethodBadge method={method} />
@@ -787,9 +794,9 @@ function ApisTab({ projectId }: { projectId: string }) {
                         padding: '2px 8px',
                         fontSize: 11,
                         fontWeight: 500,
-                        color: '#F59E0B',
-                        backgroundColor: '#F59E0B15',
-                        borderRadius: 6,
+                        color: '#161616',
+                        backgroundColor: '#e0e0e0',
+                        borderRadius: 0,
                         fontFamily: FONT,
                       }}
                     >
@@ -814,7 +821,7 @@ function ApisTab({ projectId }: { projectId: string }) {
                 style={{
                   backgroundColor: THEME.panel,
                   border: `1px solid ${THEME.border}`,
-                  borderRadius: 12,
+                  borderRadius: 0,
                   overflow: 'hidden',
                 }}
               >
@@ -867,7 +874,7 @@ function SettingsTab({ project }: { project: Project }) {
     slug: project.slug || '',
     description: project.description || '',
     image: project.image || '',
-    themeColor: project.themeColor || '#60A5FA',
+    themeColor: project.themeColor || '#0f62fe',
     baseUrl: project.baseUrl || '',
     proxyTargetUrl: project.proxyTargetUrl || '',
     authType: project.authType || 'NONE',
@@ -950,7 +957,7 @@ function SettingsTab({ project }: { project: Project }) {
     padding: '8px 12px',
     backgroundColor: 'var(--t-input)',
     border: `1px solid ${THEME.border}`,
-    borderRadius: 8,
+    borderRadius: 0,
     fontSize: 13,
     color: THEME.text.primary,
     fontFamily: FONT,
@@ -965,7 +972,7 @@ function SettingsTab({ project }: { project: Project }) {
         style={{
           backgroundColor: THEME.panel,
           border: `1px solid ${THEME.border}`,
-          borderRadius: 12,
+          borderRadius: 0,
           padding: 24,
         }}
       >
@@ -1025,7 +1032,7 @@ function SettingsTab({ project }: { project: Project }) {
                   width: 32,
                   height: 32,
                   border: `1px solid ${THEME.border}`,
-                  borderRadius: 6,
+                  borderRadius: 0,
                   cursor: 'pointer',
                   padding: 0,
                   flexShrink: 0,
@@ -1034,7 +1041,7 @@ function SettingsTab({ project }: { project: Project }) {
               <InputField
                 value={form.themeColor}
                 onChange={(v) => updateField('themeColor', v)}
-                placeholder="#60A5FA"
+                placeholder="#0f62fe"
               />
             </div>
           </FormField>
@@ -1046,7 +1053,7 @@ function SettingsTab({ project }: { project: Project }) {
         style={{
           backgroundColor: THEME.panel,
           border: `1px solid ${THEME.border}`,
-          borderRadius: 12,
+          borderRadius: 0,
           padding: 24,
         }}
       >
@@ -1126,7 +1133,7 @@ function SettingsTab({ project }: { project: Project }) {
         style={{
           backgroundColor: THEME.panel,
           border: `1px solid ${THEME.border}`,
-          borderRadius: 12,
+          borderRadius: 0,
           padding: 24,
         }}
       >
@@ -1202,12 +1209,13 @@ function SettingsTab({ project }: { project: Project }) {
           style={{
             display: 'inline-flex',
             alignItems: 'center',
-            gap: 6,
-            padding: '8px 16px',
-            backgroundColor: '#EF444418',
-            color: '#F87171',
-            border: '1px solid #EF444430',
-            borderRadius: 8,
+            gap: 8,
+            height: 32,
+            padding: '0 12px',
+            backgroundColor: '#da1e28',
+            color: '#ffffff',
+            border: 'none',
+            borderRadius: 0,
             fontSize: 13,
             fontWeight: 500,
             fontFamily: FONT,
@@ -1216,9 +1224,9 @@ function SettingsTab({ project }: { project: Project }) {
             transition: 'background-color 0.15s',
           }}
           onMouseEnter={(e) => {
-            if (!deleteMutation.isPending) e.currentTarget.style.backgroundColor = '#EF444425'
+            if (!deleteMutation.isPending) e.currentTarget.style.backgroundColor = '#b81921'
           }}
-          onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = '#EF444418')}
+          onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = '#da1e28')}
         >
           {deleteMutation.isPending ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14} />}
           Delete Project
@@ -1231,13 +1239,13 @@ function SettingsTab({ project }: { project: Project }) {
             display: 'inline-flex',
             alignItems: 'center',
             gap: 6,
-            padding: '8px 20px',
+            padding: '0 12px', height: 32,
             backgroundColor: THEME.accent,
             color: '#FFFFFF',
             border: 'none',
-            borderRadius: 8,
+            borderRadius: 0,
             fontSize: 13,
-            fontWeight: 500,
+            fontWeight: 400,
             fontFamily: FONT,
             cursor:
               updateMutation.isPending || !form.name || !form.slug || !form.baseUrl
@@ -1417,8 +1425,8 @@ function EventLogTab({ project }: { project: Project }) {
           onClick={() => { setEditing('new'); setDraft(EMPTY_PATTERN) }}
           style={{
             display: 'inline-flex', alignItems: 'center', gap: 6,
-            padding: '8px 14px', backgroundColor: THEME.accent, color: '#fff',
-            borderRadius: 8, fontSize: 13, fontWeight: 500, border: 'none', cursor: 'pointer',
+            padding: '0 12px', height: 32, backgroundColor: THEME.accent, color: '#fff',
+            borderRadius: 0, fontSize: 13, fontWeight: 400, border: 'none', cursor: 'pointer',
           }}
         >
           <Plus size={14} /> Add Rule
@@ -1432,7 +1440,7 @@ function EventLogTab({ project }: { project: Project }) {
         >
           <div
             onClick={(e) => e.stopPropagation()}
-            className="w-full max-w-3xl max-h-[90vh] overflow-y-auto rounded-xl"
+            className="w-full max-w-3xl max-h-[90vh] overflow-y-auto"
             style={{ backgroundColor: THEME.panel, border: `1px solid ${THEME.border}` }}
           >
             <div style={{ padding: '14px 20px', borderBottom: `1px solid ${THEME.border}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -1461,11 +1469,11 @@ function EventLogTab({ project }: { project: Project }) {
       {isLoading ? (
         <SkeletonBlock height={64} />
       ) : rows.length === 0 ? (
-        <div style={{ padding: 32, textAlign: 'center', backgroundColor: THEME.panel, border: `1px solid ${THEME.border}`, borderRadius: 12, color: THEME.text.muted }}>
+        <div style={{ padding: 32, textAlign: 'center', backgroundColor: THEME.panel, border: `1px solid ${THEME.border}`, borderRadius: 0, color: THEME.text.muted }}>
           No rules yet. Add one to start capturing matching traffic.
         </div>
       ) : (
-        <div style={{ backgroundColor: THEME.panel, border: `1px solid ${THEME.border}`, borderRadius: 12, overflow: 'hidden' }}>
+        <div style={{ backgroundColor: THEME.panel, border: `1px solid ${THEME.border}`, borderRadius: 0, overflow: 'hidden' }}>
           {rows.map((r, i) => (
             <div
               key={r.id}
@@ -1489,17 +1497,17 @@ function EventLogTab({ project }: { project: Project }) {
                   </div>
                 )}
               </div>
-              <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 6, background: r.capture === 'FULL_BODY' ? '#3B82F618' : r.capture === 'NONE' ? '#6B728018' : '#10B98118', color: r.capture === 'FULL_BODY' ? '#60A5FA' : r.capture === 'NONE' ? THEME.text.muted : '#34D399', textAlign: 'center' }}>
+              <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 0, background: r.capture === 'FULL_BODY' ? '#d0e2ff' : r.capture === 'NONE' ? '#e0e0e0' : '#a7f0ba', color: r.capture === 'FULL_BODY' ? '#0043ce' : r.capture === 'NONE' ? '#161616' : '#0e6027', textAlign: 'center' }}>
                 {r.capture}
               </span>
               <span style={{ fontSize: 11, color: THEME.text.muted, textAlign: 'center' }}>level: {r.level}</span>
               <button
                 onClick={() => updateMut.mutate({ id: r.id, body: { enabled: !r.enabled } })}
                 style={{
-                  fontSize: 11, padding: '4px 10px', borderRadius: 6,
-                  border: `1px solid ${r.enabled ? '#10B98140' : THEME.border}`,
-                  background: r.enabled ? '#10B98115' : 'transparent',
-                  color: r.enabled ? '#34D399' : THEME.text.muted,
+                  fontSize: 11, padding: '4px 10px', borderRadius: 0,
+                  border: 'none',
+                  background: r.enabled ? '#a7f0ba' : '#e0e0e0',
+                  color: r.enabled ? '#0e6027' : '#161616',
                   cursor: 'pointer',
                 }}
               >
@@ -1649,7 +1657,7 @@ function EventPatternForm({
               ))}
               <button
                 onClick={() => update('bodyMatch', [...draft.bodyMatch, { source: 'BODY' as const, field: '', value: '' }])}
-                style={{ alignSelf: 'flex-start', display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 12, padding: '4px 10px', borderRadius: 6, background: '#3B82F618', color: '#60A5FA', border: 'none', cursor: 'pointer' }}
+                style={{ alignSelf: 'flex-start', display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 12, padding: '4px 10px', borderRadius: 0, background: 'transparent', color: '#0f62fe', border: 'none', cursor: 'pointer' }}
               >
                 <Plus size={12} /> Add rule
               </button>
@@ -1658,8 +1666,8 @@ function EventPatternForm({
         </div>
       </div>
       <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 16 }}>
-        <button onClick={onCancel} style={{ padding: '8px 16px', borderRadius: 8, border: `1px solid ${THEME.border}`, background: 'transparent', color: THEME.text.secondary, cursor: 'pointer' }}>Cancel</button>
-        <button onClick={onSave} disabled={saving} style={{ padding: '8px 16px', borderRadius: 8, border: 'none', background: THEME.accent, color: '#fff', cursor: saving ? 'not-allowed' : 'pointer', opacity: saving ? 0.5 : 1 }}>
+        <button onClick={onCancel} style={{ padding: '8px 16px', borderRadius: 0, border: `1px solid ${THEME.border}`, background: 'transparent', color: THEME.text.secondary, cursor: 'pointer' }}>Cancel</button>
+        <button onClick={onSave} disabled={saving} style={{ padding: '0 12px', height: 32, borderRadius: 0, border: 'none', background: THEME.accent, color: '#fff', cursor: saving ? 'not-allowed' : 'pointer', opacity: saving ? 0.5 : 1 }}>
           {saving ? 'Saving…' : 'Save Rule'}
         </button>
       </div>
@@ -1696,10 +1704,10 @@ function RulesTab({ project }: { project: Project }) {
               onClick={() => setActiveRule(s.id)}
               style={{
                 display: 'inline-flex', alignItems: 'center', gap: 6,
-                padding: '8px 14px', borderRadius: 8, fontSize: 13,
+                padding: '8px 14px', borderRadius: 0, fontSize: 13,
                 fontWeight: active ? 600 : 400,
                 border: `1px solid ${active ? THEME.accent : THEME.border}`,
-                background: active ? `${THEME.accent}15` : THEME.panel,
+                background: active ? '#e0e0e0' : THEME.panel,
                 color: active ? THEME.accent : THEME.text.secondary,
                 cursor: 'pointer',
               }}
@@ -1724,15 +1732,15 @@ function RulesTab({ project }: { project: Project }) {
 
 function RulesSubLink({ projectId, href, label, hint }: { projectId: string; href: string; label: string; hint: string }) {
   return (
-    <div style={{ background: THEME.panel, border: `1px solid ${THEME.border}`, borderRadius: 12, padding: 24, textAlign: 'center' }}>
+    <div style={{ background: THEME.panel, border: `1px solid ${THEME.border}`, borderRadius: 0, padding: 24, textAlign: 'center' }}>
       <p style={{ fontSize: 13, color: THEME.text.secondary, marginBottom: 4 }}>{hint}</p>
       <p style={{ fontSize: 11, color: THEME.text.muted, marginBottom: 16 }}>The {label.toLowerCase()} library has its own dedicated page with Add modal + inline editing.</p>
       <Link
         href={`/projects/${projectId}/${href}`}
         style={{
           display: 'inline-flex', alignItems: 'center', gap: 6,
-          padding: '10px 18px', backgroundColor: THEME.accent, color: '#fff',
-          borderRadius: 8, fontSize: 13, fontWeight: 500, textDecoration: 'none',
+          padding: '0 12px', height: 32, backgroundColor: THEME.accent, color: '#fff',
+          borderRadius: 0, fontSize: 13, fontWeight: 400, textDecoration: 'none',
         }}
       >
         <ExternalLink size={14} /> Open {label}
@@ -1838,7 +1846,7 @@ function OpenApiTab({ project }: { project: Project }) {
     backgroundColor: THEME.panel,
     color: THEME.text.secondary,
     border: `1px solid ${THEME.border}`,
-    borderRadius: 8,
+    borderRadius: 0,
     fontSize: 12,
     fontWeight: 500,
     fontFamily: FONT,
@@ -1863,7 +1871,7 @@ function OpenApiTab({ project }: { project: Project }) {
           textAlign: 'center',
           backgroundColor: THEME.panel,
           border: `1px solid ${THEME.border}`,
-          borderRadius: 12,
+          borderRadius: 0,
         }}
       >
         <Code size={40} style={{ color: THEME.text.muted, margin: '0 auto 12px' }} />
@@ -1888,13 +1896,13 @@ function OpenApiTab({ project }: { project: Project }) {
             display: 'inline-flex',
             alignItems: 'center',
             gap: 6,
-            padding: '8px 20px',
+            padding: '0 12px', height: 32,
             backgroundColor: THEME.accent,
             color: '#FFFFFF',
             border: 'none',
-            borderRadius: 8,
+            borderRadius: 0,
             fontSize: 13,
-            fontWeight: 500,
+            fontWeight: 400,
             fontFamily: FONT,
             cursor: regenerateMutation.isPending ? 'not-allowed' : 'pointer',
             opacity: regenerateMutation.isPending ? 0.5 : 1,
@@ -1942,9 +1950,7 @@ function OpenApiTab({ project }: { project: Project }) {
                   fontSize: 11,
                   fontWeight: 600,
                   padding: '2px 8px',
-                  borderRadius: 6,
-                  backgroundColor: `${METHOD_COLORS[method] || '#8B92A5'}18`,
-                  color: METHOD_COLORS[method] || 'var(--t-text-secondary)',
+                  ...cdsTag(METHOD_COLORS[method] || ''),
                   fontFamily: FONT,
                 }}
               >
@@ -1961,7 +1967,7 @@ function OpenApiTab({ project }: { project: Project }) {
             style={{
               display: 'flex',
               backgroundColor: 'var(--t-input)',
-              borderRadius: 8,
+              borderRadius: 0,
               border: `1px solid ${THEME.border}`,
               overflow: 'hidden',
             }}
@@ -2035,14 +2041,14 @@ function OpenApiTab({ project }: { project: Project }) {
         <div
           className="swagger-ui-dark"
           style={{
-            borderRadius: 12,
+            borderRadius: 0,
             overflow: 'hidden',
             border: `1px solid ${THEME.border}`,
           }}
         >
           <style>{`
             .swagger-ui-dark .swagger-ui {
-              font-family: 'Prompt', sans-serif;
+              font-family: var(--font-sans);
             }
             .swagger-ui-dark .swagger-ui .wrapper {
               padding: 20px;
@@ -2056,10 +2062,10 @@ function OpenApiTab({ project }: { project: Project }) {
             .swagger-ui-dark .swagger-ui .info .title,
             .swagger-ui-dark .swagger-ui .opblock-tag {
               color: var(--t-text);
-              font-family: 'Prompt', sans-serif;
+              font-family: var(--font-sans);
             }
             .swagger-ui-dark .swagger-ui .info .title small {
-              background: #3B82F6;
+              background: #0f62fe;
             }
             .swagger-ui-dark .swagger-ui .info .description p,
             .swagger-ui-dark .swagger-ui .info .description,
@@ -2068,10 +2074,10 @@ function OpenApiTab({ project }: { project: Project }) {
             .swagger-ui-dark .swagger-ui .info table td,
             .swagger-ui-dark .swagger-ui .info table th {
               color: var(--t-text-secondary);
-              font-family: 'Prompt', sans-serif;
+              font-family: var(--font-sans);
             }
             .swagger-ui-dark .swagger-ui .info a {
-              color: #60A5FA;
+              color: #0f62fe;
             }
             /* Operation blocks */
             .swagger-ui-dark .swagger-ui .opblock {
@@ -2098,7 +2104,7 @@ function OpenApiTab({ project }: { project: Project }) {
             }
             .swagger-ui-dark .swagger-ui .opblock .opblock-summary-description {
               color: var(--t-text-secondary);
-              font-family: 'Prompt', sans-serif;
+              font-family: var(--font-sans);
               font-size: 12px;
             }
             .swagger-ui-dark .swagger-ui .opblock .opblock-section-header {
@@ -2107,7 +2113,7 @@ function OpenApiTab({ project }: { project: Project }) {
             }
             .swagger-ui-dark .swagger-ui .opblock .opblock-section-header h4 {
               color: var(--t-text);
-              font-family: 'Prompt', sans-serif;
+              font-family: var(--font-sans);
             }
             .swagger-ui-dark .swagger-ui .opblock-body pre {
               background: var(--t-bg);
@@ -2116,43 +2122,43 @@ function OpenApiTab({ project }: { project: Project }) {
             }
             /* GET */
             .swagger-ui-dark .swagger-ui .opblock.opblock-get {
-              border-color: #60A5FA30;
-              background: #60A5FA08;
+              border-color: #0f62fe30;
+              background: #0f62fe08;
             }
             .swagger-ui-dark .swagger-ui .opblock.opblock-get .opblock-summary {
-              border-color: #60A5FA20;
+              border-color: #0f62fe20;
             }
             /* POST */
             .swagger-ui-dark .swagger-ui .opblock.opblock-post {
-              border-color: #10B98130;
-              background: #10B98108;
+              border-color: #24a14830;
+              background: #24a14808;
             }
             .swagger-ui-dark .swagger-ui .opblock.opblock-post .opblock-summary {
-              border-color: #10B98120;
+              border-color: #24a14820;
             }
             /* PUT */
             .swagger-ui-dark .swagger-ui .opblock.opblock-put {
-              border-color: #F59E0B30;
-              background: #F59E0B08;
+              border-color: #ba4e0030;
+              background: #ba4e0008;
             }
             .swagger-ui-dark .swagger-ui .opblock.opblock-put .opblock-summary {
-              border-color: #F59E0B20;
+              border-color: #ba4e0020;
             }
             /* DELETE */
             .swagger-ui-dark .swagger-ui .opblock.opblock-delete {
-              border-color: #EF444430;
-              background: #EF444408;
+              border-color: #da1e2830;
+              background: #da1e2808;
             }
             .swagger-ui-dark .swagger-ui .opblock.opblock-delete .opblock-summary {
-              border-color: #EF444420;
+              border-color: #da1e2820;
             }
             /* PATCH */
             .swagger-ui-dark .swagger-ui .opblock.opblock-patch {
-              border-color: #8B5CF630;
-              background: #8B5CF608;
+              border-color: #8a3ffc30;
+              background: #8a3ffc08;
             }
             .swagger-ui-dark .swagger-ui .opblock.opblock-patch .opblock-summary {
-              border-color: #8B5CF620;
+              border-color: #8a3ffc20;
             }
             /* Tables & Parameters */
             .swagger-ui-dark .swagger-ui table thead tr td,
@@ -2163,7 +2169,7 @@ function OpenApiTab({ project }: { project: Project }) {
               color: var(--t-text-secondary);
             }
             .swagger-ui-dark .swagger-ui .parameter__name.required::after {
-              color: #EF4444;
+              color: #da1e28;
             }
             .swagger-ui-dark .swagger-ui table tbody tr td {
               color: var(--t-text);
@@ -2194,7 +2200,7 @@ function OpenApiTab({ project }: { project: Project }) {
             /* Buttons & Inputs */
             .swagger-ui-dark .swagger-ui .btn {
               border-radius: 6px;
-              font-family: 'Prompt', sans-serif;
+              font-family: var(--font-sans);
             }
             .swagger-ui-dark .swagger-ui select {
               background: var(--t-panel);
@@ -2215,7 +2221,7 @@ function OpenApiTab({ project }: { project: Project }) {
             }
             /* Auth */
             .swagger-ui-dark .swagger-ui .authorization__btn svg {
-              fill: #60A5FA;
+              fill: #0f62fe;
             }
             /* Tag section */
             .swagger-ui-dark .swagger-ui .opblock-tag-section {
@@ -2272,7 +2278,7 @@ function OpenApiTab({ project }: { project: Project }) {
           style={{
             backgroundColor: 'var(--t-input)',
             border: `1px solid ${THEME.border}`,
-            borderRadius: 12,
+            borderRadius: 0,
             overflow: 'hidden',
           }}
         >
@@ -2409,15 +2415,15 @@ export default function ProjectDetailPage() {
             style={{
               width: 48,
               height: 48,
-              borderRadius: 12,
-              backgroundColor: themeColor + '20',
+              backgroundColor: 'transparent',
+              border: '1px solid #e0e0e0',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               flexShrink: 0,
             }}
           >
-            <FolderKanban size={24} style={{ color: themeColor }} />
+            <FolderKanban size={20} style={{ color: '#525252' }} />
           </div>
 
           {/* Title */}
@@ -2425,8 +2431,8 @@ export default function ProjectDetailPage() {
             <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
               <h1
                 style={{
-                  fontSize: 22,
-                  fontWeight: 700,
+                  fontSize: 20,
+                  fontWeight: 400,
                   color: THEME.text.primary,
                   margin: 0,
                   fontFamily: FONT,
@@ -2454,7 +2460,7 @@ export default function ProjectDetailPage() {
                   fontFamily: 'monospace',
                   backgroundColor: THEME.borderLight,
                   padding: '2px 8px',
-                  borderRadius: 4,
+                  borderRadius: 0,
                 }}
               >
                 {project.slug}
@@ -2494,9 +2500,10 @@ export default function ProjectDetailPage() {
           style={{
             display: 'flex',
             gap: 0,
-            borderBottom: `1px solid ${THEME.border}`,
+            borderBottom: '1px solid #e0e0e0',
             marginBottom: 24,
           }}
+          className="overflow-x-auto"
         >
           {TABS.map((tab) => {
             const Icon = tab.icon
@@ -2508,14 +2515,16 @@ export default function ProjectDetailPage() {
             const tabStyle = {
               display: 'flex',
               alignItems: 'center',
-              gap: 6,
-              padding: '10px 20px',
-              fontSize: 13,
-              fontWeight: isActive && !tab.href ? 600 : 400,
-              color: isActive && !tab.href ? THEME.accent : THEME.text.secondary,
+              gap: 8,
+              height: 40,
+              padding: '0 16px',
+              fontSize: 14,
+              fontWeight: 400,
+              flexShrink: 0,
+              color: isActive && !tab.href ? '#161616' : '#525252',
               backgroundColor: 'transparent',
               border: 'none',
-              borderBottom: isActive && !tab.href ? `2px solid ${THEME.accent}` : '2px solid transparent',
+              borderBottom: isActive && !tab.href ? '2px solid #0f62fe' : '2px solid transparent',
               cursor: 'pointer',
               fontFamily: FONT,
               transition: 'color 0.15s, border-color 0.15s',

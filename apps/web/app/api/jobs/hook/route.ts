@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { getTenantContext, featureGuard } from '@/lib/tenant'
 
 /**
  * Webhook endpoint for Worker to call back when a Job is complete
@@ -11,6 +12,9 @@ const COMPLETION_TTL = 5 * 60 * 1000 // 5 minutes
 
 export async function POST(request: NextRequest) {
   try {
+    const ctx = await getTenantContext(request)
+    const blocked = featureGuard(ctx, 'flows')
+    if (blocked) return blocked
     const body = await request.json()
     const { request_id, job_id, status, output_data, error_message } = body
 

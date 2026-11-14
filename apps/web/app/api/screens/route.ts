@@ -7,6 +7,7 @@
  */
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { getTenantContext, featureGuard, tenantWhere, projectAllowed } from '@/lib/tenant'
 import { z } from 'zod'
 
 const schema = z.object({
@@ -19,6 +20,9 @@ const schema = z.object({
 })
 
 export async function GET(req: NextRequest) {
+  const ctx = await getTenantContext(req)
+  const blocked = featureGuard(ctx, 'projects')
+  if (blocked) return blocked
   const projectId = req.nextUrl.searchParams.get('projectId') || undefined
   const clientId  = req.nextUrl.searchParams.get('clientId')  || undefined
   const system    = req.nextUrl.searchParams.get('system')    || undefined
@@ -27,6 +31,7 @@ export async function GET(req: NextRequest) {
       ...(projectId ? { OR: [{ projectId }, { projectId: null }] } : {}),
       ...(clientId  ? { clientId } : {}),
       ...(system    ? { system   } : {}),
+      ...(ctx.tenantId ? { AND: [{ OR: [{ projectId: null }, { project: tenantWhere(ctx) }] }] } : {}),
     },
     orderBy: [{ system: 'asc' }, { code: 'asc' }],
     include: {
@@ -41,8 +46,14 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
+  const ctx = await getTenantContext(req)
+  const blocked = featureGuard(ctx, 'projects')
+  if (blocked) return blocked
   try {
     const body = schema.parse(await req.json())
+    if (!(await projectAllowed(ctx, (body as { projectId?: unknown }).projectId))) {
+      return NextResponse.json({ error: 'project not found' }, { status: 404 })
+    }
     const created = await prisma.screen.create({ data: body })
     return NextResponse.json({ data: created }, { status: 201 })
   } catch (e) {

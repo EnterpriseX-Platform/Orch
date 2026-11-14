@@ -68,15 +68,13 @@ export function Select({
       <div className={cn('relative', className)}>
         <Listbox.Button
           style={{
-            background: 'var(--t-input)',
-            borderColor: 'var(--t-border)',
-            color: 'var(--t-text)',
+            background: '#f4f4f4',
+            color: '#161616',
           }}
           className={cn(
-            'relative w-full cursor-pointer rounded-lg border text-left font-medium',
-            'hover:border-[#3B82F6]/50',
-            'focus:border-[#3B82F6] focus:outline-none focus:ring-2 focus:ring-[#3B82F6]/20',
-            'transition-all duration-200',
+            'relative w-full min-h-9 cursor-pointer border-0 border-b border-b-[#8d8d8d] text-left',
+            'hover:bg-[#e8e8e8]',
+            'focus:outline focus:outline-2 focus:-outline-offset-2 focus:outline-[#0f62fe]',
             disabled && 'cursor-not-allowed opacity-60',
             styles.button
           )}
@@ -110,9 +108,8 @@ export function Select({
               borderColor: 'var(--t-border)',
             }}
             className={cn(
-              'absolute z-50 mt-1.5 max-h-60 w-full overflow-auto rounded-xl',
-              'py-1.5 shadow-2xl',
-              'border',
+              'absolute z-50 max-h-60 w-full overflow-auto',
+              'py-0 border border-[#e0e0e0]',
               'focus:outline-none',
               'scrollbar-thin scrollbar-track-transparent',
               styles.options
@@ -123,9 +120,9 @@ export function Select({
                 key={option.value}
                 className={({ active, selected }) =>
                   cn(
-                    'relative cursor-pointer select-none transition-all duration-100 mx-1.5 rounded-lg',
+                    'relative cursor-pointer select-none border-b border-[#e0e0e0] last:border-b-0',
                     styles.optionPadding,
-                    active ? 'bg-[#3B82F6]/12' : '',
+                    active ? 'bg-[#e8e8e8]' : '',
                     selected && 'font-semibold',
                     option.disabled && 'cursor-not-allowed opacity-40'
                   )
@@ -137,7 +134,7 @@ export function Select({
                   <>
                     <span
                       style={{
-                        color: selected ? '#60A5FA' : (active ? 'var(--t-text)' : 'var(--t-text-secondary)'),
+                        color: '#161616',
                       }}
                       className={cn(
                         'block truncate transition-colors',
@@ -147,7 +144,7 @@ export function Select({
                       {option.label}
                     </span>
                     {selected && (
-                      <span className="absolute inset-y-0 right-0 flex items-center pr-2.5 text-[#3B82F6]">
+                      <span className="absolute inset-y-0 right-0 flex items-center pr-2.5 text-[#0f62fe]">
                         <CheckIcon className={styles.checkIcon} aria-hidden="true" />
                       </span>
                     )}
@@ -185,8 +182,8 @@ export function NativeSelect({
       }}
       className={cn(
         'w-full rounded-lg border cursor-pointer font-medium',
-        'hover:border-[#3B82F6]/50',
-        'focus:border-[#3B82F6] focus:outline-none focus:ring-2 focus:ring-[#3B82F6]/20',
+        'hover:border-[#0f62fe]/50',
+        'focus:border-[#0f62fe] focus:outline-none focus:ring-2 focus:ring-[#0f62fe]/20',
         'transition-all duration-200',
         styles.button,
         className

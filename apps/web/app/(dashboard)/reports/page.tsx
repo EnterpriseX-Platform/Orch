@@ -1,5 +1,7 @@
 'use client'
 
+import { StatStrip } from '@/components/common/StatStrip'
+
 /**
  * /orch/reports — Analytics.
  *
@@ -65,30 +67,30 @@ interface ReportData {
 
 // Brand palette for chart categories. Kept distinct so a stacked bar
 // with 5-6 series remains legible in both light and dark theme.
-const CHART_COLORS = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#06B6D4', '#EC4899', '#F97316']
+const CHART_COLORS = ['#0f62fe', '#24a148', '#ba4e00', '#da1e28', '#8a3ffc', '#1192e8', '#EC4899', '#F97316']
 
 // Action-type → colour (used in the leaderboard split bar). Keeps the
 // same colour across all tabs so the legend is implicit.
 const ACTION_COLOR: Record<string, string> = {
-  SIGNOFF: '#EF4444',
-  SUBMIT:  '#F59E0B',
-  EXPORT:  '#3B82F6',
-  CREATE:  '#10B981',
-  UPDATE:  '#8B5CF6',
-  DELETE:  '#F87171',
+  SIGNOFF: '#da1e28',
+  SUBMIT:  '#ba4e00',
+  EXPORT:  '#0f62fe',
+  CREATE:  '#24a148',
+  UPDATE:  '#8a3ffc',
+  DELETE:  '#da1e28',
   UNKNOWN: '#64748B',
 }
 
 // HTTP method + status colours for the Access Logs tab (design-system palette).
 const METHOD_COLOR: Record<string, string> = {
-  GET: '#60A5FA', POST: '#10B981', PUT: '#F59E0B', DELETE: '#EF4444', PATCH: '#8B5CF6',
+  GET: '#0f62fe', POST: '#24a148', PUT: '#ba4e00', DELETE: '#da1e28', PATCH: '#8a3ffc',
 }
 function statusColor(s?: number): string {
   if (!s) return '#64748B'
-  if (s >= 500) return '#EF4444'
-  if (s >= 400) return '#F59E0B'
-  if (s >= 300) return '#3B82F6'
-  return '#10B981'
+  if (s >= 500) return '#da1e28'
+  if (s >= 400) return '#ba4e00'
+  if (s >= 300) return '#0f62fe'
+  return '#24a148'
 }
 
 export default function FeatureMonitorPage() {
@@ -180,12 +182,11 @@ export default function FeatureMonitorPage() {
   ]
 
   return (
-    <div className="p-6 space-y-4">
+    <div className="space-y-4">
       {/* ───────── Header ───────── */}
       <div className="flex items-start justify-between flex-wrap gap-3">
         <div>
           <div className="flex items-center gap-2 mb-1">
-            <BarChart3 className="w-6 h-6 text-[var(--t-accent)]" />
             <h1 className="text-2xl font-bold text-[var(--t-text)]">Analytics</h1>
           </div>
         </div>
@@ -214,16 +215,18 @@ export default function FeatureMonitorPage() {
            Five big numbers answering the recurring audit questions:
            How busy is the system? Who's active? How much of the
            feature surface is in use? Are things healthy? Are they fast? */}
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-        <Kpi label="Total actions"  value={kpi.totalActions.toLocaleString()} sub={`in ${rangeLabel(range)}`} icon={Activity} tone="blue" />
-        <Kpi label="Active users"   value={kpi.uniqueUsers}                   sub="unique users/IPs"         icon={Users}    tone="violet" />
-        <Kpi label="Features used"  value={kpi.featuresUsed}                  sub="screens touched"          icon={Layers}   tone="emerald" />
-        <Kpi label="Error rate"     value={`${kpi.errRate.toFixed(1)}%`}      sub={`${daily.data?.summary?.errorCount ?? 0} errors`} icon={AlertTriangle} tone={kpi.errRate > 5 ? 'red' : 'amber'} />
-        <Kpi label="Avg latency"    value={`${kpi.avgLatency}ms`}             sub="weighted by call count"   icon={Zap}      tone={kpi.avgLatency > 500 ? 'red' : 'cyan'} />
-      </div>
+      <StatStrip
+        items={[
+          { label: 'Total actions', value: kpi.totalActions.toLocaleString(), sub: `in ${rangeLabel(range)}`, icon: Activity },
+          { label: 'Active users', value: kpi.uniqueUsers, sub: 'unique users/IPs', icon: Users },
+          { label: 'Features used', value: kpi.featuresUsed, sub: 'screens touched', icon: Layers },
+          { label: 'Error rate', value: `${kpi.errRate.toFixed(1)}%`, sub: `${daily.data?.summary?.errorCount ?? 0} errors`, icon: AlertTriangle, color: kpi.errRate > 5 ? '#da1e28' : undefined },
+          { label: 'Avg latency', value: `${kpi.avgLatency}ms`, sub: 'weighted by call count', icon: Zap, color: kpi.avgLatency > 500 ? '#da1e28' : undefined },
+        ]}
+      />
 
       {/* ───────── Tab bar ───────── */}
-      <div className="flex gap-0 border-b border-[var(--t-border)]">
+      <div className="flex gap-0 border-b border-[var(--t-border)] overflow-x-auto">
         {tabs.map((t) => {
           const Icon = t.icon
           const active = tab === t.id
@@ -325,7 +328,7 @@ function AccessLogsTab({ token }: { token: string | null }) {
       </div>
 
       {err && (
-        <div className="text-xs rounded-md border border-[#F59E0B40] bg-[#F59E0B15] text-[#F59E0B] px-3 py-2">
+        <div className="text-xs rounded-md border border-[#ba4e0040] bg-[#ba4e0015] text-[#ba4e00] px-3 py-2">
           Loki query: {String(err)}{q.data?.detail ? ` · ${q.data.detail}` : ''}
         </div>
       )}
@@ -552,7 +555,7 @@ function UsersTab({ data, dailyData }: { data: ReportData; dailyData: ReportData
                 <XAxis type="number" stroke="var(--t-text-muted)" fontSize={11} />
                 <YAxis dataKey="name" type="category" stroke="var(--t-text-muted)" fontSize={11} width={120} />
                 <Tooltip contentStyle={{ background: 'var(--t-panel)', border: '1px solid var(--t-border)', fontSize: 12 }} />
-                <Bar dataKey="count" fill="#8B5CF6" radius={[0, 4, 4, 0]} />
+                <Bar dataKey="count" fill="#8a3ffc" radius={[0, 4, 4, 0]} />
               </BarChart>
             </ResponsiveContainer>
           )}
@@ -694,15 +697,15 @@ function TrendsTab({ data }: { data: ReportData }) {
             <AreaChart data={hourly}>
               <defs>
                 <linearGradient id="gradBlue" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#3B82F6" stopOpacity={0.5} />
-                  <stop offset="100%" stopColor="#3B82F6" stopOpacity={0} />
+                  <stop offset="0%" stopColor="#0f62fe" stopOpacity={0.5} />
+                  <stop offset="100%" stopColor="#0f62fe" stopOpacity={0} />
                 </linearGradient>
               </defs>
               <CartesianGrid strokeDasharray="3 3" stroke="var(--t-border)" />
               <XAxis dataKey="hour" stroke="var(--t-text-muted)" fontSize={10} />
               <YAxis stroke="var(--t-text-muted)" fontSize={11} allowDecimals={false} />
               <Tooltip contentStyle={{ background: 'var(--t-panel)', border: '1px solid var(--t-border)', fontSize: 12 }} />
-              <Area type="monotone" dataKey="count" stroke="#3B82F6" strokeWidth={2} fill="url(#gradBlue)" />
+              <Area type="monotone" dataKey="count" stroke="#0f62fe" strokeWidth={2} fill="url(#gradBlue)" />
             </AreaChart>
           </ResponsiveContainer>
         )}
@@ -724,10 +727,10 @@ function TrendsTab({ data }: { data: ReportData }) {
 
         <Panel title="Headline counters" icon={Activity}>
           <div className="grid grid-cols-2 gap-3">
-            <MiniCounter label="🔴 Sign-offs" value={data.summary?.signoffCount ?? 0} color="#EF4444" />
-            <MiniCounter label="Submits" value={data.summary?.submitCount ?? 0} color="#F59E0B" />
-            <MiniCounter label="Exports" value={data.summary?.exportCount ?? 0} color="#3B82F6" />
-            <MiniCounter label="Errors"  value={data.summary?.errorCount  ?? 0} color="#EF4444" />
+            <MiniCounter label="🔴 Sign-offs" value={data.summary?.signoffCount ?? 0} color="#da1e28" />
+            <MiniCounter label="Submits" value={data.summary?.submitCount ?? 0} color="#ba4e00" />
+            <MiniCounter label="Exports" value={data.summary?.exportCount ?? 0} color="#0f62fe" />
+            <MiniCounter label="Errors"  value={data.summary?.errorCount  ?? 0} color="#da1e28" />
           </div>
         </Panel>
       </div>
@@ -743,7 +746,7 @@ function HealthTab({ errData, capData }: { errData: ReportData; capData: ReportD
   const byStatus = Object.entries(errData.byStatusCode || {}).map(([code, count]) => ({
     code: String(code),
     count: Number(count),
-    tone: Number(code) >= 500 ? '#EF4444' : '#F59E0B',
+    tone: Number(code) >= 500 ? '#da1e28' : '#ba4e00',
   }))
   const endpoints = (capData.byEndpoint || []).slice(0, 20)
   // Flag endpoints whose p95 > 1s or max > 3s as "slow".
@@ -903,40 +906,6 @@ function FilterBar({
           ))}
         </>
       )}
-    </div>
-  )
-}
-
-function Kpi({
-  label, value, sub, icon: Icon, tone,
-}: {
-  label: string; value: string | number; sub: string
-  icon: React.ComponentType<{ className?: string; style?: React.CSSProperties }>
-  tone: 'blue' | 'violet' | 'emerald' | 'amber' | 'red' | 'cyan'
-}) {
-  const toneColor = {
-    blue: '#3B82F6', violet: '#8B5CF6', emerald: '#10B981',
-    amber: '#F59E0B', red: '#EF4444', cyan: '#06B6D4',
-  }[tone]
-  return (
-    <div className="p-4 rounded-lg bg-[var(--t-panel)] border border-[var(--t-border)] relative overflow-hidden">
-      <div
-        className="absolute top-0 right-0 w-20 h-20 rounded-full blur-3xl opacity-20"
-        style={{ background: toneColor }}
-      />
-      <div className="flex items-start justify-between relative">
-        <div>
-          <p className="text-[10px] text-[var(--t-text-muted)] uppercase tracking-wider font-semibold mb-1">{label}</p>
-          <p className="text-2xl font-bold text-[var(--t-text)]">{value}</p>
-          <p className="text-[10px] text-[var(--t-text-muted)] mt-0.5">{sub}</p>
-        </div>
-        <div
-          className="w-8 h-8 rounded-md flex items-center justify-center"
-          style={{ background: `${toneColor}15`, border: `1px solid ${toneColor}35` }}
-        >
-          <Icon className="w-4 h-4" style={{ color: toneColor }} />
-        </div>
-      </div>
     </div>
   )
 }

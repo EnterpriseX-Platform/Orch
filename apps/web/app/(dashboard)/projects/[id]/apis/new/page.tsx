@@ -31,7 +31,7 @@ import type {
   PaginatedResponse,
 } from '@/types'
 
-const FONT = "'Prompt', sans-serif"
+const FONT = '"IBM Plex Sans Thai", "IBM Plex Sans", "Sarabun", system-ui, sans-serif'
 
 const THEME = {
   bg: 'var(--t-bg)',
@@ -44,11 +44,11 @@ const THEME = {
 }
 
 const methodColors: Record<string, string> = {
-  GET: '#60A5FA',
-  POST: '#10B981',
-  PUT: '#F59E0B',
-  DELETE: '#F87171',
-  PATCH: '#A78BFA',
+  GET: '#0f62fe',
+  POST: '#24a148',
+  PUT: '#ba4e00',
+  DELETE: '#da1e28',
+  PATCH: '#8a3ffc',
 }
 
 // ========== Reusable tiny components ==========
@@ -67,7 +67,7 @@ function SectionCard({
       style={{
         background: THEME.panel,
         border: `1px solid ${THEME.border}`,
-        borderRadius: 8,
+        borderRadius: 0,
         overflow: 'hidden',
       }}
     >
@@ -87,7 +87,7 @@ function SectionCard({
             fontSize: 13,
             fontWeight: 600,
             color: THEME.text.primary,
-            letterSpacing: '0.02em',
+            
           }}
         >
           {title}
@@ -114,7 +114,7 @@ function Label({ children, required }: { children: React.ReactNode; required?: b
       }}
     >
       {children}
-      {required && <span style={{ color: '#F87171' }}>*</span>}
+      {required && <span style={{ color: '#da1e28' }}>*</span>}
     </label>
   )
 }
@@ -128,7 +128,7 @@ const inputStyle: React.CSSProperties = {
   fontSize: 13,
   padding: '6px 10px',
   border: `1px solid ${THEME.border}`,
-  borderRadius: 6,
+  borderRadius: 0,
   outline: 'none',
   color: THEME.text.primary,
   background: 'var(--t-input)',
@@ -310,7 +310,7 @@ export default function ProjectNewApiRegistrationPage() {
           alignItems: 'center',
           justifyContent: 'space-between',
           position: 'sticky',
-          top: 0,
+          top: 48,
           zIndex: 20,
         }}
       >
@@ -323,7 +323,7 @@ export default function ProjectNewApiRegistrationPage() {
               justifyContent: 'center',
               width: 28,
               height: 28,
-              borderRadius: 6,
+              borderRadius: 0,
               border: `1px solid ${THEME.border}`,
               color: THEME.text.secondary,
               textDecoration: 'none',
@@ -356,7 +356,7 @@ export default function ProjectNewApiRegistrationPage() {
               fontFamily: FONT,
               fontSize: 13,
               padding: '6px 14px',
-              borderRadius: 6,
+              borderRadius: 0,
               border: `1px solid ${THEME.border}`,
               background: THEME.panel,
               color: THEME.text.secondary,
@@ -377,7 +377,7 @@ export default function ProjectNewApiRegistrationPage() {
               fontFamily: FONT,
               fontSize: 13,
               padding: '6px 14px',
-              borderRadius: 6,
+              borderRadius: 0,
               border: 'none',
               background: createMutation.isPending ? 'var(--t-text-muted)' : THEME.accent,
               color: '#fff',
@@ -421,7 +421,7 @@ export default function ProjectNewApiRegistrationPage() {
 
             <FieldGroup>
               <Label required>API Type</Label>
-              <div style={{ display: 'flex', gap: 0, borderRadius: 6, overflow: 'hidden', border: `1px solid ${THEME.border}`, width: 'fit-content' }}>
+              <div style={{ display: 'flex', gap: 0, borderRadius: 0, overflow: 'hidden', border: `1px solid ${THEME.border}`, width: 'fit-content' }}>
                 {(['REST', 'MICROFLOW'] as ApiType[]).map((t) => (
                   <button
                     key={t}
@@ -547,12 +547,12 @@ export default function ProjectNewApiRegistrationPage() {
                   alignItems: 'center',
                   gap: 6,
                   padding: '6px 10px',
-                  background: '#3B82F618',
-                  borderRadius: 6,
-                  border: '1px solid #3B82F630',
+                  background: '#edf5ff',
+                  border: 'none',
+                  borderLeft: '3px solid #0043ce',
                 }}
               >
-                <Info size={11} style={{ color: '#60A5FA' }} />
+                <Info size={11} style={{ color: '#0f62fe' }} />
                 <span style={{ fontSize: 12, color: '#93C5FD' }}>
                   Using authentication configuration from the project
                 </span>
@@ -591,7 +591,7 @@ export default function ProjectNewApiRegistrationPage() {
                   gap: 6,
                   padding: '6px 10px',
                   background: 'var(--t-input)',
-                  borderRadius: 6,
+                  borderRadius: 0,
                   border: `1px solid ${THEME.border}`,
                 }}
               >
@@ -671,10 +671,10 @@ export default function ProjectNewApiRegistrationPage() {
                           fontSize: 12,
                           fontFamily: FONT,
                           padding: '2px 8px',
-                          borderRadius: 10,
-                          background: '#3B82F618',
-                          color: '#60A5FA',
-                          border: '1px solid #3B82F630',
+                          borderRadius: 9999,
+                          background: '#d0e2ff',
+                          color: '#0043ce',
+                          border: 'none',
                         }}
                       >
                         {tag}
@@ -687,7 +687,7 @@ export default function ProjectNewApiRegistrationPage() {
                             cursor: 'pointer',
                             display: 'flex',
                             alignItems: 'center',
-                            color: '#60A5FA',
+                            color: '#0f62fe',
                           }}
                         >
                           <X size={10} />

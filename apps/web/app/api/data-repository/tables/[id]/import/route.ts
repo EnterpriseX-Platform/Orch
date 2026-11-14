@@ -3,6 +3,7 @@
 // the parsed rows here). Inserts in chunks via routerInsert.
 import { NextRequest } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { getTenantContext, featureGuard, isForeign } from '@/lib/tenant'
 import {
   describe as routerDescribe,
   insertRow as routerInsert,
@@ -10,8 +11,13 @@ import {
 import { ok, fail } from '../../../_helpers'
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const ctx = await getTenantContext(req)
+  const blocked = featureGuard(ctx, 'dataRepository')
+  if (blocked) return blocked
   try {
     const { id } = await params
+    const owner = await prisma.repoTable.findUnique({ where: { id }, select: { tenantId: true } })
+    if (isForeign(ctx, owner)) return fail('Not found', 404)
     const t = await prisma.repoTable.findUnique({ where: { id }, include: { connection: true } })
     if (!t) return fail('Not found', 404)
     const body = await req.json()

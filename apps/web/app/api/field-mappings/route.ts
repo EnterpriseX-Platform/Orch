@@ -8,6 +8,7 @@
  */
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { getTenantContext, featureGuard, tenantWhere, projectAllowed } from '@/lib/tenant'
 import { z } from 'zod'
 
 const fieldMappingSchema = z.object({
@@ -33,10 +34,16 @@ const fieldMappingSchema = z.object({
 })
 
 export async function GET(req: NextRequest) {
+  const ctx = await getTenantContext(req)
+  const blocked = featureGuard(ctx, 'projects')
+  if (blocked) return blocked
   const { searchParams } = req.nextUrl
   const projectId = searchParams.get('projectId') || undefined
   const items = await prisma.fieldMapping.findMany({
-    where: projectId ? { OR: [{ projectId }, { projectId: null }] } : undefined,
+    where: {
+      ...(projectId ? { OR: [{ projectId }, { projectId: null }] } : {}),
+      ...(ctx.tenantId ? { AND: [{ OR: [{ projectId: null }, { project: tenantWhere(ctx) }] }] } : {}),
+    },
     orderBy: { name: 'asc' },
     include: { _count: { select: { messageFormats: true } } },
   })
@@ -44,8 +51,14 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
+  const ctx = await getTenantContext(req)
+  const blocked = featureGuard(ctx, 'projects')
+  if (blocked) return blocked
   try {
     const body = fieldMappingSchema.parse(await req.json())
+    if (!(await projectAllowed(ctx, (body as { projectId?: unknown }).projectId))) {
+      return NextResponse.json({ error: 'project not found' }, { status: 404 })
+    }
     const created = await prisma.fieldMapping.create({ data: body as any })
     return NextResponse.json({ data: created }, { status: 201 })
   } catch (e) {

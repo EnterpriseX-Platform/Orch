@@ -286,8 +286,9 @@ export default function FlowsPage() {
 
               {/* Main Info */}
               <div style={{ flex: 1, minWidth: 0 }}>
-                <div className="flex items-center gap-2 mb-0.5">
+                <div className="flex items-center gap-2 mb-0.5 min-w-0">
                   <h3 style={{
+                    minWidth: 0,
                     fontSize: 13,
                     fontWeight: 600,
                     color: THEME.text.primary,
@@ -326,7 +327,7 @@ export default function FlowsPage() {
               </div>
 
               {/* Stats */}
-              <div className="hidden md:flex items-center gap-5">
+              <div className="hidden xl:flex items-center gap-5">
                 <div style={{ textAlign: 'center' }}>
                   <p style={{ fontSize: 13, fontWeight: 600, color: THEME.text.primary }}>{(flow.nodes || []).length}</p>
                   <p style={{ fontSize: 11, color: THEME.text.muted }}>Nodes</p>

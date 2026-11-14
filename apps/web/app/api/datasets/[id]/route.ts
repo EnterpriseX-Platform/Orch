@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { getTenantContext, featureGuard, isForeign } from '@/lib/tenant'
 import { z } from 'zod'
 
 const updateDatasetSchema = z.object({
@@ -32,6 +33,9 @@ export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const ctx = await getTenantContext(request)
+  const blocked = featureGuard(ctx, 'datasets')
+  if (blocked) return blocked
   try {
     const { id } = await params
 
@@ -58,7 +62,7 @@ export async function GET(
       },
     })
 
-    if (!dataset) {
+    if (!dataset || isForeign(ctx, dataset)) {
       return NextResponse.json({ error: 'Dataset not found' }, { status: 404 })
     }
 
@@ -74,6 +78,9 @@ export async function PUT(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const ctx = await getTenantContext(request)
+  const blocked = featureGuard(ctx, 'datasets')
+  if (blocked) return blocked
   try {
     const { id } = await params
     const body = await request.json()
@@ -86,7 +93,7 @@ export async function PUT(
       where: { id },
     })
 
-    if (!existing) {
+    if (!existing || isForeign(ctx, existing)) {
       return NextResponse.json({ error: 'Dataset not found' }, { status: 404 })
     }
 
@@ -121,6 +128,9 @@ export async function DELETE(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const ctx = await getTenantContext(request)
+  const blocked = featureGuard(ctx, 'datasets')
+  if (blocked) return blocked
   try {
     const { id } = await params
 
@@ -134,7 +144,7 @@ export async function DELETE(
       },
     })
 
-    if (!existing) {
+    if (!existing || isForeign(ctx, existing)) {
       return NextResponse.json({ error: 'Dataset not found' }, { status: 404 })
     }
 

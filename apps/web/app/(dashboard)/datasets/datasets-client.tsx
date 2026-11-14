@@ -18,7 +18,7 @@ import {
 import { useSortable, SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 
-const FONT = "'Prompt', sans-serif"
+const FONT = '"IBM Plex Sans Thai", "IBM Plex Sans", "Sarabun", system-ui, sans-serif'
 
 // Dark Theme
 const THEME = {
@@ -26,12 +26,12 @@ const THEME = {
   panel: 'var(--t-panel)',
   border: 'var(--t-border)',
   borderLight: 'var(--t-border-light)',
-  borderAccent: '#2563EB50',
+  borderAccent: '#0353e950',
   text: { primary: 'var(--t-text)', secondary: 'var(--t-text-secondary)', muted: 'var(--t-text-muted)' },
   accent: 'var(--t-accent)',
   accentHover: 'var(--t-accent-hover)',
   accentLight: 'var(--t-accent-light)',
-  colors: { blue: '#8B92A5', emerald: '#059669', amber: '#F59E0B', red: '#DC2626', purple: '#7C3AED' }
+  colors: { blue: '#8B92A5', emerald: '#198038', amber: '#ba4e00', red: '#da1e28', purple: '#6929c4' }
 }
 
 interface DatasetData {
@@ -62,20 +62,20 @@ const categoryLabels: Record<string, string> = {
 const categoryColors: Record<string, string> = {
   transactional: '#64748B',
   reserved: '#64748B',
-  transfer: '#7C3AED',
-  performance: '#059669',
-  expenditure: '#DC2626',
-  procurement: '#06B6D4',
-  operation: '#10B981',
+  transfer: '#6929c4',
+  performance: '#198038',
+  expenditure: '#da1e28',
+  procurement: '#1192e8',
+  operation_success: '#24a148',
   master_data: '#64748B',
   other: '#94A3B8',
 }
 
 const statusColors: Record<string, { bg: string; text: string }> = {
-  ACTIVE: { bg: '#05966915', text: '#059669' },
-  DRAFT: { bg: '#60A5FA15', text: '#60A5FA' },
-  ARCHIVED: { bg: '#94A3B815', text: '#94A3B8' },
-  DEPRECATED: { bg: '#DC262615', text: '#DC2626' },
+  ACTIVE: { bg: '#a7f0ba', text: '#0e6027' },
+  DRAFT: { bg: '#d0e2ff', text: '#0043ce' },
+  ARCHIVED: { bg: '#e0e0e0', text: '#161616' },
+  DEPRECATED: { bg: '#ffd7d9', text: '#a2191f' },
 }
 
 // Get path to root for breadcrumb
@@ -94,13 +94,16 @@ const formInputStyle = {
   padding: '4px 8px',
   background: 'var(--t-bg)',
   border: `1px solid var(--t-border)`,
-  borderRadius: 6,
+  borderRadius: 0,
   fontSize: 12,
   color: 'var(--t-text)',
   outline: 'none',
   transition: 'border-color 0.15s ease',
   height: 28,
   lineHeight: '20px',
+  width: '100%',
+  minWidth: 0,
+  textOverflow: 'ellipsis',
 }
 
 // AutoComplete Input - suggests from existing values, allows free text
@@ -151,8 +154,8 @@ function AutoCompleteInput({ value, onChange, suggestions, placeholder, classNam
           marginTop: 4,
           background: 'var(--t-panel)',
           border: '1.5px solid var(--t-border)',
-          borderRadius: 8,
-          boxShadow: '0 4px 16px rgba(0,0,0,0.18)',
+          borderRadius: 0,
+          boxShadow: 'none',
           maxHeight: 160,
           overflowY: 'auto',
           zIndex: 50,
@@ -227,22 +230,22 @@ function InlineAddForm({ parentId, parentName, parentCategory, allSources, allCa
   return (
     <form onSubmit={handleSubmit} style={{
       background: 'var(--t-panel)',
-      borderRadius: 8,
-      border: `1.5px solid ${THEME.accent}50`,
-      boxShadow: `0 0 0 1px ${THEME.accent}15, 0 2px 8px rgba(0,0,0,0.15)`,
+      borderRadius: 0,
+      border: '1px solid #e0e0e0',
+      boxShadow: 'none',
     }}>
       {parentName && (
         <div style={{
           padding: '5px 12px',
-          background: `${THEME.accent}15`,
-          borderBottom: `1px solid ${THEME.accent}30`,
+          background: '#e0e0e0',
+          borderBottom: '1px solid #e0e0e0',
           fontSize: 11,
           fontWeight: 500,
           color: THEME.accent,
           display: 'flex',
           alignItems: 'center',
           gap: 4,
-          borderRadius: '6px 6px 0 0',
+          borderRadius: 0,
         }}>
           <CornerDownRight className="w-2.5 h-2.5" />
           Under: <strong>{parentName}</strong>
@@ -252,9 +255,9 @@ function InlineAddForm({ parentId, parentName, parentCategory, allSources, allCa
         <div style={{
           width: 26,
           height: 22,
-          background: `${THEME.accent}15`,
-          border: `1.5px dashed ${THEME.accent}60`,
-          borderRadius: 6,
+          background: '#e0e0e0',
+          border: '1px dashed #8d8d8d',
+          borderRadius: 0,
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
@@ -262,21 +265,21 @@ function InlineAddForm({ parentId, parentName, parentCategory, allSources, allCa
         }}>
           <Plus className="w-3 h-3" style={{ color: THEME.accent }} />
         </div>
-        <div style={{ flex: 1, display: 'grid', gridTemplateColumns: '3fr 2fr 2fr', gap: 6 }}>
+        <div style={{ flex: 1, display: 'grid', gridTemplateColumns: 'minmax(0,3fr) minmax(0,2fr) minmax(0,2fr)', gap: 6, minWidth: 0 }}>
           <input
             type="text"
             value={name}
             onChange={(e) => setName(e.target.value)}
             placeholder="Name..."
             style={formInputStyle}
-            className="focus:!border-blue-500"
+            className="focus:!border-[#0f62fe]"
             autoFocus
           />
           <select
             value={category}
             onChange={(e) => setCategory(e.target.value)}
             style={formInputStyle}
-            className="focus:!border-blue-500"
+            className="focus:!border-[#0f62fe]"
           >
             <option value="">— Category —</option>
             {Object.entries(categoryLabels).map(([k, v]) => (
@@ -287,7 +290,7 @@ function InlineAddForm({ parentId, parentName, parentCategory, allSources, allCa
             value={source}
             onChange={(e) => setSource(e.target.value)}
             style={formInputStyle}
-            className="focus:!border-blue-500"
+            className="focus:!border-[#0f62fe]"
           >
             <option value="">— Source table —</option>
             {(repoTables ?? []).map((t) => (
@@ -300,13 +303,13 @@ function InlineAddForm({ parentId, parentName, parentCategory, allSources, allCa
             type="submit"
             disabled={isSubmitting || !name.trim()}
             style={{
-              padding: '5px 12px',
+              padding: '0 12px', height: 32,
               background: THEME.accent,
               color: '#FFF',
-              borderRadius: 6,
+              borderRadius: 0,
               border: 'none',
               fontSize: 12,
-              fontWeight: 600,
+              fontWeight: 400,
               opacity: isSubmitting || !name.trim() ? 0.4 : 1,
               cursor: isSubmitting || !name.trim() ? 'not-allowed' : 'pointer',
               display: 'flex',
@@ -324,7 +327,7 @@ function InlineAddForm({ parentId, parentName, parentCategory, allSources, allCa
               padding: '5px 10px',
               background: 'transparent',
               border: `1px solid ${THEME.border}`,
-              borderRadius: 6,
+              borderRadius: 0,
               fontSize: 12,
               color: THEME.text.muted,
               cursor: 'pointer',
@@ -379,15 +382,15 @@ function InlineEditForm({ dataset, allSources, allCategories, repoTables, onCanc
   return (
     <form onSubmit={handleSubmit} style={{
       background: 'var(--t-panel)',
-      borderRadius: 8,
-      border: `1.5px solid ${THEME.accent}50`,
-      boxShadow: `0 0 0 1px ${THEME.accent}15, 0 2px 8px rgba(0,0,0,0.15)`,
+      borderRadius: 0,
+      border: '1px solid #e0e0e0',
+      boxShadow: 'none',
     }}>
       <div style={{
         padding: '5px 12px',
-        background: `${THEME.accent}15`,
-        borderBottom: `1px solid ${THEME.accent}30`,
-        borderRadius: '6px 6px 0 0',
+        background: '#e0e0e0',
+        borderBottom: '1px solid #e0e0e0',
+        borderRadius: 0,
         fontSize: 11,
         fontWeight: 500,
         color: THEME.accent,
@@ -402,9 +405,9 @@ function InlineEditForm({ dataset, allSources, allCategories, repoTables, onCanc
         <div style={{
           width: 26,
           height: 22,
-          background: `${THEME.accent}15`,
-          border: `1.5px solid ${THEME.accent}40`,
-          borderRadius: 6,
+          background: '#e0e0e0',
+          border: '1px solid #e0e0e0',
+          borderRadius: 0,
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
@@ -412,21 +415,21 @@ function InlineEditForm({ dataset, allSources, allCategories, repoTables, onCanc
         }}>
           <Edit3 className="w-3 h-3" style={{ color: THEME.accent }} />
         </div>
-        <div style={{ flex: 1, display: 'grid', gridTemplateColumns: '3fr 2fr 2fr', gap: 6 }}>
+        <div style={{ flex: 1, display: 'grid', gridTemplateColumns: 'minmax(0,3fr) minmax(0,2fr) minmax(0,2fr)', gap: 6, minWidth: 0 }}>
           <input
             type="text"
             value={name}
             onChange={(e) => setName(e.target.value)}
             placeholder="Name..."
             style={formInputStyle}
-            className="focus:!border-blue-500"
+            className="focus:!border-[#0f62fe]"
             autoFocus
           />
           <select
             value={category}
             onChange={(e) => setCategory(e.target.value)}
             style={formInputStyle}
-            className="focus:!border-blue-500"
+            className="focus:!border-[#0f62fe]"
           >
             <option value="">— Category —</option>
             {Object.entries(categoryLabels).map(([k, v]) => (
@@ -437,7 +440,7 @@ function InlineEditForm({ dataset, allSources, allCategories, repoTables, onCanc
             value={source}
             onChange={(e) => setSource(e.target.value)}
             style={formInputStyle}
-            className="focus:!border-blue-500"
+            className="focus:!border-[#0f62fe]"
           >
             <option value="">— Source table —</option>
             {(repoTables ?? []).map((t) => (
@@ -450,13 +453,13 @@ function InlineEditForm({ dataset, allSources, allCategories, repoTables, onCanc
             type="submit"
             disabled={isSubmitting || !name.trim()}
             style={{
-              padding: '5px 12px',
+              padding: '0 12px', height: 32,
               background: THEME.accent,
               color: '#FFF',
-              borderRadius: 6,
+              borderRadius: 0,
               border: 'none',
               fontSize: 12,
-              fontWeight: 600,
+              fontWeight: 400,
               opacity: isSubmitting || !name.trim() ? 0.4 : 1,
               cursor: isSubmitting || !name.trim() ? 'not-allowed' : 'pointer',
               display: 'flex',
@@ -474,7 +477,7 @@ function InlineEditForm({ dataset, allSources, allCategories, repoTables, onCanc
               padding: '5px 10px',
               background: 'transparent',
               border: `1px solid ${THEME.border}`,
-              borderRadius: 6,
+              borderRadius: 0,
               fontSize: 12,
               color: THEME.text.muted,
               cursor: 'pointer',
@@ -596,10 +599,10 @@ function SortableTreeNode({
         alignItems: 'center',
         gap: 4,
         padding: '6px 10px',
-        borderRadius: 8,
+        borderRadius: 0,
         marginLeft: level * 20,
-        background: isDragging ? `${THEME.accent}10` : 'transparent',
-        border: isDragging ? `1px solid ${THEME.accent}40` : '1px solid transparent',
+        background: isDragging ? '#e0e0e0' : 'transparent',
+        border: isDragging ? '1px solid #e0e0e0' : '1px solid transparent',
         position: 'relative',
       }} className="hover:bg-[var(--t-panel-hover)] group">
         
@@ -625,8 +628,8 @@ function SortableTreeNode({
               style={{
                 padding: 2,
                 color: menuOpen ? THEME.accent : THEME.text.muted,
-                borderRadius: 6,
-                background: menuOpen ? `${THEME.accent}15` : 'transparent',
+                borderRadius: 0,
+                background: menuOpen ? '#e0e0e0' : 'transparent',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
@@ -645,12 +648,12 @@ function SortableTreeNode({
                 marginTop: 4,
                 background: THEME.panel,
                 border: `1px solid ${THEME.border}`,
-                borderRadius: 8,
-                boxShadow: '0 4px 16px rgba(0,0,0,0.25)',
+                borderRadius: 0,
+                boxShadow: 'none',
                 zIndex: 50,
                 minWidth: 140,
                 padding: 4,
-                fontFamily: "'Prompt', sans-serif",
+                fontFamily: '"IBM Plex Sans Thai", "IBM Plex Sans", "Sarabun", system-ui, sans-serif',
               }}>
                 <button
                   onClick={(e) => { e.stopPropagation(); setMenuOpen(false); setShowAddForm(true) }}
@@ -663,7 +666,7 @@ function SortableTreeNode({
                     fontSize: 12,
                     fontWeight: 500,
                     color: THEME.accent,
-                    borderRadius: 6,
+                    borderRadius: 0,
                     background: 'transparent',
                     border: 'none',
                     cursor: 'pointer',
@@ -683,8 +686,8 @@ function SortableTreeNode({
                     padding: '6px 10px',
                     fontSize: 12,
                     fontWeight: 500,
-                    color: '#60A5FA',
-                    borderRadius: 6,
+                    color: '#0f62fe',
+                    borderRadius: 0,
                     background: 'transparent',
                     border: 'none',
                     cursor: 'pointer',
@@ -705,13 +708,13 @@ function SortableTreeNode({
                     padding: '6px 10px',
                     fontSize: 12,
                     fontWeight: 500,
-                    color: '#F87171',
-                    borderRadius: 6,
+                    color: '#da1e28',
+                    borderRadius: 0,
                     background: 'transparent',
                     border: 'none',
                     cursor: 'pointer',
                   }}
-                  className="hover:bg-red-500/10"
+                  className="hover:bg-[#e8e8e8]"
                 >
                   <Trash2 className="w-3.5 h-3.5" />
                   Delete
@@ -729,7 +732,7 @@ function SortableTreeNode({
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              borderRadius: 6,
+              borderRadius: 0,
               color: THEME.text.muted,
               visibility: hasChildren ? 'visible' : 'hidden',
             }} 
@@ -742,9 +745,9 @@ function SortableTreeNode({
           <div {...attributes} {...listeners} style={{
             width: 26,
             height: 22,
-            background: hasChildren ? `${THEME.accent}15` : THEME.bg,
-            border: `1px solid ${hasChildren ? `${THEME.accent}40` : THEME.border}`,
-            borderRadius: 6,
+            background: 'transparent',
+            border: '1px solid #e0e0e0',
+            borderRadius: 0,
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
@@ -777,17 +780,17 @@ function SortableTreeNode({
               }}>{dataset.name}</span>
               <span style={{ 
                 padding: '1px 6px', 
-                borderRadius: 8, 
+                borderRadius: 0, 
                 fontSize: 11,
                 fontWeight: 600,
                 background: statusColor.bg,
                 color: statusColor.text,
-                border: `1px solid ${statusColor.text}30`,
+                border: '1px solid #e0e0e0',
               }}>{dataset.status}</span>
               {hasChildren && (
                 <span style={{
                   padding: '1px 5px',
-                  borderRadius: 8,
+                  borderRadius: 0,
                   fontSize: 10,
                   fontWeight: 500,
                   background: THEME.bg,
@@ -1075,7 +1078,7 @@ export default function DatasetsClientPage() {
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
         <div>
-          <h1 style={{ fontSize: 22, fontWeight: 700, color: THEME.text.primary }}>Data Catalogs</h1>
+          <h1 style={{ fontSize: 20, fontWeight: 400, color: THEME.text.primary }}>Data Catalogs</h1>
           <p style={{ fontSize: 13, color: THEME.text.muted, marginTop: 1 }}>
             {stats.total} total • {stats.root} root • {stats.withChildren} with children
           </p>
@@ -1086,20 +1089,20 @@ export default function DatasetsClientPage() {
             display: 'flex',
             alignItems: 'center',
             gap: 4,
-            padding: '6px 14px',
+            padding: '0 12px', height: 32,
             background: THEME.accent,
             color: '#FFFFFF',
-            borderRadius: 8,
+            borderRadius: 0,
             fontSize: 13,
-            fontWeight: 600,
+            fontWeight: 400,
             border: 'none',
             cursor: 'pointer',
             transition: 'all 0.15s ease',
           }}
-          className="hover:bg-blue-500"
+          className="hover:bg-[#0f62fe]"
         >
           <Plus className="w-3.5 h-3.5" />
-          + Add Root
+          Add Root
         </button>
       </div>
 
@@ -1117,7 +1120,7 @@ export default function DatasetsClientPage() {
               padding: '6px 10px 6px 28px',
               background: 'var(--t-input)',
               border: `1px solid ${THEME.border}`,
-              borderRadius: 8,
+              borderRadius: 0,
               fontSize: 13,
               color: THEME.text.primary,
               outline: 'none',
@@ -1127,31 +1130,13 @@ export default function DatasetsClientPage() {
         <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
           <button
             onClick={handleExpandAll}
-            style={{
-              padding: '4px 8px',
-              background: THEME.panel,
-              border: `1px solid ${THEME.border}`,
-              borderRadius: 6,
-              fontSize: 11,
-              color: THEME.text.muted,
-              cursor: 'pointer',
-            }}
-            className="hover:border-blue-300 hover:text-blue-400"
+            className="h-8 px-3 text-[13px] bg-[var(--t-panel)] border border-[#8d8d8d] text-[#161616] hover:bg-[#e8e8e8]"
           >
             Expand
           </button>
           <button
             onClick={handleCollapseAll}
-            style={{
-              padding: '4px 8px',
-              background: THEME.panel,
-              border: `1px solid ${THEME.border}`,
-              borderRadius: 6,
-              fontSize: 11,
-              color: THEME.text.muted,
-              cursor: 'pointer',
-            }}
-            className="hover:border-blue-300 hover:text-blue-400"
+            className="h-8 px-3 text-[13px] bg-[var(--t-panel)] border border-[#8d8d8d] text-[#161616] hover:bg-[#e8e8e8]"
           >
             Collapse
           </button>
@@ -1184,7 +1169,7 @@ export default function DatasetsClientPage() {
               padding: '6px 10px',
               background: 'transparent',
               border: `1px dashed ${THEME.border}`,
-              borderRadius: 8,
+              borderRadius: 0,
               fontSize: 13,
               fontWeight: 600,
               color: THEME.text.muted,
@@ -1192,10 +1177,10 @@ export default function DatasetsClientPage() {
               width: '100%',
               transition: 'all 0.15s ease',
             }} 
-            className="hover:border-blue-400 hover:text-blue-400 hover:bg-blue-500/10"
+            className="hover:border-blue-400 hover:text-blue-400 hover:bg-[#e8e8e8]"
           >
             <Plus className="w-3.5 h-3.5" />
-            + Add Root
+            Add Root
           </button>
         </div>
       )}
@@ -1221,7 +1206,7 @@ export default function DatasetsClientPage() {
             height: 30, 
             background: THEME.panel, 
             border: `1px solid ${THEME.border}`, 
-            borderRadius: 8, 
+            borderRadius: 0, 
             display: 'flex', 
             alignItems: 'center', 
             justifyContent: 'center', 
@@ -1246,7 +1231,7 @@ export default function DatasetsClientPage() {
           <div style={{ 
             background: THEME.panel, 
             border: `1px solid ${THEME.border}`, 
-            borderRadius: 6, 
+            borderRadius: 0, 
             padding: 8,
           }}>
             <SortableContext items={flatDatasets.map(d => d.id)} strategy={verticalListSortingStrategy}>
@@ -1272,17 +1257,17 @@ export default function DatasetsClientPage() {
             {activeDataset ? (
               <div style={{ 
                 background: THEME.panel, 
-                border: `1px solid ${THEME.accent}50`, 
-                borderRadius: 8, 
+                border: '1px solid #e0e0e0', 
+                borderRadius: 0, 
                 padding: 8, 
-                boxShadow: '0 4px 12px rgba(0,0,0,0.4)',
+                boxShadow: 'none',
               }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                   <MoreVertical className="w-3.5 h-3.5" style={{ color: THEME.text.muted }} />
                   <div style={{ 
                     width: 3, 
                     height: 20, 
-                    borderRadius: 2, 
+                    borderRadius: 0, 
                     background: categoryColors[activeDataset.category] || categoryColors.other 
                   }} />
                   <Folder className="w-4 h-4" style={{ color: THEME.accent }} />

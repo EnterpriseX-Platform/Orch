@@ -18,7 +18,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { Filter, ChevronDown, ChevronRight, X } from 'lucide-react'
 
-const FONT = "'Prompt', sans-serif"
+const FONT = '"IBM Plex Sans Thai", "IBM Plex Sans", "Sarabun", system-ui, sans-serif'
 
 // Option groups -------------------------------------------------------
 
@@ -102,8 +102,6 @@ function Section({
           fontFamily: FONT,
           fontSize: 11,
           fontWeight: 600,
-          letterSpacing: '0.5px',
-          textTransform: 'uppercase',
           color: 'var(--t-text-muted)',
         }}
       >
@@ -118,10 +116,10 @@ function Section({
             style={{
               marginLeft: 'auto',
               padding: '0 6px',
-              borderRadius: 10,
-              fontSize: 10,
-              fontWeight: 700,
-              background: 'var(--t-accent)',
+              borderRadius: 0,
+              fontSize: 12,
+              fontWeight: 400,
+              background: '#0f62fe',
               color: '#FFFFFF',
             }}
           >
@@ -160,13 +158,13 @@ function CheckRow({
         style={{
           width: 16,
           height: 16,
-          borderRadius: 4,
+          borderRadius: 0,
           flexShrink: 0,
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          border: `1px solid ${checked ? 'var(--t-accent)' : 'var(--t-border)'}`,
-          background: checked ? 'var(--t-accent)' : 'var(--t-input)',
+          border: `1px solid ${checked ? '#161616' : '#161616'}`,
+          background: checked ? '#161616' : 'transparent',
         }}
       >
         {checked && (
@@ -195,14 +193,11 @@ function CheckRow({
 const inputStyle: React.CSSProperties = {
   width: '100%',
   padding: '6px 10px',
-  background: 'var(--t-input)',
-  border: '1px solid var(--t-border)',
-  borderRadius: 6,
   fontSize: 12,
   color: 'var(--t-text)',
   outline: 'none',
   fontFamily: FONT,
-  colorScheme: 'dark',
+  colorScheme: 'light',
 }
 
 export function AuditFilters({
@@ -274,18 +269,19 @@ export function AuditFilters({
         style={{
           display: 'flex',
           alignItems: 'center',
-          gap: 6,
-          padding: '6px 14px',
-          background: open || activeCount > 0 ? 'var(--t-input)' : 'var(--t-panel)',
-          border: `1px solid ${open ? 'var(--t-accent)' : 'var(--t-border)'}`,
-          borderRadius: 8,
-          fontSize: 13,
-          color: activeCount > 0 ? 'var(--t-text)' : 'var(--t-text-secondary)',
+          gap: 8,
+          height: 32,
+          padding: '0 12px',
+          background: open ? '#e8e8e8' : 'transparent',
+          border: '1px solid #0f62fe',
+          borderRadius: 0,
+          fontSize: 14,
+          color: '#0f62fe',
           cursor: 'pointer',
           transition: 'all 0.15s ease',
           fontFamily: FONT,
         }}
-        className="hover:border-[#3B82F6] hover:text-[#3B82F6]"
+        className="hover:bg-[#e8e8e8]"
       >
         <Filter className="w-4 h-4" />
         Filters
@@ -293,10 +289,10 @@ export function AuditFilters({
           <span
             style={{
               padding: '0 6px',
-              borderRadius: 10,
-              fontSize: 11,
-              fontWeight: 700,
-              background: 'var(--t-accent)',
+              borderRadius: 0,
+              fontSize: 12,
+              fontWeight: 400,
+              background: '#0f62fe',
               color: '#FFFFFF',
             }}
           >
@@ -319,8 +315,8 @@ export function AuditFilters({
             width: 300,
             background: 'var(--t-panel)',
             border: '1px solid var(--t-border)',
-            borderRadius: 10,
-            boxShadow: '0 8px 28px rgba(0,0,0,0.35)',
+            borderRadius: 0,
+            boxShadow: 'none',
             fontFamily: FONT,
             overflow: 'hidden',
           }}
@@ -426,17 +422,17 @@ export function AuditFilters({
                     type="button"
                     onClick={() => applyPreset(p.ms)}
                     style={{
-                      padding: '3px 8px',
-                      fontSize: 11,
-                      fontWeight: 500,
-                      borderRadius: 6,
-                      background: 'var(--t-input)',
-                      border: '1px solid var(--t-border)',
-                      color: 'var(--t-text-secondary)',
+                      padding: '4px 8px',
+                      fontSize: 12,
+                      fontWeight: 400,
+                      borderRadius: 0,
+                      background: 'transparent',
+                      border: 'none',
+                      color: '#0f62fe',
                       cursor: 'pointer',
                       fontFamily: FONT,
                     }}
-                    className="hover:border-[#3B82F6] hover:text-[#3B82F6]"
+                    className="hover:bg-[#e8e8e8]"
                   >
                     {p.label}
                   </button>
@@ -452,13 +448,13 @@ export function AuditFilters({
                       display: 'inline-flex',
                       alignItems: 'center',
                       gap: 3,
-                      padding: '3px 8px',
-                      fontSize: 11,
-                      fontWeight: 500,
-                      borderRadius: 6,
+                      padding: '4px 8px',
+                      fontSize: 12,
+                      fontWeight: 400,
+                      borderRadius: 0,
                       background: 'transparent',
-                      border: '1px solid var(--t-border)',
-                      color: 'var(--t-text-muted)',
+                      border: 'none',
+                      color: '#0f62fe',
                       cursor: 'pointer',
                       fontFamily: FONT,
                     }}

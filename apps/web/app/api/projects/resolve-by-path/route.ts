@@ -1,10 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { getTenantContext, featureGuard, tenantWhere } from '@/lib/tenant'
 
 // GET /api/projects/resolve-by-path?path=/service-center/payments/123
 // Resolves a request path to a Project by pathPrefix matching
 // Used by the broker for fallback routing when no API Registration matches
 export async function GET(request: NextRequest) {
+  const ctx = await getTenantContext(request)
+  const blocked = featureGuard(ctx, 'projects')
+  if (blocked) return blocked
   try {
     const { searchParams } = request.nextUrl
     const path = searchParams.get('path')
@@ -19,6 +23,7 @@ export async function GET(request: NextRequest) {
     // Find all active projects that have a pathPrefix configured
     const projects = await prisma.project.findMany({
       where: {
+        ...tenantWhere(ctx),
         status: 'ACTIVE',
         pathPrefix: { not: null },
       },

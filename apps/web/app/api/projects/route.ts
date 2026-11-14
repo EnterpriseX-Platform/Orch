@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { getTenantContext, featureGuard, tenantWhere } from '@/lib/tenant'
 import { createId } from '@paralleldrive/cuid2'
 import { z } from 'zod'
 
@@ -35,6 +36,9 @@ function generateSlug(name: string): string {
 
 // GET /api/projects - List all projects
 export async function GET(request: NextRequest) {
+  const ctx = await getTenantContext(request)
+  const blocked = featureGuard(ctx, 'projects')
+  if (blocked) return blocked
   try {
     const { searchParams } = request.nextUrl
     const page = parseInt(searchParams.get('page') || '1')
@@ -47,7 +51,7 @@ export async function GET(request: NextRequest) {
     const skip = (page - 1) * limit
 
     // Build where clause
-    const where: any = {}
+    const where: any = { ...tenantWhere(ctx) }
 
     if (status) {
       where.status = status
@@ -108,6 +112,9 @@ export async function GET(request: NextRequest) {
 
 // POST /api/projects - Create new project
 export async function POST(request: NextRequest) {
+  const ctx = await getTenantContext(request)
+  const blocked = featureGuard(ctx, 'projects')
+  if (blocked) return blocked
   try {
     const body = await request.json()
 
@@ -143,6 +150,7 @@ export async function POST(request: NextRequest) {
     const project = await prisma.project.create({
       data: {
         id: createId(),
+        tenantId: ctx.tenantId ?? undefined,
         name: validated.name,
         nameEn: validated.nameEn,
         slug,

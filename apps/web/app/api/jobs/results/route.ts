@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { getTenantContext, featureGuard } from '@/lib/tenant'
 import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
 
@@ -20,6 +21,9 @@ const jobResultSchema = z.object({
 
 export async function POST(request: NextRequest) {
   try {
+    const ctx = await getTenantContext(request)
+    const blocked = featureGuard(ctx, 'flows')
+    if (blocked) return blocked
     const body = await request.json()
     const validated = jobResultSchema.parse(body)
 

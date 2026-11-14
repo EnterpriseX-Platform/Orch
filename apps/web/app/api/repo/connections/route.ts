@@ -3,6 +3,7 @@
  */
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { getTenantContext, tenantWhere, featureGuard } from '@/lib/tenant'
 import { z } from 'zod'
 
 const configSchema = z.object({
@@ -22,8 +23,12 @@ const createSchema = z.object({
   config: configSchema,
 })
 
-export async function GET() {
+export async function GET(req: NextRequest) {
+  const ctx = await getTenantContext(req)
+  const blocked = featureGuard(ctx, 'dataRepository')
+  if (blocked) return blocked
   const data = await prisma.repoConnection.findMany({
+    where: tenantWhere(ctx),
     orderBy: { name: 'asc' },
     include: { _count: { select: { tables: true } } },
   })
@@ -39,10 +44,14 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
+  const ctx = await getTenantContext(req)
+  const blocked = featureGuard(ctx, 'dataRepository')
+  if (blocked) return blocked
   try {
     const body = createSchema.parse(await req.json())
     const created = await prisma.repoConnection.create({
       data: {
+        tenantId: ctx.tenantId ?? undefined,
         name: body.name,
         type: body.type,
         config: body.config as any,

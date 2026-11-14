@@ -97,51 +97,51 @@ export default function NewDatasetPage() {
         <div className="flex items-center gap-4 mb-8">
           <Link 
             href="/datasets"
-            className="p-2 hover:bg-[var(--t-panel-hover)] rounded-lg transition-colors"
+            className="p-2 hover:bg-[var(--t-panel-hover)] transition-colors"
           >
             <ArrowLeft className="w-5 h-5 text-[var(--t-text-secondary)]" />
           </Link>
           <div>
-            <h1 className="text-3xl font-bold text-[var(--t-text)]">Add New Dataset</h1>
+            <h1 className="text-xl font-normal text-[var(--t-text)]">Add New Dataset</h1>
             <p className="text-base text-[var(--t-text-muted)] mt-1">Create a new data catalog entry</p>
           </div>
         </div>
 
         {/* Success Message */}
         {success && (
-          <div className="mb-6 p-4 bg-[#10b981]/10 border border-[#10b981]/30 rounded-xl flex items-center gap-3">
-            <CheckCircle2 className="w-5 h-5 text-[#34d399]" />
+          <div className="mb-6 p-4 bg-[#f4f4f4] border border-[#24a148]/30 flex items-center gap-3">
+            <CheckCircle2 className="w-5 h-5 text-[#24a148]" />
             <div>
-              <p className="font-medium text-[#34d399]">Dataset created successfully!</p>
-              <p className="text-base text-[#10b981]/70">Redirecting to dataset list...</p>
+              <p className="font-medium text-[#24a148]">Dataset created successfully!</p>
+              <p className="text-base text-[#24a148]/70">Redirecting to dataset list...</p>
             </div>
           </div>
         )}
 
         {/* Error Message */}
         {error && (
-          <div className="mb-6 p-4 bg-[#ef4444]/10 border border-[#ef4444]/30 rounded-xl flex items-center gap-3">
-            <AlertCircle className="w-5 h-5 text-[#f87171]" />
+          <div className="mb-6 p-4 bg-[#f4f4f4] border border-[#da1e28]/30 flex items-center gap-3">
+            <AlertCircle className="w-5 h-5 text-[#da1e28]" />
             <div>
-              <p className="font-medium text-[#f87171]">Error</p>
-              <p className="text-base text-[#f87171]/70">{error}</p>
+              <p className="font-medium text-[#da1e28]">Error</p>
+              <p className="text-base text-[#da1e28]/70">{error}</p>
             </div>
           </div>
         )}
 
         {/* Form */}
-        <form onSubmit={handleSubmit} className="bg-[var(--t-panel)] border border-[var(--t-border)] rounded-xl p-6 space-y-6">
+        <form onSubmit={handleSubmit} className="bg-[var(--t-panel)] border border-[var(--t-border)] p-6 space-y-6">
           {/* Dataset Name */}
           <div>
             <label className="block text-base font-medium text-[var(--t-text-secondary)] mb-2">
-              Dataset Name <span className="text-[#ef4444]">*</span>
+              Dataset Name <span className="text-[#da1e28]">*</span>
             </label>
             <input
               type="text"
               value={formData.name}
               onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              placeholder="e.g., Transactional 2024"
-              className="w-full px-4 py-2.5 bg-[var(--t-bg)] border border-[var(--t-border)] rounded-lg text-[var(--t-text)] placeholder:text-[var(--t-text-muted)]/60 focus:outline-none focus:border-[#3b82f6] transition-colors"
+              placeholder="e.g., Budget Expense 2024"
+              className="w-full px-4 py-2.5 bg-[var(--t-bg)] border border-[var(--t-border)] text-[var(--t-text)] placeholder:text-[var(--t-text-muted)]/60 focus:outline-none focus:border-[#0f62fe] transition-colors"
               required
             />
           </div>
@@ -149,14 +149,14 @@ export default function NewDatasetPage() {
           {/* Source */}
           <div>
             <label className="block text-base font-medium text-[var(--t-text-secondary)] mb-2">
-              Data Source <span className="text-[#ef4444]">*</span>
+              Data Source <span className="text-[#da1e28]">*</span>
             </label>
             <input
               type="text"
               value={formData.source}
               onChange={(e) => setFormData({ ...formData, source: e.target.value })}
               placeholder="e.g., SAP ERP, Oracle Database"
-              className="w-full px-4 py-2.5 bg-[var(--t-bg)] border border-[var(--t-border)] rounded-lg text-[var(--t-text)] placeholder:text-[var(--t-text-muted)]/60 focus:outline-none focus:border-[#3b82f6] transition-colors"
+              className="w-full px-4 py-2.5 bg-[var(--t-bg)] border border-[var(--t-border)] text-[var(--t-text)] placeholder:text-[var(--t-text-muted)]/60 focus:outline-none focus:border-[#0f62fe] transition-colors"
               required
             />
           </div>
@@ -165,13 +165,13 @@ export default function NewDatasetPage() {
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-base font-medium text-[var(--t-text-secondary)] mb-2">
-                Category <span className="text-[#ef4444]">*</span>
+                Category <span className="text-[#da1e28]">*</span>
               </label>
               <div className="relative">
                 <select
                   value={formData.category}
                   onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                  className="w-full px-4 py-2.5 bg-[var(--t-bg)] border border-[var(--t-border)] rounded-lg text-[var(--t-text)] focus:outline-none focus:border-[#3b82f6] appearance-none cursor-pointer"
+                  className="w-full px-4 py-2.5 bg-[var(--t-bg)] border border-[var(--t-border)] text-[var(--t-text)] focus:outline-none focus:border-[#0f62fe] appearance-none cursor-pointer"
                   required
                 >
                   {categories.map((cat) => (
@@ -190,7 +190,7 @@ export default function NewDatasetPage() {
                 <select
                   value={formData.status}
                   onChange={(e) => setFormData({ ...formData, status: e.target.value })}
-                  className="w-full px-4 py-2.5 bg-[var(--t-bg)] border border-[var(--t-border)] rounded-lg text-[var(--t-text)] focus:outline-none focus:border-[#3b82f6] appearance-none cursor-pointer"
+                  className="w-full px-4 py-2.5 bg-[var(--t-bg)] border border-[var(--t-border)] text-[var(--t-text)] focus:outline-none focus:border-[#0f62fe] appearance-none cursor-pointer"
                 >
                   {statuses.map((s) => (
                     <option key={s.value} value={s.value}>{s.label}</option>
@@ -211,7 +211,7 @@ export default function NewDatasetPage() {
               onChange={(e) => setFormData({ ...formData, description: e.target.value })}
               placeholder="Describe the dataset content and purpose..."
               rows={4}
-              className="w-full px-4 py-2.5 bg-[var(--t-bg)] border border-[var(--t-border)] rounded-lg text-[var(--t-text)] placeholder:text-[var(--t-text-muted)]/60 focus:outline-none focus:border-[#3b82f6] transition-colors resize-none"
+              className="w-full px-4 py-2.5 bg-[var(--t-bg)] border border-[var(--t-border)] text-[var(--t-text)] placeholder:text-[var(--t-text-muted)]/60 focus:outline-none focus:border-[#0f62fe] transition-colors resize-none"
             />
           </div>
 
@@ -226,7 +226,7 @@ export default function NewDatasetPage() {
             <button
               type="submit"
               disabled={isSubmitting || success}
-              className="flex items-center gap-2 px-6 py-2.5 bg-[#3b82f6] hover:bg-[#2563eb] text-white rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-[#3b82f6]/20"
+              className="flex items-center gap-2 px-3 h-8.5 bg-[#0f62fe] hover:bg-[#0353e9] text-white font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-[#0f62fe]/20"
             >
               {isSubmitting ? (
                 <>

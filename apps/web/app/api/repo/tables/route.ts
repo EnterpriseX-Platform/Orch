@@ -13,6 +13,7 @@
  */
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { getTenantContext, tenantWhere, featureGuard } from '@/lib/tenant'
 import { z } from 'zod'
 import { ensurePhysicalTable } from '@/lib/repo-physical'
 import { count as routerCount } from '@/lib/repo-router'
@@ -41,8 +42,12 @@ const createSchema = z.object({
   externalTableName: z.string().optional().nullable(),
 })
 
-export async function GET() {
+export async function GET(req: NextRequest) {
+  const ctx = await getTenantContext(req)
+  const blocked = featureGuard(ctx, 'dataRepository')
+  if (blocked) return blocked
   const tables = await prisma.repoTable.findMany({
+    where: tenantWhere(ctx),
     orderBy: [{ folderId: 'asc' }, { sortOrder: 'asc' }, { name: 'asc' }],
     include: {
       folder: { select: { id: true, name: true } },
@@ -69,6 +74,9 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
+  const ctx = await getTenantContext(req)
+  const blocked = featureGuard(ctx, 'dataRepository')
+  if (blocked) return blocked
   try {
     const body = createSchema.parse(await req.json())
     const importMode = !!(body.connectionId && body.externalTableName)
@@ -79,6 +87,7 @@ export async function POST(req: NextRequest) {
     }
     const created = await prisma.repoTable.create({
       data: {
+        tenantId: ctx.tenantId ?? undefined,
         name: body.name,
         displayName: body.displayName ?? null,
         description: body.description ?? null,

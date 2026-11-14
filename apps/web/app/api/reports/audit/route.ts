@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { getTenantContext, featureGuard, tenantWhere } from '@/lib/tenant'
 
 // ============================================
 // Audit Reports API — generic; aggregates audit_logs across all systems.
@@ -11,6 +12,9 @@ function hoursAgo(h: number) {
 }
 
 export async function GET(request: NextRequest) {
+  const ctx = await getTenantContext(request)
+  const blocked = featureGuard(ctx, 'analytics')
+  if (blocked) return blocked
   const { searchParams } = request.nextUrl
   const type = searchParams.get('type') || 'daily'
   const fromParam = searchParams.get('from')
@@ -29,7 +33,7 @@ export async function GET(request: NextRequest) {
   // today it's mostly null (verified), so we don't filter by it yet. Proper
   // fix: derive `system` from the project on audit writes (see
   // LOGGING_DESIGN.md), then scope reports by it.
-  const where: any = { timestamp: { gte: from, lte: to } }
+  const where: any = { ...tenantWhere(ctx), timestamp: { gte: from, lte: to } }
   if (userId) where.userId = userId
   if (userIp) where.userIp = userIp
 

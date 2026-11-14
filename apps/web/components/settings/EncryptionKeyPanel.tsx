@@ -63,9 +63,9 @@ export function EncryptionKeyPanel() {
   const busy = mutate.isPending
 
   return (
-    <div style={{ fontFamily: FONT }} className="rounded-xl border border-[var(--t-border)] bg-[var(--t-panel)] p-5">
+    <div style={{ fontFamily: FONT }} className="border border-[#e0e0e0] bg-white p-5">
       <div className="flex items-center gap-2 mb-4">
-        <KeyRound size={16} className="text-[var(--t-accent)]" />
+        <KeyRound size={16} className="text-[#525252]" />
         <h3 className="text-sm font-semibold text-[var(--t-text)]">App-Level Encryption Key</h3>
       </div>
 
@@ -76,7 +76,7 @@ export function EncryptionKeyPanel() {
       ) : (
         <>
           {!st?.kekConfigured && (
-            <div className="flex items-start gap-2 text-xs text-amber-600 bg-amber-500/10 rounded p-2 mb-3">
+            <div className="flex items-start gap-2 text-xs text-[#8a3800] bg-[#fff1e6] border-l-[3px] border-[#f1c21b] p-2 mb-3">
               <AlertTriangle size={14} className="mt-0.5 shrink-0" />
               <span>
                 <code>ORCH_ENCRYPTION_KEK</code> is not set — an insecure dev fallback key is in use. Set it
@@ -88,7 +88,7 @@ export function EncryptionKeyPanel() {
 
           <div className="grid grid-cols-2 gap-3 text-xs mb-4">
             <Field label="Status">
-              {st?.enabled ? <span className="text-emerald-500 font-medium">Enabled</span> : <span className="text-[var(--t-text-muted)]">Disabled</span>}
+              {st?.enabled ? <span className="text-[#24a148] font-medium">Enabled</span> : <span className="text-[var(--t-text-muted)]">Disabled</span>}
             </Field>
             <Field label="Active key version">{st?.activeKeyVersion != null ? `v${st.activeKeyVersion}` : '—'}</Field>
             <Field label="Key versions">{st?.versions?.length ? st.versions.map((v) => `v${v}`).join(', ') : '—'}</Field>
@@ -100,7 +100,7 @@ export function EncryptionKeyPanel() {
               <button
                 disabled={busy}
                 onClick={() => mutate.mutate('generate')}
-                className="inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded bg-[var(--t-accent)] text-white disabled:opacity-50"
+                className="inline-flex items-center gap-2 text-sm h-8 px-3 bg-[#0f62fe] text-white disabled:opacity-50 hover:bg-[#0353e9]"
               >
                 {busy ? <Loader2 size={13} className="animate-spin" /> : <KeyRound size={13} />} Generate key
               </button>
@@ -113,16 +113,16 @@ export function EncryptionKeyPanel() {
                       mutate.mutate('rotate')
                     }
                   }}
-                  className="inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded bg-[var(--t-panel-hover)] text-[var(--t-text)] border border-[var(--t-border)] disabled:opacity-50"
+                  className="inline-flex items-center gap-2 text-sm h-8 px-3 bg-[#393939] text-white hover:bg-[#474747] disabled:opacity-50"
                 >
                   {busy ? <Loader2 size={13} className="animate-spin" /> : <RotateCw size={13} />} Rotate
                 </button>
                 {st.enabled ? (
-                  <button disabled={busy} onClick={() => mutate.mutate('disable')} className="inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded bg-red-500/10 text-red-500 disabled:opacity-50">
+                  <button disabled={busy} onClick={() => mutate.mutate('disable')} className="inline-flex items-center gap-2 text-sm h-8 px-3 bg-[#da1e28] text-white hover:bg-[#b81921] disabled:opacity-50">
                     <ShieldOff size={13} /> Disable
                   </button>
                 ) : (
-                  <button disabled={busy} onClick={() => mutate.mutate('enable')} className="inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded bg-emerald-500/10 text-emerald-500 disabled:opacity-50">
+                  <button disabled={busy} onClick={() => mutate.mutate('enable')} className="inline-flex items-center gap-2 text-sm h-8 px-3 bg-[#0f62fe] text-white hover:bg-[#0353e9] disabled:opacity-50">
                     <ShieldCheck size={13} /> Enable
                   </button>
                 )}
@@ -138,7 +138,7 @@ export function EncryptionKeyPanel() {
 function Field({ label, children }: { label: string; children: ReactNode }) {
   return (
     <div>
-      <p className="text-[10px] uppercase tracking-wider text-[var(--t-text-muted)] mb-0.5">{label}</p>
+      <p className="text-[12px] text-[#525252] mb-0.5">{label}</p>
       <div className="text-[var(--t-text)]">{children}</div>
     </div>
   )

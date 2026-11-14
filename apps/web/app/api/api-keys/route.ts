@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import crypto from 'crypto'
 import { createId } from '@paralleldrive/cuid2'
 import { prisma } from '@/lib/prisma'
+import { getTenantContext, featureGuard, tenantWhere, isForeign } from '@/lib/tenant'
 import { getUserId, resolveUserId } from '@/lib/auth'
 import { z } from 'zod'
 
@@ -26,10 +27,13 @@ function generateKey(): { plain: string; prefix: string; hash: string } {
 
 // GET /api/api-keys?projectId=... — list keys (safe fields only)
 export async function GET(request: NextRequest) {
+  const ctx = await getTenantContext(request)
+  const blocked = featureGuard(ctx, 'projects')
+  if (blocked) return blocked
   try {
     const { searchParams } = request.nextUrl
     const projectId = searchParams.get('projectId') || undefined
-    const where: any = { revokedAt: null }
+    const where: any = { revokedAt: null, ...tenantWhere(ctx) }
     if (projectId) where.projectId = projectId
 
     const keys = await prisma.apiKey.findMany({
@@ -58,12 +62,15 @@ export async function GET(request: NextRequest) {
 
 // POST /api/api-keys — create new API key. Returns full plain key ONCE.
 export async function POST(request: NextRequest) {
+  const ctx = await getTenantContext(request)
+  const blocked = featureGuard(ctx, 'projects')
+  if (blocked) return blocked
   try {
     const body = await request.json()
     const input = createSchema.parse(body)
 
     const project = await prisma.project.findUnique({ where: { id: input.projectId } })
-    if (!project) {
+    if (!project || isForeign(ctx, project)) {
       return NextResponse.json({ error: 'Project not found' }, { status: 404 })
     }
 
@@ -79,6 +86,7 @@ export async function POST(request: NextRequest) {
     const created = await prisma.apiKey.create({
       data: {
         id: createId(),
+        tenantId: ctx.tenantId ?? project.tenantId ?? undefined,
         name: input.name,
         keyHash: hash,
         prefix,

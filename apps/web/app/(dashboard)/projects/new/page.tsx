@@ -24,7 +24,7 @@ import { toast } from 'sonner'
 import { projectApi } from '@/lib/api'
 import { CustomSelect } from '@/components/ui/CustomSelect'
 
-const FONT = "'Prompt', sans-serif"
+const FONT = '"IBM Plex Sans Thai", "IBM Plex Sans", "Sarabun", system-ui, sans-serif'
 
 const THEME = {
   bg: 'var(--t-bg)',
@@ -58,7 +58,7 @@ function SectionCard({
       style={{
         background: THEME.panel,
         border: `1px solid ${THEME.border}`,
-        borderRadius: 8,
+        borderRadius: 0,
         overflow: 'hidden',
       }}
     >
@@ -78,7 +78,7 @@ function SectionCard({
             fontSize: 14,
             fontWeight: 600,
             color: THEME.text.primary,
-            letterSpacing: '0.02em',
+            
           }}
         >
           {title}
@@ -105,7 +105,7 @@ function Label({ children, required }: { children: React.ReactNode; required?: b
       }}
     >
       {children}
-      {required && <span style={{ color: '#F87171' }}>*</span>}
+      {required && <span style={{ color: '#da1e28' }}>*</span>}
     </label>
   )
 }
@@ -119,7 +119,7 @@ const inputStyle: React.CSSProperties = {
   fontSize: 13,
   padding: '6px 10px',
   border: `1px solid ${THEME.border}`,
-  borderRadius: 6,
+  borderRadius: 0,
   outline: 'none',
   color: THEME.text.primary,
   background: 'var(--t-input)',
@@ -153,7 +153,7 @@ export default function NewProjectPage() {
   const [slugManuallyEdited, setSlugManuallyEdited] = useState(false)
   const [description, setDescription] = useState('')
   const [imageUrl, setImageUrl] = useState('')
-  const [themeColor, setThemeColor] = useState('#60A5FA')
+  const [themeColor, setThemeColor] = useState('#0f62fe')
 
   // ---- Section 2: API Configuration ----
   const [baseUrl, setBaseUrl] = useState('')
@@ -280,21 +280,18 @@ export default function NewProjectPage() {
   }
 
   return (
-    <div style={{ fontFamily: FONT, minHeight: '100vh', background: THEME.bg }}>
+    <div style={{ fontFamily: FONT }}>
       {/* Header */}
       <div
         style={{
-          background: THEME.panel,
-          borderBottom: `1px solid ${THEME.border}`,
-          padding: '12px 24px',
+          maxWidth: 900,
+          margin: '0 auto',
+          padding: '4px 24px 0',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
           flexWrap: 'wrap' as const,
           gap: 12,
-          position: 'sticky',
-          top: 0,
-          zIndex: 20,
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, minWidth: 0, flex: 1 }}>
@@ -306,7 +303,7 @@ export default function NewProjectPage() {
               justifyContent: 'center',
               width: 28,
               height: 28,
-              borderRadius: 6,
+              borderRadius: 0,
               border: `1px solid ${THEME.border}`,
               color: THEME.text.secondary,
               textDecoration: 'none',
@@ -320,7 +317,7 @@ export default function NewProjectPage() {
             <h1
               style={{
                 fontSize: 18,
-                fontWeight: 700,
+                fontWeight: 600,
                 color: THEME.text.primary,
                 margin: 0,
                 whiteSpace: 'nowrap' as const,
@@ -341,7 +338,7 @@ export default function NewProjectPage() {
               fontFamily: FONT,
               fontSize: 13,
               padding: '6px 14px',
-              borderRadius: 6,
+              borderRadius: 0,
               border: `1px solid ${THEME.border}`,
               background: THEME.panel,
               color: THEME.text.secondary,
@@ -363,7 +360,7 @@ export default function NewProjectPage() {
               fontFamily: FONT,
               fontSize: 13,
               padding: '6px 14px',
-              borderRadius: 6,
+              borderRadius: 0,
               border: 'none',
               background: createMutation.isPending ? 'var(--t-text-muted)' : THEME.accent,
               color: '#fff',
@@ -451,7 +448,7 @@ export default function NewProjectPage() {
                     marginTop: 4,
                     padding: 8,
                     background: THEME.borderLight,
-                    borderRadius: 6,
+                    borderRadius: 0,
                     border: `1px solid ${THEME.border}`,
                     display: 'flex',
                     alignItems: 'center',
@@ -465,7 +462,7 @@ export default function NewProjectPage() {
                     style={{
                       maxWidth: 120,
                       maxHeight: 80,
-                      borderRadius: 4,
+                      borderRadius: 0,
                       objectFit: 'contain',
                     }}
                     onError={(e) => {
@@ -491,7 +488,7 @@ export default function NewProjectPage() {
                     height: 28,
                     padding: 0,
                     border: `1px solid ${THEME.border}`,
-                    borderRadius: 4,
+                    borderRadius: 0,
                     cursor: 'pointer',
                     background: 'none',
                   }}
@@ -500,13 +497,13 @@ export default function NewProjectPage() {
                   style={{ ...inputStyle, width: 120 }}
                   value={themeColor}
                   onChange={(e) => setThemeColor(e.target.value)}
-                  placeholder="#60A5FA"
+                  placeholder="#0f62fe"
                 />
                 <div
                   style={{
                     width: 20,
                     height: 20,
-                    borderRadius: 4,
+                    borderRadius: 0,
                     background: themeColor,
                     border: `1px solid ${THEME.border}`,
                     flexShrink: 0,
@@ -635,10 +632,10 @@ export default function NewProjectPage() {
                           fontSize: 11,
                           fontFamily: FONT,
                           padding: '2px 8px',
-                          borderRadius: 4,
-                          background: '#3B82F618',
-                          color: '#60A5FA',
-                          border: '1px solid #3B82F630',
+                          borderRadius: 9999,
+                          background: '#d0e2ff',
+                          color: '#0043ce',
+                          border: 'none',
                         }}
                       >
                         {tag}
@@ -651,7 +648,7 @@ export default function NewProjectPage() {
                             cursor: 'pointer',
                             display: 'flex',
                             alignItems: 'center',
-                            color: '#60A5FA',
+                            color: '#0f62fe',
                           }}
                         >
                           <X size={12} />

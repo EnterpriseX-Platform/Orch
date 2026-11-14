@@ -18,6 +18,7 @@
  */
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { getTenantContext, featureGuard, isForeign } from '@/lib/tenant'
 import { describe as routerDescribe, count as routerCount } from '@/lib/repo-router'
 import { migrateColumnEncrypt, migrateColumnDecrypt } from '@/lib/repo-crypto-hooks'
 import { getActiveEncryptionKey } from '@/lib/encryption-keys'
@@ -31,8 +32,13 @@ export async function POST(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
+  const ctx = await getTenantContext(req)
+  const blocked = featureGuard(ctx, 'dataRepository')
+  if (blocked) return blocked
   try {
     const { id } = await params
+    const owner = await prisma.repoTable.findUnique({ where: { id }, select: { tenantId: true } })
+    if (isForeign(ctx, owner)) return NextResponse.json({ error: 'Not found' }, { status: 404 })
     const t = await prisma.repoTable.findUnique({
       where: { id },
       include: { connection: true },

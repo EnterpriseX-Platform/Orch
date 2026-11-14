@@ -17,7 +17,7 @@ import {
 } from 'lucide-react'
 import { useAuthStore } from '@/stores/authStore'
 
-const FONT = "'Prompt', sans-serif"
+const FONT = '"IBM Plex Sans Thai", "IBM Plex Sans", "Sarabun", system-ui, sans-serif'
 
 const CATEGORIES = [
   { value: 'GENERAL',       label: 'General' },
@@ -249,8 +249,8 @@ export function SystemConfigPanel({
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
         {!embedded && (
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <Settings size={24} color="var(--t-accent)" />
-            <h1 style={{ fontSize: 22, fontWeight: 600, margin: 0 }}>System Configuration</h1>
+            <Settings size={20} color="#525252" />
+            <h1 style={{ fontSize: 20, fontWeight: 400, margin: 0 }}>System Configuration</h1>
           </div>
         )}
         {embedded && <div />}
@@ -260,8 +260,8 @@ export function SystemConfigPanel({
               onClick={() => setShowAdd((v) => !v)}
               style={{
                 ...btnGhost,
-                background: showAdd ? 'var(--t-accent-light)' : btnGhost.background,
-                color: showAdd ? 'var(--t-accent)' : btnGhost.color,
+                background: showAdd ? '#e0e0e0' : btnGhost.background,
+                color: showAdd ? '#161616' : btnGhost.color,
               }}
             >
               <Plus size={14} /> {showAdd ? 'Cancel' : 'Add Key'}
@@ -295,9 +295,8 @@ export function SystemConfigPanel({
             gap: 8,
             alignItems: 'center',
             padding: 12,
-            background: 'var(--t-panel)',
-            border: '1px solid var(--t-border)',
-            borderRadius: 8,
+            background: '#f4f4f4',
+            borderRadius: 0,
             marginBottom: 16,
           }}
         >
@@ -322,7 +321,7 @@ export function SystemConfigPanel({
             disabled={!newKey.trim() || createMutation.isPending}
             style={{
               ...btnGhost,
-              background: 'var(--t-accent)',
+              background: '#0f62fe',
               color: '#fff',
               opacity: !newKey.trim() || createMutation.isPending ? 0.5 : 1,
             }}
@@ -365,7 +364,7 @@ export function SystemConfigPanel({
         ) : (
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
             <thead>
-              <tr style={{ borderBottom: '1px solid var(--t-border)' }}>
+              <tr>
                 <th style={th}>Key / Label</th>
                 <th style={th}>Category</th>
                 <th style={th}>Type</th>
@@ -380,21 +379,21 @@ export function SystemConfigPanel({
                 return (
                   <tr key={row.id} style={{ borderBottom: '1px solid var(--t-border-light)' }}>
                     <td style={td}>
-                      <div style={{ fontWeight: 600, fontSize: 13 }}>{row.key}</div>
-                      {row.label && <div style={{ fontSize: 11, color: 'var(--t-text-secondary)' }}>{row.label}</div>}
-                      {row.description && <div style={{ fontSize: 11, color: 'var(--t-text-muted)', marginTop: 2 }}>{row.description}</div>}
+                      <div style={{ fontWeight: 600, fontSize: 14 }}>{row.key}</div>
+                      {row.label && <div style={{ fontSize: 12, color: '#525252' }}>{row.label}</div>}
+                      {row.description && <div style={{ fontSize: 12, color: '#6f6f6f', marginTop: 2 }}>{row.description}</div>}
                       <div style={{ display: 'flex', gap: 4, marginTop: 4 }}>
-                        {row.isRequired && <span style={badge('#F5974618')}>required</span>}
-                        {row.isSecret && <span style={badge('#EF444418')}><Lock size={9} /> secret</span>}
-                        {row.isReadOnly && <span style={badge('#8B92A518')}>read-only</span>}
-                        {row.group && <span style={badge('#3B82F618')}>{row.group}</span>}
+                        {row.isRequired && <span className="cds-tag" style={badge('#fff1e6', '#8a3800')}>required</span>}
+                        {row.isSecret && <span className="cds-tag" style={badge('#ffd7d9', '#a2191f')}><Lock size={9} /> secret</span>}
+                        {row.isReadOnly && <span className="cds-tag" style={badge('#e0e0e0')}>read-only</span>}
+                        {row.group && <span className="cds-tag" style={badge('#d0e2ff', '#0043ce')}>{row.group}</span>}
                       </div>
                     </td>
                     <td style={td}>
-                      <span style={{ fontSize: 11, color: 'var(--t-text-secondary)' }}>{row.category}</span>
+                      <span style={{ fontSize: 12, color: '#525252' }}>{row.category}</span>
                     </td>
                     <td style={td}>
-                      <span style={{ fontSize: 11, color: 'var(--t-text-muted)' }}>{row.valueType}</span>
+                      <span style={{ fontSize: 12, color: '#6f6f6f' }}>{row.valueType}</span>
                     </td>
                     <td style={td}>
                       {row.valueType === 'BOOLEAN' ? (
@@ -452,10 +451,10 @@ export function SystemConfigPanel({
       {historyKey && (
         <div style={modalOverlay} onClick={() => setHistoryKey(null)}>
           <div style={modal} onClick={(e) => e.stopPropagation()}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
-              <h2 style={{ fontSize: 16, fontWeight: 600, margin: 0 }}>History: {historyKey}</h2>
-              <button onClick={() => setHistoryKey(null)} style={btnGhost}>
-                <X size={14} />
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: 16, margin: -20, marginBottom: 0 }}>
+              <h2 style={{ fontSize: 20, fontWeight: 400, margin: 0 }}>History: {historyKey}</h2>
+              <button onClick={() => setHistoryKey(null)} style={{ ...btnGhost, width: 32, padding: 0, justifyContent: 'center', color: '#161616' }}>
+                <X size={16} />
               </button>
             </div>
             <div style={{ maxHeight: 400, overflowY: 'auto' }}>
@@ -467,9 +466,9 @@ export function SystemConfigPanel({
                   </div>
                   {h.reason && <div style={{ fontStyle: 'italic', fontSize: 11 }}>— {h.reason}</div>}
                   <div style={{ marginTop: 4, fontFamily: 'ui-monospace, monospace', fontSize: 11 }}>
-                    <span style={{ color: '#EF4444' }}>- {valueToDisplay(h.oldValue)}</span>
+                    <span style={{ color: '#da1e28' }}>- {valueToDisplay(h.oldValue)}</span>
                     <br />
-                    <span style={{ color: '#10B981' }}>+ {valueToDisplay(h.newValue)}</span>
+                    <span style={{ color: '#24a148' }}>+ {valueToDisplay(h.newValue)}</span>
                   </div>
                 </div>
               ))}
@@ -486,13 +485,10 @@ export function SystemConfigPanel({
 const panel: React.CSSProperties = {
   background: 'var(--t-panel)',
   border: '1px solid var(--t-border)',
-  borderRadius: 8,
+  borderRadius: 0,
   overflow: 'hidden',
 }
 const input: React.CSSProperties = {
-  background: 'var(--t-bg)',
-  border: '1px solid var(--t-border)',
-  borderRadius: 6,
   padding: '6px 10px',
   color: 'var(--t-text)',
   fontSize: 12,
@@ -501,36 +497,37 @@ const input: React.CSSProperties = {
 }
 const th: React.CSSProperties = {
   textAlign: 'left',
-  padding: '10px 12px',
-  fontSize: 11,
-  textTransform: 'uppercase',
-  color: 'var(--t-text-muted)',
+  padding: '0 12px',
+  height: 40,
+  fontSize: 12,
+  color: '#161616',
   fontWeight: 600,
+  background: '#e0e0e0',
 }
 const td: React.CSSProperties = { padding: '10px 12px', fontSize: 12, verticalAlign: 'top' }
 const btnGhost: React.CSSProperties = {
   background: 'transparent',
-  border: '1px solid var(--t-border)',
-  borderRadius: 6,
-  padding: '6px 10px',
-  color: 'var(--t-text)',
-  fontSize: 12,
+  border: 'none',
+  borderRadius: 0,
+  height: 32,
+  padding: '0 12px',
+  color: '#0f62fe',
+  fontSize: 14,
   cursor: 'pointer',
   display: 'inline-flex',
   alignItems: 'center',
-  gap: 4,
+  gap: 8,
   fontFamily: FONT,
 }
 const btnPrimary: React.CSSProperties = {
   ...btnGhost,
-  background: 'var(--t-accent)',
-  borderColor: 'var(--t-accent)',
+  background: '#0f62fe',
   color: '#fff',
 }
 const modalOverlay: React.CSSProperties = {
   position: 'fixed',
   inset: 0,
-  background: 'rgba(0,0,0,0.5)',
+  background: 'rgba(22,22,22,0.5)',
   zIndex: 1000,
   display: 'flex',
   alignItems: 'center',
@@ -539,16 +536,17 @@ const modalOverlay: React.CSSProperties = {
 const modal: React.CSSProperties = {
   background: 'var(--t-panel)',
   border: '1px solid var(--t-border)',
-  borderRadius: 8,
+  borderRadius: 0,
   padding: 20,
   width: 600,
   maxWidth: '90vw',
 }
-const badge = (bg: string): React.CSSProperties => ({
+const badge = (bg: string, color = '#161616'): React.CSSProperties => ({
   background: bg,
-  padding: '2px 6px',
-  borderRadius: 4,
-  fontSize: 10,
+  color,
+  padding: '2px 8px',
+  borderRadius: 24,
+  fontSize: 12,
   display: 'inline-flex',
   alignItems: 'center',
   gap: 3,

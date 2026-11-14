@@ -73,7 +73,7 @@ import { EnvAwareInput } from '@/components/common/EnvAwareInput'
 
 // ==================== CONSTANTS ====================
 
-const FONT = "'Prompt', sans-serif"
+const FONT = '"IBM Plex Sans Thai", "IBM Plex Sans", "Sarabun", system-ui, sans-serif'
 
 const THEME = {
   bg: 'var(--t-bg)',
@@ -86,18 +86,27 @@ const THEME = {
 }
 
 const METHOD_COLORS: Record<string, string> = {
-  GET: '#60A5FA',
-  POST: '#10B981',
-  PUT: '#F59E0B',
-  DELETE: '#F87171',
-  PATCH: '#A78BFA',
+  GET: '#0f62fe',
+  POST: '#24a148',
+  PUT: '#ba4e00',
+  DELETE: '#da1e28',
+  PATCH: '#8a3ffc',
+}
+
+// Carbon tag colour pair for a semantic hex colour (green / red / blue, else grey).
+function cdsTag(color: string): { background: string; color: string } {
+  const c = (color || '').toLowerCase()
+  if (['#24a148', '#198038', '#10b981', '#22c55e'].includes(c)) return { background: '#a7f0ba', color: '#0e6027' }
+  if (['#da1e28', '#ef4444', '#a2191f'].includes(c)) return { background: '#ffd7d9', color: '#a2191f' }
+  if (['#0f62fe', '#0043ce', '#3b82f6', '#0353e9'].includes(c)) return { background: '#d0e2ff', color: '#0043ce' }
+  return { background: '#e0e0e0', color: '#161616' }
 }
 
 const STATUS_STYLES: Record<string, { bg: string; color: string }> = {
-  ACTIVE: { bg: '#10B98118', color: '#34D399' },
+  ACTIVE: { bg: '#24a14818', color: '#24a148' },
   INACTIVE: { bg: '#8B92A518', color: '#8B92A5' },
-  DRAFT: { bg: '#F59E0B18', color: '#FBBF24' },
-  DEPRECATED: { bg: '#EF444418', color: '#F87171' },
+  DRAFT: { bg: '#ba4e0018', color: '#ba4e00' },
+  DEPRECATED: { bg: '#da1e2818', color: '#da1e28' },
 }
 
 const STATUS_LABELS: Record<string, string> = {
@@ -161,13 +170,13 @@ const OAUTH2_FLOWS: { value: OAuth2Flow; label: string }[] = [
   { value: 'PASSWORD', label: 'Password' },
 ]
 const HEADER_DIRECTIONS: { value: HeaderDirection; label: string; color: string }[] = [
-  { value: 'REQUEST', label: 'Request', color: '#60A5FA' },
-  { value: 'RESPONSE', label: 'Response', color: '#34D399' },
+  { value: 'REQUEST', label: 'Request', color: '#0f62fe' },
+  { value: 'RESPONSE', label: 'Response', color: '#24a148' },
 ]
 const HEADER_ACTIONS: { value: HeaderAction; label: string; color: string }[] = [
-  { value: 'SET', label: 'SET', color: '#60A5FA' },
-  { value: 'APPEND', label: 'APPEND', color: '#A78BFA' },
-  { value: 'REMOVE', label: 'REMOVE', color: '#F87171' },
+  { value: 'SET', label: 'SET', color: '#0f62fe' },
+  { value: 'APPEND', label: 'APPEND', color: '#8a3ffc' },
+  { value: 'REMOVE', label: 'REMOVE', color: '#da1e28' },
   { value: 'PASSTHROUGH', label: 'PASSTHROUGH', color: '#8B92A5' },
 ]
 const DISCRIMINATOR_SOURCES: { value: DiscriminatorSource; label: string }[] = [
@@ -178,9 +187,9 @@ const DISCRIMINATOR_SOURCES: { value: DiscriminatorSource; label: string }[] = [
 
 const FORMAT_TYPES: { value: MessageFormatType; label: string; color: string }[] = [
   { value: 'STANDARD', label: 'Standard', color: '#8B92A5' },
-  { value: 'MICROFLOW', label: 'Microflow', color: '#A78BFA' },
-  { value: 'BATCH', label: 'Batch', color: '#F59E0B' },
-  { value: 'NOTIFICATION', label: 'Notification', color: '#60A5FA' },
+  { value: 'MICROFLOW', label: 'Microflow', color: '#8a3ffc' },
+  { value: 'BATCH', label: 'Batch', color: '#ba4e00' },
+  { value: 'NOTIFICATION', label: 'Notification', color: '#0f62fe' },
 ]
 
 // Mirrors the FieldMapping page so admins see consistent options
@@ -227,7 +236,7 @@ function SectionCard({
   return (
     <div
       id={sectionId}
-      className={cn('bg-[var(--t-panel)] border border-[var(--t-border)] rounded-xl overflow-hidden', className)}
+      className={cn('bg-[var(--t-panel)] border border-[var(--t-border)]  overflow-hidden', className)}
       style={{ scrollMarginTop: 80 }}
     >
       {title && (
@@ -260,23 +269,23 @@ function AutosaveIndicator({
   let icon: React.ReactNode = null
   if (status === 'pending') {
     label = 'Unsaved changes…'
-    cls = 'text-amber-400 bg-amber-500/10 border-amber-500/30'
+    cls = 'text-amber-400 bg-[#f4f4f4] border-amber-500/30'
   } else if (status === 'saving') {
     label = 'Saving…'
-    cls = 'text-[#60A5FA] bg-[#3B82F6]/10 border-[#3B82F6]/30'
+    cls = 'text-[#0f62fe] bg-[#f4f4f4] border-[#0f62fe]/30'
     icon = <Loader2 className="w-3 h-3 animate-spin" />
   } else if (status === 'saved') {
     label = savedAt ? `Saved · ${formatSavedAgo(savedAt)}` : 'Saved'
-    cls = 'text-emerald-400 bg-emerald-500/10 border-emerald-500/30'
+    cls = 'text-emerald-400 bg-[#f4f4f4] border-emerald-500/30'
     icon = <Check className="w-3 h-3" />
   } else if (status === 'error') {
     label = 'Autosave failed'
-    cls = 'text-[#F87171] bg-[#EF4444]/10 border-[#EF4444]/30'
+    cls = 'text-[#da1e28] bg-[#f4f4f4] border-[#da1e28]/30'
     icon = <AlertTriangle className="w-3 h-3" />
   }
   return (
     <span
-      className={`inline-flex items-center gap-1.5 px-2.5 py-1 text-[11px] font-medium rounded-md border ${cls}`}
+      className={`inline-flex items-center gap-1.5 px-2.5 py-1 text-[11px] font-medium  border ${cls}`}
       title={error ?? undefined}
     >
       {icon}
@@ -298,7 +307,7 @@ function FormField({ label, required, hint, children }: { label: React.ReactNode
   return (
     <div>
       <label className="block text-xs font-medium text-[var(--t-text-secondary)] mb-1">
-        {label} {required && <span className="text-[#F87171]">*</span>}
+        {label} {required && <span className="text-[#da1e28]">*</span>}
       </label>
       {children}
       {hint && <p className="mt-0.5 text-[11px] text-[var(--t-text-muted)]">{hint}</p>}
@@ -329,8 +338,8 @@ function InputField({
       placeholder={placeholder}
       disabled={disabled}
       className={cn(
-        'w-full px-2.5 py-1.5 bg-[var(--t-input)] border border-[var(--t-border)] rounded-md text-sm text-[var(--t-text)]',
-        'placeholder:text-[var(--t-text-muted)] focus:outline-none focus:ring-2 focus:ring-[#3B82F6]/20 focus:border-[#3B82F6]',
+        'w-full px-2.5 py-1.5 bg-[var(--t-input)] border border-[var(--t-border)]  text-sm text-[var(--t-text)]',
+        'placeholder:text-[var(--t-text-muted)] focus:outline-none focus:ring-2 focus:ring-[#0f62fe]/20 focus:border-[#0f62fe]',
         'transition-colors disabled:opacity-50 disabled:cursor-not-allowed',
         className
       )}
@@ -370,8 +379,8 @@ function TagChipInput({
     <div
       className={cn(
         'flex flex-wrap items-center gap-1.5 min-h-[42px] px-2 py-1.5',
-        'bg-[var(--t-input)] border border-[var(--t-border)] rounded-lg',
-        'focus-within:ring-2 focus-within:ring-[#3B82F6]/20 focus-within:border-[#3B82F6]',
+        'bg-[var(--t-input)] border border-[var(--t-border)] ',
+        'focus-within:ring-2 focus-within:ring-[#0f62fe]/20 focus-within:border-[#0f62fe]',
       )}
       onClick={(e) => {
         const input = (e.currentTarget as HTMLElement).querySelector('input')
@@ -381,7 +390,7 @@ function TagChipInput({
       {tags.map((t, i) => (
         <span
           key={`${t}-${i}`}
-          className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs bg-[#3B82F6]/15 text-[#60A5FA] border border-[#3B82F6]/30"
+          className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs bg-[#f4f4f4] text-[#0f62fe] border border-[#0f62fe]/30"
         >
           {t}
           <button
@@ -466,16 +475,16 @@ function TextAreaField({
       onChange={(e) => onChange(e.target.value)}
       placeholder={placeholder}
       rows={rows}
-      className="w-full px-2.5 py-1.5 bg-[var(--t-input)] border border-[var(--t-border)] rounded-md text-sm text-[var(--t-text)] placeholder:text-[var(--t-text-muted)] focus:outline-none focus:ring-2 focus:ring-[#3B82F6]/20 focus:border-[#3B82F6] transition-colors font-mono resize-y"
+      className="w-full px-2.5 py-1.5 bg-[var(--t-input)] border border-[var(--t-border)] text-sm text-[var(--t-text)] placeholder:text-[var(--t-text-muted)] focus:outline-none focus:ring-2 focus:ring-[#0f62fe]/20 focus:border-[#0f62fe] transition-colors font-mono resize-y"
     />
   )
 }
 
-function Badge({ label, bg, color }: { label: string; bg: string; color: string }) {
+function Badge({ label, color }: { label: string; bg: string; color: string }) {
   return (
     <span
-      className="inline-flex items-center px-2 py-0.5 rounded-full text-sm font-medium"
-      style={{ background: bg, color }}
+      className="cds-tag inline-flex items-center px-2 py-0.5 text-xs font-normal"
+      style={cdsTag(color)}
     >
       {label}
     </span>
@@ -486,8 +495,8 @@ function MethodBadge({ method }: { method: string }) {
   const color = METHOD_COLORS[method] || '#64748B'
   return (
     <span
-      className="inline-flex items-center px-2.5 py-0.5 rounded text-sm font-bold tracking-wider"
-      style={{ background: `${color}15`, color, border: `1px solid ${color}30` }}
+      className="cds-tag inline-flex items-center px-2 py-0.5 text-xs font-normal"
+      style={cdsTag(color)}
     >
       {method}
     </span>
@@ -500,7 +509,7 @@ function StatusBadge({ status }: { status: string }) {
 }
 
 function Spinner() {
-  return <Loader2 className="w-5 h-5 animate-spin text-[#3B82F6]" />
+  return <Loader2 className="w-5 h-5 animate-spin text-[#0f62fe]" />
 }
 
 function EmptyState({ message, icon: Icon }: { message: string; icon?: any }) {
@@ -701,15 +710,15 @@ function GeneralTab({ apiData, apiId, projectId, activeSection = 'basics' }: { a
                 type="button"
                 onClick={() => set('routeType', rt.value)}
                 className={cn(
-                  'flex flex-col items-start p-4 rounded-lg border-2 text-left transition-all',
+                  'flex flex-col items-start p-4  border-2 text-left transition-all',
                   form.routeType === rt.value
-                    ? 'border-[#3B82F6] bg-[#3B82F610]'
+                    ? 'border-[#0f62fe] bg-[#0f62fe10]'
                     : 'border-[var(--t-border)] bg-[var(--t-bg)] hover:border-[var(--t-text-muted)]'
                 )}
               >
                 <span className={cn(
                   'text-sm font-semibold',
-                  form.routeType === rt.value ? 'text-[#60A5FA]' : 'text-[var(--t-text)]'
+                  form.routeType === rt.value ? 'text-[#0f62fe]' : 'text-[var(--t-text)]'
                 )}>
                   {rt.label}
                 </span>
@@ -719,7 +728,7 @@ function GeneralTab({ apiData, apiId, projectId, activeSection = 'basics' }: { a
           </div>
 
           {form.routeType === 'SHARED_ENDPOINT' && (
-            <div className="p-4 bg-[var(--t-bg)] border border-[#3B82F630] rounded-lg space-y-3">
+            <div className="p-4 bg-[var(--t-bg)] border border-[#0f62fe30] space-y-3">
               <FormField label="Routing Key (JSONPath)" required>
                 <InputField
                   value={form.routingKey}
@@ -736,7 +745,7 @@ function GeneralTab({ apiData, apiId, projectId, activeSection = 'basics' }: { a
                   type="button"
                   onClick={() => set('autoDiscoverFormats', !form.autoDiscoverFormats)}
                   className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                    form.autoDiscoverFormats ? 'bg-[#3B82F6]' : 'bg-[var(--t-border)]'
+                    form.autoDiscoverFormats ? 'bg-[#0f62fe]' : 'bg-[var(--t-border)]'
                   }`}
                 >
                   <span
@@ -911,7 +920,7 @@ function GeneralTab({ apiData, apiId, projectId, activeSection = 'basics' }: { a
               type="checkbox"
               checked={form.deprecated}
               onChange={(e) => set('deprecated', e.target.checked)}
-              className="w-4 h-4 rounded border-[var(--t-border)] bg-[var(--t-input)] text-[#3B82F6] focus:ring-[#3B82F6]"
+              className="w-4 h-4 border-[var(--t-border)] bg-[var(--t-input)] text-[#0f62fe] focus:ring-[#0f62fe]"
             />
             <span className="text-sm text-[var(--t-text-secondary)]">Deprecated</span>
           </div>
@@ -1013,7 +1022,7 @@ function UnifiedSidebar({
 
   return (
     <aside className="hidden lg:block sticky top-4 self-start z-10">
-      <nav className="bg-[var(--t-panel)] border border-[var(--t-border)] rounded-xl p-3 max-h-[calc(100vh-2rem)] overflow-y-auto">
+      <nav className="bg-[var(--t-panel)] border border-[var(--t-border)] p-3 max-h-[calc(100vh-2rem)] overflow-y-auto">
         <div className="space-y-0.5">
           {items.map((item) => {
             const Icon = item.icon
@@ -1030,9 +1039,9 @@ function UnifiedSidebar({
                 type="button"
                 onClick={() => handleClick(item)}
                 className={cn(
-                  'w-full flex items-center justify-between gap-2 px-2 py-1.5 rounded-md text-xs transition-colors',
+                  'w-full flex items-center justify-between gap-2 px-2 py-1.5  text-xs transition-colors',
                   isActive
-                    ? 'bg-[#3B82F6]/15 text-[#60A5FA] font-semibold'
+                    ? 'bg-[#e0e0e0] text-[#161616] font-semibold'
                     : 'text-[var(--t-text-secondary)] hover:bg-[var(--t-panel-hover)] hover:text-[var(--t-text)]',
                 )}
               >
@@ -1043,7 +1052,7 @@ function UnifiedSidebar({
                 {item.badge != null && item.badge > 0 && (
                   <span className={cn(
                     'px-1.5 py-0.5 rounded-full text-[10px] font-semibold shrink-0',
-                    isActive ? 'bg-[#3B82F6]/20 text-[#60A5FA]' : 'bg-[var(--t-panel-hover)] text-[var(--t-text-muted)]',
+                    isActive ? 'bg-[#d0e2ff] text-[#0043ce]' : 'bg-[var(--t-panel-hover)] text-[var(--t-text-muted)]',
                   )}>
                     {item.badge}
                   </span>
@@ -1293,7 +1302,7 @@ function AuthTab({ apiId }: { apiId: string }) {
                 }
               }}
               disabled={deleteMutation.isPending}
-              className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium text-[#F87171] bg-[#EF444418] hover:bg-[#EF444430] transition-colors disabled:opacity-50"
+              className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-[#da1e28] bg-[#da1e2818] hover:bg-[#da1e2830] transition-colors disabled:opacity-50"
             >
               {deleteMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
               Delete Auth Config
@@ -1304,7 +1313,7 @@ function AuthTab({ apiId }: { apiId: string }) {
           <button
             onClick={handleSave}
             disabled={upsertMutation.isPending}
-            className="flex items-center gap-2 px-6 py-2.5 rounded-lg text-sm font-medium text-white transition-colors disabled:opacity-50"
+            className="flex items-center gap-2 px-6 py-2.5 text-sm font-medium text-white transition-colors disabled:opacity-50"
             style={{ background: THEME.accent }}
           >
             {upsertMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
@@ -1388,7 +1397,7 @@ function HeadersTab({ apiId }: { apiId: string }) {
           <h3 className="text-sm font-semibold text-[var(--t-text)]">Header Mappings</h3>
           <button
             onClick={() => setShowForm(!showForm)}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium text-white transition-colors"
+            className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-white transition-colors"
             style={{ background: THEME.accent }}
           >
             {showForm ? <X className="w-3.5 h-3.5" /> : <Plus className="w-3.5 h-3.5" />}
@@ -1398,7 +1407,7 @@ function HeadersTab({ apiId }: { apiId: string }) {
 
         {/* Add form */}
         {showForm && (
-          <div className="mb-6 p-4 bg-[var(--t-input)] border border-[var(--t-border)] rounded-lg space-y-3">
+          <div className="mb-6 p-4 bg-[var(--t-input)] border border-[var(--t-border)] space-y-3">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
               <FormField label="Direction">
                 <SelectField
@@ -1451,7 +1460,7 @@ function HeadersTab({ apiId }: { apiId: string }) {
               <button
                 onClick={handleAdd}
                 disabled={createMutation.isPending}
-                className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium text-white transition-colors disabled:opacity-50"
+                className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white transition-colors disabled:opacity-50"
                 style={{ background: THEME.accent }}
               >
                 {createMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
@@ -1515,7 +1524,7 @@ function HeadersTab({ apiId }: { apiId: string }) {
                               }
                             }}
                             disabled={deleteMutation.isPending}
-                            className="p-1.5 text-[var(--t-text-muted)] hover:text-[#F87171] hover:bg-[#EF444418] rounded-md transition-colors"
+                            className="p-1.5 text-[var(--t-text-muted)] hover:text-[#da1e28] hover:bg-[#da1e2818] transition-colors"
                           >
                             <Trash2 className="w-3.5 h-3.5" />
                           </button>
@@ -1634,11 +1643,11 @@ function InheritedFromLibrary({
     { k: 'Username Source', v: lib.usernameSource ? `${lib.usernameSource}${lib.usernameField ? ` · ${lib.usernameField}` : ''}${lib.usernameStatic ? ` · "${lib.usernameStatic}"` : ''}` : null },
   ]
   return (
-    <div className="rounded-md border border-[#A78BFA38] bg-[#A78BFA0F] p-3 space-y-2">
+    <div className="border border-[#8a3ffc38] bg-[#8a3ffc0F] p-3 space-y-2">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <Tag className="w-3.5 h-3.5 text-[#A78BFA]" />
-          <span className="text-xs font-semibold text-[#A78BFA]">
+          <Tag className="w-3.5 h-3.5 text-[#8a3ffc]" />
+          <span className="text-xs font-semibold text-[#8a3ffc]">
             Inherited from library: {lib.name}
           </span>
         </div>
@@ -1672,7 +1681,7 @@ function InheritedFromLibrary({
 function MatchRuleCell({ fmt, sharedKey }: { fmt: MessageFormat; sharedKey?: string }) {
   if ((fmt as any).isDefault) {
     return (
-      <span className="inline-flex items-center gap-1 text-xs text-[#F59E0B]">
+      <span className="inline-flex items-center gap-1 text-xs text-[#ba4e00]">
         <span className="text-sm">⭐</span>
         <span>Catch-all (default fallback)</span>
       </span>
@@ -1684,7 +1693,7 @@ function MatchRuleCell({ fmt, sharedKey }: { fmt: MessageFormat; sharedKey?: str
       <span className="text-xs font-mono text-[var(--t-text)]">
         <span className="text-[var(--t-text-muted)]">{sharedKey}</span>
         <span className="mx-1 text-[var(--t-text-muted)]">=</span>
-        <span className="text-[#60A5FA]">{fmt.discriminatorValue}</span>
+        <span className="text-[#0f62fe]">{fmt.discriminatorValue}</span>
       </span>
     )
   }
@@ -1698,7 +1707,7 @@ function MatchRuleCell({ fmt, sharedKey }: { fmt: MessageFormat; sharedKey?: str
         {fmt.discriminatorValue && (
           <>
             <span className="mx-1 text-[var(--t-text-muted)]">=</span>
-            <span className="font-mono text-[#60A5FA]">{fmt.discriminatorValue}</span>
+            <span className="font-mono text-[#0f62fe]">{fmt.discriminatorValue}</span>
           </>
         )}
       </span>
@@ -1715,7 +1724,7 @@ function AuditCell({ fmt }: { fmt: MessageFormat }) {
   const action = (fmt as any).actionType as string | undefined
   return (
     <span className="inline-flex items-center gap-1.5 text-xs">
-      <span className="text-[#34D399]">✓</span>
+      <span className="text-[#24a148]">✓</span>
       {action ? (
         <span className="text-[11px] font-semibold text-[var(--t-text)]">{action}</span>
       ) : (
@@ -1729,7 +1738,7 @@ function AuditCell({ fmt }: { fmt: MessageFormat }) {
 // field-mappings / clients tables so all admin tables look the same.
 function FmtTh({ children, className }: { children: React.ReactNode; className?: string }) {
   return (
-    <th className={cn('text-left px-4 py-2 text-[10px] font-semibold uppercase tracking-wider text-[var(--t-text-muted)]', className)}>
+    <th className={cn('text-left px-4 py-2 text-[10px] font-semibold   text-[var(--t-text-muted)]', className)}>
       {children}
     </th>
   )
@@ -1745,7 +1754,7 @@ function FormatsTable({
   isDeleting: boolean
 }) {
   return (
-    <div className="rounded-lg bg-[var(--t-panel)] border border-[var(--t-border)] overflow-hidden">
+    <div className="bg-[var(--t-panel)] border border-[var(--t-border)] overflow-hidden">
       <table className="w-full text-sm">
         <thead>
           <tr className="border-b border-[var(--t-border)] bg-[var(--t-bg)]">
@@ -1784,7 +1793,7 @@ function FormatsTable({
                 <td className="px-4 py-2.5 align-top">
                   {fmt.flow ? (
                     <span className="inline-flex items-center gap-1 text-xs text-[var(--t-text)]">
-                      <Workflow className="w-3 h-3 text-[#A78BFA]" />
+                      <Workflow className="w-3 h-3 text-[#8a3ffc]" />
                       {fmt.flow.name}
                     </span>
                   ) : (
@@ -1804,7 +1813,7 @@ function FormatsTable({
                   <div className="inline-flex items-center gap-1">
                     <button
                       onClick={() => onEdit(fmt)}
-                      className="p-1 rounded hover:bg-[var(--t-panel-hover)]"
+                      className="p-1 hover:bg-[var(--t-panel-hover)]"
                       title="Edit"
                     >
                       <Pencil className="w-3.5 h-3.5 text-[var(--t-text-muted)]" />
@@ -1812,7 +1821,7 @@ function FormatsTable({
                     <button
                       onClick={() => onDelete(fmt)}
                       disabled={isDeleting}
-                      className="p-1 rounded hover:bg-red-500/10 disabled:opacity-50"
+                      className="p-1 hover:bg-[#e8e8e8] disabled:opacity-50"
                       title="Delete"
                     >
                       <Trash2 className="w-3.5 h-3.5 text-red-400" />
@@ -2088,7 +2097,7 @@ function FormatForm({
                   <button
                     type="button"
                     onClick={() => set('matchRules', form.matchRules.filter((_, j) => j !== i))}
-                    className="px-2 text-[var(--t-text-muted)] hover:text-[#F87171]"
+                    className="px-2 text-[var(--t-text-muted)] hover:text-[#da1e28]"
                     title="Remove rule"
                   >
                     <X className="w-3.5 h-3.5" />
@@ -2098,7 +2107,7 @@ function FormatForm({
               <button
                 type="button"
                 onClick={() => set('matchRules', [...form.matchRules, { source: 'BODY', field: '', value: '' }])}
-                className="inline-flex items-center gap-1.5 text-xs px-2.5 py-1.5 rounded-md bg-[#3B82F618] text-[#60A5FA] hover:bg-[#3B82F628]"
+                className="inline-flex items-center gap-1.5 text-xs px-2.5 py-1.5 bg-[#0f62fe18] text-[#0f62fe] hover:bg-[#0f62fe28]"
               >
                 <Plus className="w-3.5 h-3.5" />
                 Add rule
@@ -2137,7 +2146,7 @@ function FormatForm({
               type="checkbox"
               checked={form.auditEnabled}
               onChange={e => set('auditEnabled', e.target.checked)}
-              className="w-4 h-4 rounded border-[var(--t-border)] bg-[var(--t-input)] text-[var(--t-accent)] focus:ring-[var(--t-accent)]"
+              className="w-4 h-4 border-[var(--t-border)] bg-[var(--t-input)] text-[var(--t-accent)] focus:ring-[var(--t-accent)]"
             />
             <span className="text-sm text-[var(--t-text)]">Enable audit logging for this format</span>
           </label>
@@ -2255,10 +2264,10 @@ function FormatForm({
                 />
               </FormField>
               {usingAcLib && (
-                <div className="rounded-md border border-[#34D39938] bg-[#34D3990F] p-3 text-xs">
+                <div className="border border-[#24a14838] bg-[#24a1480F] p-3 text-xs">
                   <div className="flex items-center gap-2">
-                    <Shield className="w-3.5 h-3.5 text-[#34D399]" />
-                    <span className="font-semibold text-[#34D399]">
+                    <Shield className="w-3.5 h-3.5 text-[#24a148]" />
+                    <span className="font-semibold text-[#24a148]">
                       Inherited: {acLibs.find((ac: any) => ac.id === form.auditConfigId)?.name}
                     </span>
                   </div>
@@ -2272,7 +2281,7 @@ function FormatForm({
                 that catalog" — audit rows tag every selected id so
                 /audit can filter "show all changes to dataset X". */}
             <AdvancedBlock title="Datasets">
-              <div className="rounded-md border border-[var(--t-border)] bg-[var(--t-bg)] max-h-48 overflow-y-auto p-1.5">
+              <div className="border border-[var(--t-border)] bg-[var(--t-bg)] max-h-48 overflow-y-auto p-1.5">
                 {allDatasets.length === 0 ? (
                   <p className="text-[11px] text-[var(--t-text-muted)] italic px-2 py-1.5">No datasets yet — register one at /orch/datasets.</p>
                 ) : (
@@ -2282,7 +2291,7 @@ function FormatForm({
                     return (
                       <label
                         key={ds.id}
-                        className="flex items-center gap-2 px-2 py-1 text-xs cursor-pointer hover:bg-[var(--t-panel-hover)] rounded"
+                        className="flex items-center gap-2 px-2 py-1 text-xs cursor-pointer hover:bg-[var(--t-panel-hover)]"
                         style={{ paddingLeft: 8 + depth * 14 }}
                       >
                         <input
@@ -2328,12 +2337,12 @@ function FormatForm({
                   )
                 }
                 placeholder="$.password, $.creditCard, $.id_card"
-                className="w-full px-2.5 py-1.5 text-sm font-mono rounded-md border border-[var(--t-border)] bg-[var(--t-input)] text-[var(--t-text)] focus:border-[var(--t-accent)] focus:outline-none"
+                className="w-full px-2.5 py-1.5 text-sm font-mono border border-[var(--t-border)] bg-[var(--t-input)] text-[var(--t-text)] focus:border-[var(--t-accent)] focus:outline-none"
               />
               {form.maskPaths.length > 0 && (
                 <div className="flex flex-wrap gap-1.5 mt-1">
                   {form.maskPaths.map(p => (
-                    <code key={p} className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-300 border border-amber-500/30">
+                    <code key={p} className="text-[10px] font-mono px-1.5 py-0.5 bg-[#f4f4f4] text-amber-300 border border-amber-500/30">
                       {p}
                     </code>
                   ))}
@@ -2417,7 +2426,7 @@ function FormatForm({
                 type="button"
                 onClick={onDetectFields}
                 disabled={isDetecting || !form.jsonSample.trim()}
-                className="flex items-center gap-2 px-3.5 py-1.5 rounded-md text-sm font-medium text-white transition-colors disabled:opacity-50"
+                className="flex items-center gap-2 px-3.5 py-1.5 text-sm font-medium text-white transition-colors disabled:opacity-50"
                 style={{ background: THEME.accent }}
               >
                 {isDetecting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Zap className="w-4 h-4" />}
@@ -2425,7 +2434,7 @@ function FormatForm({
               </button>
 
               {form.extractedFields.length > 0 && (
-                <div className="border border-[var(--t-border)] rounded-lg overflow-hidden">
+                <div className="border border-[var(--t-border)] overflow-hidden">
                   <div className="bg-[var(--t-input)] px-3 py-2 flex items-center gap-2 text-xs font-semibold text-[var(--t-text-muted)] border-b border-[var(--t-border)]">
                     <span className="flex-1 min-w-0">Field / Path</span>
                     <span className="w-14 text-center shrink-0">Type</span>
@@ -2440,11 +2449,11 @@ function FormatForm({
                         style={{ paddingLeft: `${12 + (field.depth || 0) * 16}px` }}
                       >
                         <div className="flex-1 min-w-0">
-                          <div className={cn("text-sm truncate", field.isNestedJson ? "text-[#A78BFA] font-medium" : "text-[var(--t-text)]")}>
+                          <div className={cn("text-sm truncate", field.isNestedJson ? "text-[#8a3ffc] font-medium" : "text-[var(--t-text)]")}>
                             {field.depth > 0 && <span className="text-[#3A3F50] mr-1">{'└'}</span>}
                             {field.fieldName}
-                            {field.isNestedJson && <span className="ml-1 text-[10px] text-[#A78BFA]">🔗</span>}
-                            {field.sensitive && <span className="ml-1 text-[10px] text-[#F59E0B]">⚠</span>}
+                            {field.isNestedJson && <span className="ml-1 text-[10px] text-[#8a3ffc]">🔗</span>}
+                            {field.sensitive && <span className="ml-1 text-[10px] text-[#ba4e00]">⚠</span>}
                           </div>
                           <div className="text-[10px] text-[var(--t-text-muted)] font-mono truncate" title={field.fieldPath}>{field.fieldPath}</div>
                         </div>
@@ -2454,7 +2463,7 @@ function FormatForm({
                             type="checkbox"
                             checked={form.extractSelected.includes(field.id)}
                             onChange={() => toggleExtract(field.id)}
-                            className="w-3.5 h-3.5 rounded border-[var(--t-border)] bg-[var(--t-input)] text-[#3B82F6] focus:ring-[#3B82F6]"
+                            className="w-3.5 h-3.5 border-[var(--t-border)] bg-[var(--t-input)] text-[#0f62fe] focus:ring-[#0f62fe]"
                           />
                         </span>
                         <span className="w-12 text-center shrink-0">
@@ -2462,7 +2471,7 @@ function FormatForm({
                             type="checkbox"
                             checked={form.auditSelected.includes(field.id)}
                             onChange={() => toggleAudit(field.id)}
-                            className="w-3.5 h-3.5 rounded border-[var(--t-border)] bg-[var(--t-input)] text-[#10B981] focus:ring-[#10B981]"
+                            className="w-3.5 h-3.5 border-[var(--t-border)] bg-[var(--t-input)] text-[#24a148] focus:ring-[#24a148]"
                           />
                         </span>
                       </div>
@@ -2473,13 +2482,13 @@ function FormatForm({
 
               {form.manualFields.length > 0 && (
                 <div className="space-y-1">
-                  <span className="text-xs font-semibold text-[var(--t-text-muted)] uppercase tracking-wider">Manual Fields</span>
+                  <span className="text-xs font-semibold text-[var(--t-text-muted)]">Manual Fields</span>
                   {form.manualFields.map((mf, idx) => (
-                    <div key={idx} className="flex items-center gap-2 text-sm py-1 px-2 bg-[var(--t-bg)] rounded-md">
+                    <div key={idx} className="flex items-center gap-2 text-sm py-1 px-2 bg-[var(--t-bg)]">
                       <span className="text-[var(--t-text)] font-mono text-xs flex-1 truncate">{mf.path}</span>
                       <span className="text-[var(--t-text-secondary)]">{mf.name}</span>
                       <span className="text-[var(--t-text-muted)] text-xs">{mf.type}</span>
-                      <button onClick={() => removeManualField(idx)} className="text-[#F87171] hover:text-[#EF4444]">
+                      <button onClick={() => removeManualField(idx)} className="text-[#da1e28] hover:text-[#da1e28]">
                         <X className="w-3.5 h-3.5" />
                       </button>
                     </div>
@@ -2511,7 +2520,7 @@ function FormatForm({
                   type="button"
                   onClick={addManualField}
                   disabled={!newManual.path || !newManual.name}
-                  className="flex items-center gap-1 px-3 py-1.5 mb-[1px] rounded-md text-sm font-medium text-[#60A5FA] bg-[#3B82F618] hover:bg-[#3B82F630] transition-colors disabled:opacity-40"
+                  className="flex items-center gap-1 px-3 py-1.5 mb-[1px] text-sm font-medium text-[#0f62fe] bg-[#0f62fe18] hover:bg-[#0f62fe30] transition-colors disabled:opacity-40"
                 >
                   <Plus className="w-3.5 h-3.5" />
                   Add
@@ -2538,7 +2547,7 @@ function FormSection({
   return (
     <section>
       <div className="border-b border-[var(--t-border-light)] pb-2 mb-3">
-        <h3 className="text-[13px] font-semibold uppercase tracking-wider text-[var(--t-text-secondary)]">
+        <h3 className="text-[13px] font-semibold text-[var(--t-text-secondary)]">
           {title}
         </h3>
       </div>
@@ -2615,7 +2624,7 @@ function AdvancedBlock({
   return (
     <div className="space-y-3">
       <div>
-        <div className="text-xs font-semibold text-[var(--t-text-muted)] uppercase tracking-wider">{title}</div>
+        <div className="text-xs font-semibold text-[var(--t-text-muted)]">{title}</div>
         {hint && <div className="text-[11px] text-[var(--t-text-muted)] mt-0.5">{hint}</div>}
       </div>
       {children}
@@ -2684,9 +2693,9 @@ function CallSitesSection({ formatId, projectId }: { formatId?: string; projectI
       ) : (
         <div className="space-y-2">
           {Object.values(groups).map((g, i) => (
-            <div key={i} className="rounded-md bg-[var(--t-panel)] border border-[var(--t-border)] overflow-hidden">
+            <div key={i} className="bg-[var(--t-panel)] border border-[var(--t-border)] overflow-hidden">
               <div className="px-3 py-1.5 bg-[var(--t-bg)] border-b border-[var(--t-border)] flex items-center gap-2">
-                <Smartphone className="w-3.5 h-3.5 text-[#60A5FA]" />
+                <Smartphone className="w-3.5 h-3.5 text-[#0f62fe]" />
                 <span className="text-xs font-semibold text-[var(--t-text)]">{g.client?.name ?? 'Unbound'}</span>
                 {g.client?.appCode && <code className="text-[10px] font-mono text-[var(--t-text-muted)]">{g.client.appCode}</code>}
               </div>
@@ -2700,13 +2709,13 @@ function CallSitesSection({ formatId, projectId }: { formatId?: string; projectI
                     {s.buttons.map((b: any) => (
                       <span
                         key={b.id}
-                        className="group/btn inline-flex items-center gap-1.5 text-[11px] px-2 py-1 rounded bg-[var(--t-bg)] border border-[var(--t-border)]"
+                        className="group/btn inline-flex items-center gap-1.5 text-[11px] px-2 py-1 bg-[var(--t-bg)] border border-[var(--t-border)]"
                         title={b.detectionSource ? `${b.detectionSource}: ${b.detectionField} = ${b.detectionValue}` : undefined}
                       >
                         {b.tabName && <span className="text-[var(--t-text-muted)]">{b.tabName} ·</span>}
                         <span className="text-[var(--t-text)]">{b.buttonLabel}</span>
                         {b.actionType && <code className="text-[9px] text-[var(--t-text-muted)]">{b.actionType}</code>}
-                        {b.detectionSource && <span className="text-[9px] text-[#A78BFA]">⚡{b.detectionSource}</span>}
+                        {b.detectionSource && <span className="text-[9px] text-[#8a3ffc]">⚡{b.detectionSource}</span>}
                         <button
                           type="button"
                           onClick={async () => {
@@ -2719,7 +2728,7 @@ function CallSitesSection({ formatId, projectId }: { formatId?: string; projectI
                               removeBinding.mutate({ screenId: s.screen.id, buttonId: b.id })
                             }
                           }}
-                          className="opacity-0 group-hover/btn:opacity-100 transition-opacity text-[var(--t-text-muted)] hover:text-[#F87171]"
+                          className="opacity-0 group-hover/btn:opacity-100 transition-opacity text-[var(--t-text-muted)] hover:text-[#da1e28]"
                         >
                           <X className="w-3 h-3" />
                         </button>
@@ -2748,7 +2757,7 @@ function CallSitesSection({ formatId, projectId }: { formatId?: string; projectI
         <button
           type="button"
           onClick={() => setShowAdd(true)}
-          className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-md bg-[#3B82F618] text-[#60A5FA] hover:bg-[#3B82F628] transition-colors"
+          className="flex items-center gap-1.5 text-xs px-3 py-1.5 bg-[#0f62fe18] text-[#0f62fe] hover:bg-[#0f62fe28] transition-colors"
         >
           <Plus className="w-3.5 h-3.5" />
           Add binding
@@ -2877,8 +2886,8 @@ function AddBindingForm({
   const canSubmit = clientName.trim() && screenCode.trim() && buttonLabel.trim() && !submitting
 
   return (
-    <div className="rounded-lg border border-[var(--t-border)] bg-[var(--t-bg)] p-4 space-y-3">
-      <div className="text-xs font-semibold uppercase tracking-wider text-[var(--t-text-secondary)] pb-2 border-b border-[var(--t-border-light)]">
+    <div className="border border-[var(--t-border)] bg-[var(--t-bg)] p-4 space-y-3">
+      <div className="text-xs font-semibold text-[var(--t-text-secondary)] pb-2 border-b border-[var(--t-border-light)]">
         New binding
       </div>
 
@@ -2897,7 +2906,7 @@ function AddBindingForm({
                 const m = clients.find((c: any) => c.name === e.target.value || c.appCode === e.target.value)
                 if (m && m.appCode) setClientCode(m.appCode)
               }}
-              className="w-full px-2.5 py-1.5 text-sm rounded-md border border-[var(--t-border)] bg-[var(--t-input)] text-[var(--t-text)] focus:border-[var(--t-accent)] focus:outline-none"
+              className="w-full px-2.5 py-1.5 text-sm border border-[var(--t-border)] bg-[var(--t-input)] text-[var(--t-text)] focus:border-[var(--t-accent)] focus:outline-none"
             />
             <datalist id="clients-list">
               {clients.map((c: any) => (
@@ -2910,7 +2919,7 @@ function AddBindingForm({
             placeholder="App code (optional)"
             value={clientCode}
             onChange={e => setClientCode(e.target.value)}
-            className="w-full px-2.5 py-1.5 text-sm font-mono rounded-md border border-[var(--t-border)] bg-[var(--t-input)] text-[var(--t-text)] focus:border-[var(--t-accent)] focus:outline-none"
+            className="w-full px-2.5 py-1.5 text-sm font-mono border border-[var(--t-border)] bg-[var(--t-input)] text-[var(--t-text)] focus:border-[var(--t-accent)] focus:outline-none"
           />
         </div>
         {!matchedClient && clientName.trim() && (
@@ -2931,7 +2940,7 @@ function AddBindingForm({
               const m = screens.find((s: any) => s.code === e.target.value)
               if (m) setScreenName(m.name || '')
             }}
-            className="w-full px-2.5 py-1.5 text-sm font-mono rounded-md border border-[var(--t-border)] bg-[var(--t-input)] text-[var(--t-text)] focus:border-[var(--t-accent)] focus:outline-none"
+            className="w-full px-2.5 py-1.5 text-sm font-mono border border-[var(--t-border)] bg-[var(--t-input)] text-[var(--t-text)] focus:border-[var(--t-accent)] focus:outline-none"
           />
           <datalist id="screens-list">
             {screens.map((s: any) => (
@@ -2943,7 +2952,7 @@ function AddBindingForm({
             placeholder="Screen name"
             value={screenName}
             onChange={e => setScreenName(e.target.value)}
-            className="w-full px-2.5 py-1.5 text-sm rounded-md border border-[var(--t-border)] bg-[var(--t-input)] text-[var(--t-text)] focus:border-[var(--t-accent)] focus:outline-none"
+            className="w-full px-2.5 py-1.5 text-sm border border-[var(--t-border)] bg-[var(--t-input)] text-[var(--t-text)] focus:border-[var(--t-accent)] focus:outline-none"
           />
         </div>
         {!matchedScreen && screenCode.trim() && clientName.trim() && (
@@ -2957,7 +2966,7 @@ function AddBindingForm({
           type="text"
           value={buttonLabel}
           onChange={e => setButtonLabel(e.target.value)}
-          className="w-full px-2.5 py-1.5 text-sm rounded-md border border-[var(--t-border)] bg-[var(--t-input)] text-[var(--t-text)] focus:border-[var(--t-accent)] focus:outline-none"
+          className="w-full px-2.5 py-1.5 text-sm border border-[var(--t-border)] bg-[var(--t-input)] text-[var(--t-text)] focus:border-[var(--t-accent)] focus:outline-none"
         />
       </FormRow>
 
@@ -2966,7 +2975,7 @@ function AddBindingForm({
           type="text"
           value={tabName}
           onChange={e => setTabName(e.target.value)}
-          className="w-full max-w-xs px-2.5 py-1.5 text-sm rounded-md border border-[var(--t-border)] bg-[var(--t-input)] text-[var(--t-text)] focus:border-[var(--t-accent)] focus:outline-none"
+          className="w-full max-w-xs px-2.5 py-1.5 text-sm border border-[var(--t-border)] bg-[var(--t-input)] text-[var(--t-text)] focus:border-[var(--t-accent)] focus:outline-none"
         />
       </FormRow>
 
@@ -3018,14 +3027,14 @@ function AddBindingForm({
                   placeholder={detectionSource === 'REFERER' ? 'Regex pattern' : 'Field / param'}
                   value={detectionField}
                   onChange={e => setDetectionField(e.target.value)}
-                  className="w-full px-2.5 py-1.5 text-sm rounded-md border border-[var(--t-border)] bg-[var(--t-input)] text-[var(--t-text)] focus:border-[var(--t-accent)] focus:outline-none"
+                  className="w-full px-2.5 py-1.5 text-sm border border-[var(--t-border)] bg-[var(--t-input)] text-[var(--t-text)] focus:border-[var(--t-accent)] focus:outline-none"
                 />
                 <input
                   type="text"
                   placeholder="Expected value"
                   value={detectionValue}
                   onChange={e => setDetectionValue(e.target.value)}
-                  className="w-full px-2.5 py-1.5 text-sm rounded-md border border-[var(--t-border)] bg-[var(--t-input)] text-[var(--t-text)] focus:border-[var(--t-accent)] focus:outline-none"
+                  className="w-full px-2.5 py-1.5 text-sm border border-[var(--t-border)] bg-[var(--t-input)] text-[var(--t-text)] focus:border-[var(--t-accent)] focus:outline-none"
                 />
               </>
             )}
@@ -3045,7 +3054,7 @@ function AddBindingForm({
           type="button"
           onClick={submit}
           disabled={!canSubmit}
-          className="flex items-center gap-1.5 px-4 py-1.5 text-sm rounded-md bg-[var(--t-accent)] text-white disabled:opacity-50 hover:bg-[#2563EB]"
+          className="flex items-center gap-1.5 px-4 py-1.5 text-sm bg-[var(--t-accent)] text-white disabled:opacity-50 hover:bg-[#0353e9]"
         >
           {submitting && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
           Add binding
@@ -3299,7 +3308,7 @@ function MessageFormatsTab({ apiId, apiData }: { apiId: string; apiData?: ApiReg
         <h2 className="text-base font-semibold text-[var(--t-text)]">Message Formats</h2>
         <button
           onClick={openCreateModal}
-          className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold text-white bg-[var(--t-accent)] hover:bg-[#2563EB]"
+          className="flex items-center gap-2 px-4 py-2 text-sm font-semibold text-white bg-[var(--t-accent)] hover:bg-[#0353e9]"
         >
           <Plus className="w-4 h-4" />
           New Format
@@ -3418,7 +3427,7 @@ function MessageFormatModal({
       onClick={onClose}
     >
       <div
-        className="bg-[var(--t-panel)] border border-[var(--t-border)] rounded-xl w-full max-w-5xl max-h-[92vh] flex flex-col overflow-hidden"
+        className="bg-[var(--t-panel)] border border-[var(--t-border)] w-full max-w-5xl max-h-[92vh] flex flex-col overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between px-5 py-3 border-b border-[var(--t-border)]">
@@ -3437,7 +3446,7 @@ function MessageFormatModal({
               <button
                 onClick={onSave}
                 disabled={isSaving || !form.name}
-                className="flex items-center gap-1.5 px-4 py-1.5 rounded-md text-sm font-medium text-white transition-colors disabled:opacity-50"
+                className="flex items-center gap-1.5 px-4 py-1.5 text-sm font-medium text-white transition-colors disabled:opacity-50"
                 style={{ background: 'var(--t-accent)' }}
               >
                 {isSaving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Plus className="w-3.5 h-3.5" />}
@@ -3446,7 +3455,7 @@ function MessageFormatModal({
             )}
             <button
               onClick={onClose}
-              className="p-1.5 rounded-md hover:bg-[var(--t-panel-hover)] text-[var(--t-text-muted)]"
+              className="p-1.5 hover:bg-[var(--t-panel-hover)] text-[var(--t-text-muted)]"
               title={mode === 'edit' ? 'Close (changes are autosaved)' : 'Cancel'}
             >
               <X className="w-4 h-4" />
@@ -3536,9 +3545,9 @@ export default function ProjectApiDetailPage() {
     return (
       <div style={{ fontFamily: FONT }} className="flex items-center justify-center min-h-[400px]">
         <div className="flex flex-col items-center gap-3 text-center">
-          <AlertTriangle className="w-10 h-10 text-[#FBBF24]" />
+          <AlertTriangle className="w-10 h-10 text-[#ba4e00]" />
           <p className="text-sm text-[var(--t-text-secondary)]">API not found or an error occurred</p>
-          <Link href={`/projects/${projectId}`} className="text-sm text-[#3B82F6] hover:underline">
+          <Link href={`/projects/${projectId}`} className="text-sm text-[#0f62fe] hover:underline">
             Back to Project
           </Link>
         </div>
@@ -3556,17 +3565,17 @@ export default function ProjectApiDetailPage() {
           <div className="flex items-start gap-3 flex-1 min-w-0">
             <Link
               href={`/projects/${projectId}`}
-              className="mt-0.5 p-1.5 text-[var(--t-text-muted)] hover:text-[#F1F5F9] hover:bg-[var(--t-panel-hover)] rounded-lg transition-colors"
+              className="mt-0.5 p-1.5 text-[var(--t-text-muted)] hover:text-[#F1F5F9] hover:bg-[var(--t-panel-hover)] transition-colors"
             >
               <ArrowLeft className="w-5 h-5" />
             </Link>
             <div className="min-w-0">
               <div className="flex items-center gap-2.5 flex-wrap">
-                <h1 className="text-xl font-bold text-[var(--t-text)]">{api.name}</h1>
+                <h1 className="text-xl font-semibold text-[var(--t-text)]">{api.name}</h1>
                 <MethodBadge method={api.method} />
                 <StatusBadge status={api.status} />
                 {api.deprecated && (
-                  <Badge label="Deprecated" bg="#EF444418" color="#F87171" />
+                  <Badge label="Deprecated" bg="#da1e2818" color="#da1e28" />
                 )}
               </div>
               <p className="text-sm text-[var(--t-text-muted)] mt-0.5 font-mono truncate">{api.endpoint}</p>
@@ -3584,7 +3593,7 @@ export default function ProjectApiDetailPage() {
                 page's primary actions) instead of the green pill. */}
             <button
               onClick={() => setTestOpen(true)}
-              className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-medium text-white transition-colors hover:opacity-90"
+              className="flex items-center gap-1.5 px-3.5 py-2 text-xs font-medium text-white transition-colors hover:opacity-90"
               style={{ background: 'var(--t-accent)' }}
               title="Send a real request through the broker"
             >

@@ -6,10 +6,14 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { resolveUserId } from '@/lib/auth'
+import { featureGuard, getTenantContext, resolveAuditTenant, tenantWhere } from '@/lib/tenant'
 
 // GET /api/audit - List audit logs
 export async function GET(request: NextRequest) {
   try {
+    const ctx = await getTenantContext(request)
+    const blocked = featureGuard(ctx, 'audit')
+    if (blocked) return blocked
     const { searchParams } = request.nextUrl
     const page = parseInt(searchParams.get('page') || '1')
     const limit = parseInt(searchParams.get('limit') || '20')
@@ -21,7 +25,7 @@ export async function GET(request: NextRequest) {
 
     const skip = (page - 1) * limit
 
-    const where: any = {}
+    const where: any = { ...tenantWhere(ctx) }
 
     // Only add filters if they have valid values (not null, undefined, or 'undefined' string)
     if (entityType && entityType !== 'undefined' && entityType !== 'null') where.entityType = entityType
@@ -259,8 +263,17 @@ export async function POST(request: NextRequest) {
       console.warn('[Audit] diff-vs-previous (old values) failed:', e)
     }
 
+    const auditTenantId = await resolveAuditTenant({
+      ctx: await getTenantContext(request),
+      flowId: body.flowId ?? body.changes?.flowId,
+      flowName: body.flowName ?? body.changes?.flowName,
+      apiId: body.apiId ?? body.changes?.apiId,
+      formatName: body.changes?.formatName,
+    })
+
     const log = await prisma.auditLog.create({
       data: {
+        tenantId: auditTenantId ?? undefined,
         action: resolvedAction as any,
         entityType: body.entityType || 'API',
         entityId: body.entityId,

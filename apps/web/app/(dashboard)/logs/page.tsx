@@ -1,5 +1,7 @@
 'use client'
 
+import { StatStrip } from '@/components/common/StatStrip'
+
 import { useEffect, useMemo, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { eventLogsApi } from '@/lib/api'
@@ -37,7 +39,7 @@ interface EventLogData {
   userIp?: string | null
 }
 
-const FONT = "'Prompt', sans-serif"
+const FONT = '"IBM Plex Sans Thai", "IBM Plex Sans", "Sarabun", system-ui, sans-serif'
 
 const THEME = {
   bg: 'var(--t-bg)',
@@ -51,9 +53,9 @@ const THEME = {
 // Level palette — solid fill + white text so the severity reads at a
 // glance (mirrors the HTTP-status palette the api_logs screen used).
 const LEVEL_HEX: Record<string, { bg: string; text: string; dot: string }> = {
-  info:  { bg: '#3B82F6', text: '#FFFFFF', dot: '#60A5FA' },
-  warn:  { bg: '#F59E0B', text: '#FFFFFF', dot: '#FBBF24' },
-  error: { bg: '#EF4444', text: '#FFFFFF', dot: '#F87171' },
+  info:  { bg: '#0f62fe', text: '#FFFFFF', dot: '#0f62fe' },
+  warn:  { bg: '#ba4e00', text: '#FFFFFF', dot: '#ba4e00' },
+  error: { bg: '#da1e28', text: '#FFFFFF', dot: '#da1e28' },
   debug: { bg: '#64748B', text: '#FFFFFF', dot: '#94A3B8' },
 }
 
@@ -168,7 +170,7 @@ export default function LogsPage() {
         <div style={{ flexShrink: 0 }}>
           <h1 style={{ fontSize: 22, fontWeight: 700, color: THEME.text.primary }}>Event Logs</h1>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', justifyContent: 'flex-end', flex: 1, minWidth: 0 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', justifyContent: 'flex-end', flex: '1 1 560px', minWidth: 0 }}>
           {/* Free-text search */}
           <div style={{ position: 'relative', flex: '1 1 180px', minWidth: 160, maxWidth: 300 }}>
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: THEME.text.muted }} />
@@ -213,7 +215,7 @@ export default function LogsPage() {
               cursor: 'pointer',
               transition: 'all 0.15s ease',
             }}
-            className="hover:border-[#3B82F6] hover:text-[#3B82F6]"
+            className="hover:border-[#0f62fe] hover:text-[#0f62fe]"
           >
             <RefreshCw className="w-4 h-4" />
             Refresh
@@ -247,39 +249,16 @@ export default function LogsPage() {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 mb-4">
-        {[
-          { icon: Activity, label: 'Total', value: stats.total.toString(), color: '#8B92A5' },
-          { icon: InfoIcon, label: 'Info', value: stats.info.toString(), color: '#3B82F6' },
-          { icon: AlertTriangle, label: 'Warn', value: stats.warn.toString(), color: '#F59E0B' },
-          { icon: XCircle, label: 'Error', value: stats.error.toString(), color: '#EF4444' },
-          { icon: Bug, label: 'Debug', value: stats.debug.toString(), color: '#64748B' },
-        ].map((stat) => (
-          <div key={stat.label} style={{
-            background: THEME.panel,
-            border: `1px solid ${THEME.border}`,
-            borderRadius: 10,
-            padding: '10px',
-          }}>
-            <div className="flex items-center justify-between mb-2">
-              <div style={{
-                width: 26,
-                height: 22,
-                background: `${stat.color}12`,
-                border: `1px solid ${stat.color}35`,
-                borderRadius: 6,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}>
-                <stat.icon className="w-3.5 h-3.5" style={{ color: stat.color }} />
-              </div>
-            </div>
-            <p style={{ fontSize: 20, fontWeight: 700, color: THEME.text.primary }}>{stat.value}</p>
-            <p style={{ fontSize: 11, color: THEME.text.muted }}>{stat.label}</p>
-          </div>
-        ))}
-      </div>
+      <StatStrip
+        className="mb-4"
+        items={[
+          { icon: Activity, label: 'Total', value: stats.total.toString() },
+          { icon: InfoIcon, label: 'Info', value: stats.info.toString(), color: '#0f62fe' },
+          { icon: AlertTriangle, label: 'Warn', value: stats.warn.toString(), color: '#ba4e00' },
+          { icon: XCircle, label: 'Error', value: stats.error.toString(), color: '#da1e28' },
+          { icon: Bug, label: 'Debug', value: stats.debug.toString() },
+        ]}
+      />
 
       {/* Active-filter chips — thin bare row; self-hides when empty */}
       <div style={{ marginBottom: 12 }}>
@@ -314,9 +293,9 @@ export default function LogsPage() {
       <div style={{
         background: THEME.panel,
         border: `1px solid ${THEME.border}`,
-        borderRadius: 8,
-        overflow: 'hidden',
+        overflowX: 'auto',
       }}>
+        <div style={{ minWidth: 820 }}>
         {/* Table Header */}
         <div style={{
           display: 'grid',
@@ -485,6 +464,7 @@ export default function LogsPage() {
             })}
           </div>
         )}
+        </div>
       </div>
 
       {/* Pagination */}

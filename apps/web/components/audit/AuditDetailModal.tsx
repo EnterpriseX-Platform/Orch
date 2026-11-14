@@ -56,17 +56,17 @@ export function AuditDetailModal({
 
   return (
     <div
-      className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4"
+      className="fixed inset-0 z-50 bg-[rgba(22,22,22,0.5)] flex items-center justify-center p-4"
       onClick={onClose}
     >
       <div
-        className="bg-[var(--t-panel)] border border-[var(--t-border)] rounded-xl w-full max-w-5xl max-h-[90vh] flex flex-col overflow-hidden"
+        className="bg-[var(--t-panel)] border border-[var(--t-border)] rounded-none w-full max-w-5xl max-h-[90vh] flex flex-col overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-3 border-b border-[var(--t-border)]">
           <div className="flex items-center gap-3 min-w-0">
-            <span className="px-2 py-0.5 rounded text-[11px] font-semibold bg-[#3B82F6]/20 text-[#60A5FA]">
+            <span className="cds-tag px-2 py-0.5 text-[12px] bg-[#d0e2ff] text-[#0043ce]">
               {log.action}
             </span>
             <span className="text-[11px] text-[var(--t-text-muted)]">on</span>
@@ -82,7 +82,7 @@ export function AuditDetailModal({
           </div>
           <button
             onClick={onClose}
-            className="p-1.5 rounded-md hover:bg-[var(--t-panel-hover)] text-[var(--t-text-muted)] shrink-0"
+            className="w-8 h-8 flex items-center justify-center hover:bg-[#e8e8e8] text-[#161616] shrink-0"
           >
             <X className="w-4 h-4" />
           </button>
@@ -97,10 +97,10 @@ export function AuditDetailModal({
               <button
                 key={t.id}
                 onClick={() => setTab(t.id)}
-                className={`flex items-center gap-1.5 px-3 py-2 text-xs font-medium border-b-2 transition-colors ${
+                className={`flex items-center gap-2 px-4 h-10 text-sm border-b-2 ${
                   active
-                    ? 'border-[var(--t-accent)] text-[var(--t-accent)]'
-                    : 'border-transparent text-[var(--t-text-muted)] hover:text-[var(--t-text)]'
+                    ? 'border-[#0f62fe] text-[#161616] font-semibold'
+                    : 'border-transparent text-[#525252] hover:bg-[#e8e8e8] hover:text-[#161616]'
                 }`}
               >
                 <Icon className="w-3.5 h-3.5" />
@@ -150,10 +150,10 @@ export function AuditDetailModal({
 
           {tab === 'changes' && (
             <div>
-              <div className="grid grid-cols-3 gap-3 mb-2 text-[10px] font-semibold uppercase tracking-wider text-[var(--t-text-muted)]">
+              <div className="grid grid-cols-3 gap-3 mb-2 text-[12px] text-[#525252]">
                 <div>Field</div>
-                <div className="text-red-400">Old Value</div>
-                <div className="text-emerald-400">New Value</div>
+                <div className="text-[#da1e28]">Old Value</div>
+                <div className="text-[#24a148]">New Value</div>
               </div>
               <div className="space-y-1">{renderDiff(log)}</div>
             </div>
@@ -177,7 +177,7 @@ export function AuditDetailModal({
 function Field({ label, children, full }: { label: string; children: React.ReactNode; full?: boolean }) {
   return (
     <div className={full ? 'col-span-2' : ''}>
-      <p className="text-[10px] font-semibold text-[var(--t-text-muted)] uppercase tracking-wider mb-0.5">{label}</p>
+      <p className="text-[12px] text-[#525252] mb-0.5">{label}</p>
       {children}
     </div>
   )
@@ -186,8 +186,8 @@ function Field({ label, children, full }: { label: string; children: React.React
 function Block({ label, content }: { label: string; content: string }) {
   return (
     <div>
-      <p className="text-[10px] font-semibold text-[var(--t-text-muted)] uppercase tracking-wider mb-1">{label}</p>
-      <pre className="px-3 py-2 rounded bg-[var(--t-bg)] border border-[var(--t-border)] text-[var(--t-text-secondary)] text-xs font-mono whitespace-pre-wrap break-all max-h-[50vh] overflow-auto">
+      <p className="text-[12px] text-[#525252] mb-1">{label}</p>
+      <pre className="px-3 py-2 bg-[#f4f4f4] text-[#161616] text-xs font-mono whitespace-pre-wrap break-all max-h-[50vh] overflow-auto">
         {content || '(empty)'}
       </pre>
     </div>

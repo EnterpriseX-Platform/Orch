@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { getTenantContext, featureGuard, tenantWhere } from '@/lib/tenant'
 import { z } from 'zod'
 
 // ==========================================
@@ -55,6 +56,9 @@ interface ImportResult {
 }
 
 export async function POST(request: NextRequest) {
+  const ctx = await getTenantContext(request)
+  const blocked = featureGuard(ctx, 'projects')
+  if (blocked) return blocked
   try {
     const body = await request.json()
     const validated = bulkSchema.parse(body)
@@ -72,8 +76,9 @@ export async function POST(request: NextRequest) {
     let created = 0, updated = 0, errors = 0
 
     // Cache projects for name lookup
-    const projects = await prisma.project.findMany({ select: { id: true, name: true } })
+    const projects = await prisma.project.findMany({ where: tenantWhere(ctx), select: { id: true, name: true } })
     const projectByName = new Map(projects.map(p => [p.name, p]))
+    const projectIds = new Set(projects.map(p => p.id))
 
     for (const a of validated.apis) {
       try {
@@ -84,6 +89,7 @@ export async function POST(request: NextRequest) {
           projectId = p.id
         }
         if (!projectId) throw new Error('projectId or projectName required')
+        if (ctx.tenantId && !projectIds.has(projectId)) throw new Error(`Project not found: ${projectId}`)
 
         const existing = await prisma.apiRegistration.findFirst({
           where: { projectId, name: a.name },

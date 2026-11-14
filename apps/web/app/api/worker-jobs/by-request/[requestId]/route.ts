@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { getTenantContext, featureGuard, tenantWhere } from '@/lib/tenant'
 import { prisma } from '@/lib/prisma'
 
 // GET /api/worker-jobs/by-request/:requestId
@@ -8,10 +9,14 @@ export async function GET(
   { params }: { params: Promise<{ requestId: string }> }
 ) {
   try {
+    const ctx = await getTenantContext(request)
+    const blocked = featureGuard(ctx, 'flows')
+    if (blocked) return blocked
     const { requestId } = await params
 
+    const tenantFlowIds = (ctx.tenantId ? (await prisma.flowIntegration.findMany({ where: tenantWhere(ctx), select: { id: true } })).map((f) => f.id) : null)
     const jobs = await prisma.workerJob.findMany({
-      where: { requestId },
+      where: { requestId, ...(tenantFlowIds && { flowId: { in: tenantFlowIds } }) },
       orderBy: { createdAt: 'asc' },
     })
 

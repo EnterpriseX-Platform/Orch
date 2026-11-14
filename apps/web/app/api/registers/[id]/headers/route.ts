@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { getTenantContext, featureGuard, isForeign } from '@/lib/tenant'
 import { z } from 'zod'
 
 const headerMappingSchema = z.object({
@@ -16,8 +17,15 @@ export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const ctx = await getTenantContext(request)
+  const blocked = featureGuard(ctx, 'projects')
+  if (blocked) return blocked
   try {
     const { id } = await params
+    if (ctx.tenantId) {
+      const own = await prisma.apiRegistration.findUnique({ where: { id: id }, select: { project: { select: { tenantId: true } } } })
+      if (isForeign(ctx, own?.project)) return NextResponse.json({ error: 'API not found' }, { status: 404 })
+    }
     const mappings = await prisma.apiHeaderMapping.findMany({
       where: { apiRegistrationId: id },
       orderBy: { order: 'asc' },
@@ -34,8 +42,15 @@ export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const ctx = await getTenantContext(request)
+  const blocked = featureGuard(ctx, 'projects')
+  if (blocked) return blocked
   try {
     const { id } = await params
+    if (ctx.tenantId) {
+      const own = await prisma.apiRegistration.findUnique({ where: { id: id }, select: { project: { select: { tenantId: true } } } })
+      if (isForeign(ctx, own?.project)) return NextResponse.json({ error: 'API not found' }, { status: 404 })
+    }
     const body = await request.json()
     const validated = headerMappingSchema.parse(body)
 
@@ -67,8 +82,15 @@ export async function PUT(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const ctx = await getTenantContext(request)
+  const blocked = featureGuard(ctx, 'projects')
+  if (blocked) return blocked
   try {
     const { id } = await params
+    if (ctx.tenantId) {
+      const own = await prisma.apiRegistration.findUnique({ where: { id: id }, select: { project: { select: { tenantId: true } } } })
+      if (isForeign(ctx, own?.project)) return NextResponse.json({ error: 'API not found' }, { status: 404 })
+    }
     const body = await request.json()
     const mappings = z.array(headerMappingSchema.extend({ id: z.string().optional() })).parse(body.mappings || body)
 
@@ -114,8 +136,15 @@ export async function DELETE(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const ctx = await getTenantContext(request)
+  const blocked = featureGuard(ctx, 'projects')
+  if (blocked) return blocked
   try {
     const { id } = await params
+    if (ctx.tenantId) {
+      const own = await prisma.apiRegistration.findUnique({ where: { id: id }, select: { project: { select: { tenantId: true } } } })
+      if (isForeign(ctx, own?.project)) return NextResponse.json({ error: 'API not found' }, { status: 404 })
+    }
     const headerId = request.nextUrl.searchParams.get('headerId')
 
     if (!headerId) {

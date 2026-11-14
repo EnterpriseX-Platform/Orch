@@ -29,6 +29,7 @@ model User {
   createdDatasets   DataCatalog[]     @relation("DatasetCreator")
   createdProjects   Project[]         @relation("ProjectCreator")
   createdMsgFormats MessageFormat[]   @relation("MessageFormatCreator")
+  tenantMemberships TenantMember[]
 
   @@map("users")
 }
@@ -36,6 +37,8 @@ model User {
 // ==================== DATA CATALOG (datasets) ====================
 model DataCatalog {
   id          String       @id @default(cuid())
+  tenantId    String?      @map("tenant_id")
+  tenant      Tenant?      @relation(fields: [tenantId], references: [id])
   name        String
   nameEn      String?      @map("name_en")
   description String?
@@ -71,6 +74,7 @@ model DataCatalog {
   updatedAt DateTime @updatedAt @map("updated_at")
 
   @@index([parentId])
+  @@index([tenantId])
   @@map("data_catalogs")
 }
 
@@ -100,6 +104,8 @@ enum DataStatus {
 // ==================== PROJECT (replaces Application + Module) ====================
 model Project {
   id           String  @id @default(cuid())
+  tenantId     String? @map("tenant_id")
+  tenant       Tenant? @relation(fields: [tenantId], references: [id])
   name         String
   nameEn       String? @map("name_en")
   slug         String  @unique
@@ -159,6 +165,7 @@ model Project {
   @@index([projectGroup])
   @@index([slug])
   @@index([pathPrefix])
+  @@index([tenantId])
   @@map("projects")
 }
 
@@ -771,6 +778,8 @@ enum ApiType {
 // ==================== FLOW INTEGRATION ====================
 model FlowIntegration {
   id          String  @id @default(cuid())
+  tenantId    String? @map("tenant_id")
+  tenant      Tenant? @relation(fields: [tenantId], references: [id])
   name        String
   description String?
 
@@ -818,6 +827,7 @@ model FlowIntegration {
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
+  @@index([tenantId])
   @@map("flow_integrations")
 }
 
@@ -1016,7 +1026,9 @@ model EventLog {
 
 // ==================== AUDIT LOG (change records) ====================
 model AuditLog {
-  id String @id @default(cuid())
+  id       String  @id @default(cuid())
+  tenantId String? @map("tenant_id")
+  tenant   Tenant? @relation(fields: [tenantId], references: [id])
 
   // Action Info
   action     AuditAction
@@ -1040,6 +1052,7 @@ model AuditLog {
   @@index([entityType, entityId])
   @@index([userId, timestamp])
   @@index([timestamp])
+  @@index([tenantId])
   @@map("audit_logs")
 }
 
@@ -1389,6 +1402,8 @@ model WorkerConfig {
 // ==================== API KEY ====================
 model ApiKey {
   id         String    @id @default(cuid())
+  tenantId   String?   @map("tenant_id")
+  tenant     Tenant?   @relation(fields: [tenantId], references: [id])
   name       String
   keyHash    String    @unique @map("key_hash")
   prefix     String // first 8 chars for display
@@ -1403,6 +1418,7 @@ model ApiKey {
 
   @@index([projectId])
   @@index([keyHash])
+  @@index([tenantId])
   @@map("api_keys")
 }
 
@@ -1448,6 +1464,8 @@ model IdempotencyKey {
 
 model RepoFolder {
   id        String   @id @default(cuid())
+  tenantId  String?  @map("tenant_id")
+  tenant    Tenant?  @relation(fields: [tenantId], references: [id])
   name      String
   parentId  String?  @map("parent_id")
   sortOrder Int      @default(0) @map("sort_order")
@@ -1459,11 +1477,14 @@ model RepoFolder {
   tables   RepoTable[]
 
   @@index([parentId])
+  @@index([tenantId])
   @@map("repo_folders")
 }
 
 model RepoTable {
   id                String       @id @default(cuid())
+  tenantId          String?      @map("tenant_id")
+  tenant            Tenant?      @relation(fields: [tenantId], references: [id])
   name              String       @unique // physical table name (becomes repo_<name>)
   displayName       String?      @map("display_name") // friendly label
   description       String?
@@ -1493,6 +1514,7 @@ model RepoTable {
   @@index([folderId])
   @@index([category])
   @@index([connectionId])
+  @@index([tenantId])
   @@map("repo_tables")
 }
 
@@ -1500,6 +1522,8 @@ model RepoTable {
 // Different from project-level ApiKey; scoped only to /api/repo/*.
 model RepoApiKey {
   id          String    @id @default(cuid())
+  tenantId    String?   @map("tenant_id")
+  tenant      Tenant?   @relation(fields: [tenantId], references: [id])
   name        String
   keyHash     String    @unique @map("key_hash") // hash of the key (never store plain)
   keyPrefix   String    @map("key_prefix") // first 8 chars for display
@@ -1509,6 +1533,7 @@ model RepoApiKey {
   lastUsedAt  DateTime? @map("last_used_at")
   createdAt   DateTime  @default(now()) @map("created_at")
 
+  @@index([tenantId])
   @@map("repo_api_keys")
 }
 
@@ -1522,6 +1547,8 @@ model RepoApiKey {
 // migrating again.
 model RepoConnection {
   id           String    @id @default(cuid())
+  tenantId     String?   @map("tenant_id")
+  tenant       Tenant?   @relation(fields: [tenantId], references: [id])
   name         String
   type         String // postgresql | mysql | oracle
   config       Json      @default("{}")
@@ -1532,5 +1559,63 @@ model RepoConnection {
 
   tables RepoTable[]
 
+  @@index([tenantId])
   @@map("repo_connections")
+}
+
+// ==================== MULTI-TENANT ====================
+// A tenant owns many projects and all top-level resources. Users can belong
+// to several tenants and switch between them; the active one travels in the
+// `orch-tenant` cookie and is checked against TenantMember on every request.
+model Tenant {
+  id          String   @id @default(cuid())
+  slug        String   @unique
+  name        String
+  description String?
+  isActive    Boolean  @default(true) @map("is_active")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  members          TenantMember[]
+  features         TenantFeature[]
+  projects         Project[]
+  dataCatalogs     DataCatalog[]
+  flowIntegrations FlowIntegration[]
+  repoFolders      RepoFolder[]
+  repoTables       RepoTable[]
+  repoConnections  RepoConnection[]
+  apiKeys          ApiKey[]
+  auditLogs        AuditLog[]
+  repoApiKeys      RepoApiKey[]
+
+  @@map("tenants")
+}
+
+model TenantMember {
+  id        String   @id @default(cuid())
+  tenantId  String   @map("tenant_id")
+  userId    String   @map("user_id")
+  role      String   @default("member") // owner | admin | member
+  createdAt DateTime @default(now()) @map("created_at")
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, userId])
+  @@index([userId])
+  @@map("tenant_members")
+}
+
+// Feature switch per tenant. A missing row means the feature is enabled.
+model TenantFeature {
+  id         String   @id @default(cuid())
+  tenantId   String   @map("tenant_id")
+  featureKey String   @map("feature_key")
+  enabled    Boolean  @default(true)
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, featureKey])
+  @@map("tenant_features")
 }

@@ -130,11 +130,11 @@ export function EnvAwareInput({
         disabled={disabled}
         className={
           className ??
-          'w-full px-2.5 py-1.5 bg-[var(--t-input)] border border-[var(--t-border)] rounded-md text-sm text-[var(--t-text)] placeholder:text-[var(--t-text-muted)] focus:outline-none focus:ring-2 focus:ring-[#3B82F6]/20 focus:border-[#3B82F6] transition-colors disabled:opacity-50'
+          'w-full px-2.5 py-1.5 text-sm text-[var(--t-text)] placeholder:text-[var(--t-text-muted)] focus:outline-none disabled:opacity-50'
         }
       />
       {open && trigger && (
-        <div className="absolute z-50 mt-1 w-full max-w-md max-h-56 overflow-auto rounded-md border border-[var(--t-border)] bg-[var(--t-panel)] shadow-lg">
+        <div className="absolute z-50 mt-1 w-full max-w-md max-h-56 overflow-auto border border-[#e0e0e0] bg-white">
           {filtered.length === 0 ? (
             <div className="px-3 py-2 text-xs text-[var(--t-text-muted)]">
               {projectId
@@ -149,7 +149,7 @@ export function EnvAwareInput({
                     type="button"
                     onMouseDown={(e) => e.preventDefault()}
                     onClick={() => insertKey(k)}
-                    className="w-full text-left px-3 py-1.5 text-xs font-mono hover:bg-[var(--t-panel-hover)] text-[var(--t-text)]"
+                    className="w-full text-left px-3 h-8 text-xs font-mono hover:bg-[#e8e8e8] text-[#161616]"
                   >
                     <span className="text-[var(--t-text-muted)]">$&#123;env.</span>
                     {k}

@@ -1,9 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { getTenantContext, featureGuard, tenantWhere } from '@/lib/tenant'
 
 // GET /api/events - List event logs
 export async function GET(request: NextRequest) {
   try {
+    const ctx = await getTenantContext(request)
+    const blocked = featureGuard(ctx, 'eventLogs')
+    if (blocked) return blocked
     const { searchParams } = request.nextUrl
     const page = parseInt(searchParams.get('page') || '1')
     const limit = parseInt(searchParams.get('limit') || '50')
@@ -36,6 +40,12 @@ export async function GET(request: NextRequest) {
 
     if (requestId) {
       where.requestId = requestId
+    }
+
+    if (ctx.tenantId) {
+      const flows = await prisma.flowIntegration.findMany({ where: tenantWhere(ctx), select: { id: true } })
+      const ids = flows.map((f) => f.id)
+      where.flowId = flowId ? (ids.includes(flowId) ? flowId : { in: [] }) : { in: ids }
     }
 
     const [events, total] = await Promise.all([

@@ -1,4 +1,5 @@
 import { NextRequest } from 'next/server'
+import { getTenantContext, featureGuard, tenantWhere } from '@/lib/tenant'
 import { prisma } from '@/lib/prisma'
 
 export const dynamic = 'force-dynamic'
@@ -7,6 +8,9 @@ export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ requestId: string }> }
 ) {
+  const ctx = await getTenantContext(request)
+  const blocked = featureGuard(ctx, 'flows')
+  if (blocked) return blocked
   const { requestId } = await params
 
   const stream = new ReadableStream({
@@ -46,7 +50,8 @@ export async function GET(
               inputData: {
                 path: ['requestId'],
                 equals: requestId
-              }
+              },
+              ...(ctx.tenantId && { flow: tenantWhere(ctx) }),
             },
             orderBy: {
               startedAt: 'desc'

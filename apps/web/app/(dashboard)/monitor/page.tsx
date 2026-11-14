@@ -27,7 +27,7 @@ import { LiveMetricsChart } from '@/components/monitor/LiveMetricsChart';
 import { WorkerStatusPanel } from '@/components/monitor/WorkerStatusPanel';
 import { useAuthStore } from '@/stores/authStore';
 
-const FONT = "'Prompt', sans-serif";
+const FONT = '"IBM Plex Sans Thai", "IBM Plex Sans", "Sarabun", system-ui, sans-serif';
 
 const THEME = {
   bg: 'var(--t-bg)',
@@ -37,12 +37,12 @@ const THEME = {
   text: { primary: 'var(--t-text)', secondary: 'var(--t-text-secondary)', muted: 'var(--t-text-muted)' },
   accent: 'var(--t-accent)',
   colors: {
-    blue: '#3B82F6',
-    emerald: '#10B981',
-    purple: '#8B5CF6',
-    amber: '#F59E0B',
-    red: '#EF4444',
-    cyan: '#06B6D4',
+    blue: '#0f62fe',
+    emerald: '#24a148',
+    purple: '#8a3ffc',
+    amber: '#ba4e00',
+    red: '#da1e28',
+    cyan: '#1192e8',
   }
 };
 
@@ -99,10 +99,10 @@ interface MonitorData {
 
 function StatusBadge({ status, latency }: { status: string; latency?: number }) {
   const config = {
-    online: { icon: CheckCircle, color: '#10B981', bg: '#10B98112', border: '#10B98135' },
-    offline: { icon: XCircle, color: '#EF4444', bg: '#EF444412', border: '#EF444435' },
-    error: { icon: AlertCircle, color: '#EF4444', bg: '#EF444412', border: '#EF444435' },
-    degraded: { icon: AlertCircle, color: '#F59E0B', bg: '#F59E0B12', border: '#F59E0B35' },
+    online: { icon: CheckCircle, color: '#24a148', bg: '#24a14812', border: '#24a14835' },
+    offline: { icon: XCircle, color: '#da1e28', bg: '#da1e2812', border: '#da1e2835' },
+    error: { icon: AlertCircle, color: '#da1e28', bg: '#da1e2812', border: '#da1e2835' },
+    degraded: { icon: AlertCircle, color: '#ba4e00', bg: '#ba4e0012', border: '#ba4e0035' },
     unknown: { icon: Clock, color: 'var(--t-text-muted)', bg: '#5A617812', border: '#5A617835' },
   };
 
@@ -146,42 +146,26 @@ function MetricCard({
   trend?: { value: string; direction: 'up' | 'down' | 'neutral' };
   subtext?: string;
 }) {
+  // Same look as the shared StatStrip tile: grey label + icon, light 28px value.
   return (
-    <div style={{
-      background: THEME.panel,
-      border: `1px solid ${THEME.border}`,
-      borderRadius: 10,
-      padding: '12px',
-    }}>
-      <div className="flex items-start justify-between mb-2">
-        <div style={{
-          width: 32, height: 24,
-          background: `${color}12`,
-          border: `1px solid ${color}35`,
-          borderRadius: 6,
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-        }}>
-          <Icon className="w-4 h-4" style={{ color }} />
-        </div>
+    <div className="px-4 py-3 border min-w-0" style={{ background: THEME.panel, borderColor: THEME.border }}>
+      <div className="flex items-center gap-2 mb-1 min-w-0">
+        <Icon className="w-4 h-4 flex-shrink-0" style={{ color: THEME.text.secondary }} />
+        <span className="truncate text-[12px]" style={{ color: THEME.text.secondary }}>{title}</span>
         {trend && (
-          <div style={{
-            display: 'flex', alignItems: 'center', gap: 2,
-            fontSize: 12, fontWeight: 500,
-            color: trend.direction === 'up' ? '#10B981' : trend.direction === 'down' ? '#EF4444' : 'var(--t-text-muted)',
+          <span className="ml-auto flex items-center gap-0.5 text-[12px] whitespace-nowrap" style={{
+            color: trend.direction === 'up' ? '#24a148' : trend.direction === 'down' ? '#da1e28' : THEME.text.muted,
           }}>
-            {trend.direction === 'up' ? <TrendingUp className="w-3 h-3" /> : 
+            {trend.direction === 'up' ? <TrendingUp className="w-3 h-3" /> :
              trend.direction === 'down' ? <TrendingDown className="w-3 h-3" /> : null}
             {trend.value}
-          </div>
+          </span>
         )}
       </div>
-      <p style={{ fontSize: 24, fontWeight: 700, color: THEME.text.primary, marginBottom: 0 }}>
+      <p className="tabular-nums whitespace-nowrap" style={{ fontSize: 28, fontWeight: 300, lineHeight: '36px', color: THEME.text.primary }}>
         {value}{unit && <span style={{ fontSize: 14, marginLeft: 4 }}>{unit}</span>}
       </p>
-      <p style={{ fontSize: 12, color: THEME.text.muted }}>{title}</p>
-      {subtext && (
-        <p style={{ fontSize: 11, color: THEME.text.muted, marginTop: 4 }}>{subtext}</p>
-      )}
+      {subtext && <p className="truncate text-[12px]" style={{ color: THEME.text.muted }}>{subtext}</p>}
     </div>
   );
 }
@@ -247,8 +231,8 @@ export default function MonitorPage() {
   ];
 
   const queueItems = data?.queue ? [
-    { name: 'High Priority', key: 'high', color: '#EF4444' },
-    { name: 'Default', key: 'default', color: '#3B82F6' },
+    { name: 'High Priority', key: 'high', color: '#da1e28' },
+    { name: 'Default', key: 'default', color: '#0f62fe' },
     { name: 'Low Priority', key: 'low', color: 'var(--t-text-muted)' },
   ] : [];
 
@@ -275,8 +259,8 @@ export default function MonitorPage() {
               display: 'flex', alignItems: 'center', gap: 4,
               padding: '4px 10px', fontSize: 12,
               borderRadius: 6, border: `1px solid ${THEME.border}`,
-              background: autoRefresh ? '#10B98112' : THEME.panel,
-              color: autoRefresh ? '#10B981' : THEME.text.secondary,
+              background: autoRefresh ? '#24a14812' : THEME.panel,
+              color: autoRefresh ? '#24a148' : THEME.text.secondary,
             }}
           >
             <RefreshCw className={cn("w-3 h-3", autoRefresh && "animate-spin")} />
@@ -298,7 +282,7 @@ export default function MonitorPage() {
       </div>
 
       {/* Tabs */}
-      <div className="flex items-center gap-1 mb-4" style={{ borderBottom: `1px solid ${THEME.border}` }}>
+      <div className="flex items-center gap-1 mb-4 overflow-x-auto" style={{ borderBottom: `1px solid ${THEME.border}` }}>
         {[
           { key: 'overview', label: 'Overview', icon: Activity },
           { key: 'live', label: 'Live Metrics', icon: Wifi },
@@ -313,8 +297,8 @@ export default function MonitorPage() {
             style={{
               display: 'flex', alignItems: 'center', gap: 4,
               padding: '8px 14px', fontSize: 13, fontWeight: 500,
-              borderBottom: `2px solid ${activeTab === tab.key ? '#3B82F6' : 'transparent'}`,
-              color: activeTab === tab.key ? '#3B82F6' : THEME.text.secondary,
+              borderBottom: `2px solid ${activeTab === tab.key ? '#0f62fe' : 'transparent'}`,
+              color: activeTab === tab.key ? '#0f62fe' : THEME.text.secondary,
               background: 'transparent',
               marginBottom: -1,
               cursor: 'pointer',
@@ -339,12 +323,12 @@ export default function MonitorPage() {
             <div className="flex items-center gap-2 mb-3">
               <div style={{
                 width: 28, height: 22,
-                background: '#10B98112',
-                border: '1px solid #10B98135',
+                background: '#24a14812',
+                border: '1px solid #24a14835',
                 borderRadius: 6,
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
               }}>
-                <Activity className="w-3.5 h-3.5" style={{ color: '#10B981' }} />
+                <Activity className="w-3.5 h-3.5" style={{ color: '#24a148' }} />
               </div>
               <div>
                 <h3 style={{ fontSize: 13, fontWeight: 600, color: THEME.text.primary }}>
@@ -356,7 +340,7 @@ export default function MonitorPage() {
               </div>
             </div>
 
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <div className="grid grid-cols-2 xl:grid-cols-4 gap-3">
               {healthItems.map(item => {
                 const health = data?.health?.[item.key as keyof typeof data.health];
                 return (
@@ -383,13 +367,12 @@ export default function MonitorPage() {
           </div>
 
           {/* Quick Metrics */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <div className="grid grid-cols-2 xl:grid-cols-4 gap-3">
             <MetricCard
               title="Requests/hour"
               value={data?.metrics?.requestsPerHour?.toLocaleString() || '0'}
               icon={Zap}
               color={THEME.colors.blue}
-              trend={{ value: '+12%', direction: 'up' }}
             />
             <MetricCard
               title="Avg Response Time"
@@ -405,7 +388,6 @@ export default function MonitorPage() {
               unit="%"
               icon={AlertCircle}
               color={THEME.colors.red}
-              trend={{ value: '-2%', direction: 'down' }}
             />
             <MetricCard
               title="Concurrent"
@@ -481,7 +463,7 @@ export default function MonitorPage() {
             <h3 style={{ fontSize: 13, fontWeight: 600, color: THEME.text.primary, marginBottom: 12 }}>
               Runtime Metrics
             </h3>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <div className="grid grid-cols-2 xl:grid-cols-4 gap-3">
               <MetricCard
                 title="Memory Usage"
                 value={data?.metrics?.memoryUsage || 0}
@@ -547,7 +529,7 @@ export default function MonitorPage() {
                       <td className="px-3 py-2 text-right">
                         <span style={{
                           fontSize: 12,
-                          color: Number(m.errors) > 0 ? '#EF4444' : THEME.text.secondary,
+                          color: Number(m.errors) > 0 ? '#da1e28' : THEME.text.secondary,
                           fontWeight: Number(m.errors) > 0 ? 600 : 400,
                         }}>
                           {Number(m.errors).toLocaleString()}
@@ -629,7 +611,7 @@ export default function MonitorPage() {
                 Worker Status
               </span>
             </div>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <div className="grid grid-cols-2 xl:grid-cols-4 gap-3">
               {(() => {
                 // Pull real numbers from /api/monitor (falls back to 0 when broker is unreachable).
                 const q = (data?.queue as Record<string, { pending: number; processing: number }> | undefined) || {}
@@ -643,10 +625,10 @@ export default function MonitorPage() {
                 const pending = Object.values(q).reduce((s, qq) => s + (qq?.pending || 0), 0)
                 const processing = Object.values(q).reduce((s, qq) => s + (qq?.processing || 0), 0)
                 return [
-                  { name: 'Active Workers', value: activeWorkers, icon: Users, color: '#10B981' },
-                  { name: 'Processed (total)', value: totalJobs, icon: Zap, color: '#3B82F6' },
-                  { name: 'Success Rate', value: successRate, icon: CheckCircle, color: '#10B981' },
-                  { name: 'Pending / Processing', value: `${pending} / ${processing}`, icon: Clock, color: '#8B5CF6' },
+                  { name: 'Active Workers', value: activeWorkers, icon: Users, color: '#24a148' },
+                  { name: 'Processed (total)', value: totalJobs, icon: Zap, color: '#0f62fe' },
+                  { name: 'Success Rate', value: successRate, icon: CheckCircle, color: '#24a148' },
+                  { name: 'Pending / Processing', value: `${pending} / ${processing}`, icon: Clock, color: '#8a3ffc' },
                 ]
               })().map(stat => (
                 <div key={stat.name} style={{
@@ -682,12 +664,12 @@ export default function MonitorPage() {
             <div className="flex items-center gap-2">
               <div style={{
                 width: 28, height: 22,
-                background: '#EF444412',
-                border: '1px solid #EF444435',
+                background: '#da1e2812',
+                border: '1px solid #da1e2835',
                 borderRadius: 6,
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
               }}>
-                <AlertCircle className="w-3.5 h-3.5" style={{ color: '#EF4444' }} />
+                <AlertCircle className="w-3.5 h-3.5" style={{ color: '#da1e28' }} />
               </div>
               <div>
                 <h3 style={{ fontSize: 13, fontWeight: 600, color: THEME.text.primary }}>Recent Errors</h3>
@@ -718,7 +700,7 @@ export default function MonitorPage() {
                       <td className="px-3 py-2">
                         <span style={{
                           padding: '1px 5px', borderRadius: 6, fontSize: 11, fontWeight: 600,
-                          background: '#EF444415', color: '#EF4444', border: '1px solid #EF444430',
+                          background: '#da1e2815', color: '#da1e28', border: '1px solid #da1e2830',
                         }}>
                           {error.method}
                         </span>
@@ -729,7 +711,7 @@ export default function MonitorPage() {
                       <td className="px-3 py-2 text-center">
                         <span style={{
                           padding: '1px 6px', borderRadius: 6, fontSize: 11, fontWeight: 600,
-                          background: '#EF444415', color: '#EF4444',
+                          background: '#da1e2815', color: '#da1e28',
                         }}>
                           {error.statusCode}
                         </span>
@@ -746,7 +728,7 @@ export default function MonitorPage() {
                   <tr>
                     <td colSpan={6} className="px-3 py-8 text-center">
                       <div className="flex flex-col items-center gap-2">
-                        <CheckCircle className="w-8 h-8" style={{ color: '#10B981' }} />
+                        <CheckCircle className="w-8 h-8" style={{ color: '#24a148' }} />
                         <p style={{ fontSize: 13, color: THEME.text.secondary }}>No recent errors</p>
                         <p style={{ fontSize: 11, color: THEME.text.muted }}>Everything is running smoothly</p>
                       </div>

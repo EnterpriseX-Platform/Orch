@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { getTenantContext, featureGuard, tenantWhere } from '@/lib/tenant'
 import { z } from 'zod'
 
 
@@ -39,6 +40,9 @@ const createFlowSchema = z.object({
 // GET /api/flows - List all flows
 export async function GET(request: NextRequest) {
   try {
+    const ctx = await getTenantContext(request)
+    const blocked = featureGuard(ctx, 'flows')
+    if (blocked) return blocked
     const { searchParams } = request.nextUrl
     const page = parseInt(searchParams.get('page') || '1')
     const limit = parseInt(searchParams.get('limit') || '10')
@@ -49,7 +53,7 @@ export async function GET(request: NextRequest) {
     const skip = (page - 1) * limit
 
     // Build where clause
-    const where: any = {}
+    const where: any = { ...tenantWhere(ctx) }
 
     if (flowType) {
       where.flowType = flowType
@@ -110,6 +114,9 @@ export async function GET(request: NextRequest) {
 // POST /api/flows - Create new flow
 export async function POST(request: NextRequest) {
   try {
+    const ctx = await getTenantContext(request)
+    const blocked = featureGuard(ctx, 'flows')
+    if (blocked) return blocked
     const body = await request.json()
 
     // Validate input
@@ -138,6 +145,7 @@ export async function POST(request: NextRequest) {
         settings: validated.settings,
         createdBy: userId,
         isActive: false,
+        tenantId: ctx.tenantId ?? undefined,
       },
       include: {
         creator: {

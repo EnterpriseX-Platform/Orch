@@ -144,10 +144,10 @@ function Modal({ title, onClose, children }: {
 }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-      <div className="bg-[var(--t-panel)] rounded-xl shadow-2xl w-full max-w-lg mx-4">
+      <div className="bg-[var(--t-panel)] w-full max-w-lg mx-4">
         <div className="flex items-center justify-between px-6 py-4 border-b border-[var(--t-border)]">
           <h2 className="text-lg font-semibold text-[var(--t-text)]">{title}</h2>
-          <button onClick={onClose} className="p-1 text-[var(--t-text-muted)] hover:text-[var(--t-text-secondary)] rounded">
+          <button onClick={onClose} className="p-1 text-[var(--t-text-muted)] hover:text-[var(--t-text-secondary)]">
             <X size={20} />
           </button>
         </div>
@@ -166,13 +166,13 @@ function ConfirmDialog({ message, onConfirm, onCancel }: {
 }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-      <div className="bg-[var(--t-panel)] rounded-xl shadow-2xl w-full max-w-sm mx-4 p-6">
+      <div className="bg-[var(--t-panel)] w-full max-w-sm mx-4 p-6">
         <p className="text-[var(--t-text)] mb-6">{message}</p>
         <div className="flex justify-end gap-3">
-          <button onClick={onCancel} className="px-4 py-2 text-sm rounded-lg border border-[var(--t-border)] text-[var(--t-text-secondary)] hover:bg-[var(--t-bg)]">
+          <button onClick={onCancel} className="px-4 py-2 text-sm border border-[var(--t-border)] text-[var(--t-text-secondary)] hover:bg-[var(--t-bg)]">
             Cancel
           </button>
-          <button onClick={onConfirm} className="px-4 py-2 text-sm rounded-lg bg-red-600 text-white hover:bg-red-700">
+          <button onClick={onConfirm} className="px-4 py-2 text-sm bg-red-600 text-white hover:bg-red-700">
             Delete
           </button>
         </div>
@@ -219,10 +219,10 @@ function CustomSelect({
       <button
         type="button"
         onClick={() => setIsOpen(o => !o)}
-        className={`w-full flex items-center justify-between px-3 py-2 bg-[var(--t-panel)] border rounded-lg text-sm transition-all ${
+        className={`w-full flex items-center justify-between px-3 py-2 bg-[var(--t-panel)] border  text-sm transition-all ${
           isOpen
-            ? 'border-teal-500 ring-2 ring-teal-100'
-            : 'border-[var(--t-border)] hover:border-teal-400'
+            ? 'border-[#0f62fe] ring-2 ring-[#e0e0e0]'
+            : 'border-[var(--t-border)] hover:border-[#0f62fe]'
         }`}
       >
         <span className="flex items-center gap-2 truncate">
@@ -235,14 +235,14 @@ function CustomSelect({
       </button>
 
       {isOpen && (
-        <div className="absolute z-[60] w-full mt-1 bg-[var(--t-panel)] border border-[var(--t-border)] rounded-lg shadow-lg max-h-60 overflow-y-auto py-1">
+        <div className="absolute z-[60] w-full mt-1 bg-[var(--t-panel)] border border-[var(--t-border)] max-h-60 overflow-y-auto py-1">
           {options.map(opt => (
             <button
               key={opt.value}
               type="button"
               onClick={() => { onChange(opt.value); setIsOpen(false); }}
               className={`w-full text-left px-3 py-2 text-sm flex items-center gap-2 transition-colors ${
-                value === opt.value ? 'bg-teal-50 text-teal-700' : 'text-[var(--t-text-secondary)] hover:bg-[var(--t-bg)]'
+                value === opt.value ? 'bg-[#e0e0e0] text-[#0f62fe]' : 'text-[var(--t-text-secondary)] hover:bg-[var(--t-bg)]'
               }`}
             >
               {opt.icon}
@@ -250,7 +250,7 @@ function CustomSelect({
                 <div className="truncate">{opt.label}</div>
                 {opt.description && <div className="text-[10px] text-[var(--t-text-muted)]">{opt.description}</div>}
               </div>
-              {value === opt.value && <Check size={13} className="text-teal-500 flex-shrink-0" />}
+              {value === opt.value && <Check size={13} className="text-[#0f62fe] flex-shrink-0" />}
             </button>
           ))}
           {options.length === 0 && (
@@ -383,17 +383,17 @@ function ConnectionsSection() {
     <div>
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h2 className="text-xl font-bold text-[var(--t-text)]">Connections</h2>
+          <h2 className="text-xl font-semibold text-[var(--t-text)]">Connections</h2>
           <p className="text-sm text-[var(--t-text-muted)] mt-0.5">Manage database connections for data import and sync</p>
         </div>
-        <button onClick={openCreate} className="flex items-center gap-2 px-4 py-2 bg-teal-600 text-white text-sm font-medium rounded-lg hover:bg-teal-700">
+        <button onClick={openCreate} className="flex items-center gap-2 px-3 h-8 bg-[#0f62fe] text-white text-sm font-medium hover:bg-[#0353e9]">
           <Plus size={16} /> New Connection
         </button>
       </div>
 
       {loading ? (
         <div className="flex items-center justify-center py-20">
-          <Loader2 className="animate-spin text-teal-500" size={28} />
+          <Loader2 className="animate-spin text-[#0f62fe]" size={28} />
         </div>
       ) : connections.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-20 text-[var(--t-text-muted)]">
@@ -403,10 +403,10 @@ function ConnectionsSection() {
       ) : (
         <div className="space-y-2">
           {connections.map(c => (
-            <div key={c.id} className="bg-[var(--t-panel)] border border-[var(--t-border)] rounded-lg px-3 py-2.5 hover:border-[var(--t-border)] transition-colors">
+            <div key={c.id} className="bg-[var(--t-panel)] border border-[var(--t-border)] px-3 py-2.5 hover:border-[var(--t-border)] transition-colors">
               <div className="flex items-center justify-between gap-2">
                 <div className="flex items-center gap-2.5 min-w-0 flex-1">
-                  <Database size={15} className="text-teal-500 shrink-0" />
+                  <Database size={15} className="text-[#0f62fe] shrink-0" />
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2 flex-wrap">
                       <span className="text-sm font-medium text-[var(--t-text)] truncate">{c.name}</span>
@@ -433,14 +433,14 @@ function ConnectionsSection() {
                     onClick={() => handleTest(c)}
                     disabled={testingId === c.id}
                     title="Test connection"
-                    className="p-1.5 rounded-md text-[var(--t-text-muted)] hover:text-green-600 hover:bg-green-50 disabled:opacity-50"
+                    className="p-1.5 text-[var(--t-text-muted)] hover:text-green-600 hover:bg-green-50 disabled:opacity-50"
                   >
                     {testingId === c.id ? <Loader2 size={14} className="animate-spin" /> : <Play size={14} />}
                   </button>
-                  <button onClick={() => openEdit(c)} title="Edit" className="p-1.5 rounded-md text-[var(--t-text-muted)] hover:text-teal-600 hover:bg-teal-50">
+                  <button onClick={() => openEdit(c)} title="Edit" className="p-1.5 text-[var(--t-text-muted)] hover:text-[#0f62fe] hover:bg-[#e0e0e0]">
                     <Pencil size={14} />
                   </button>
-                  <button onClick={() => setDeleteTarget(c)} title="Delete" className="p-1.5 rounded-md text-[var(--t-text-muted)] hover:text-red-600 hover:bg-red-50">
+                  <button onClick={() => setDeleteTarget(c)} title="Delete" className="p-1.5 text-[var(--t-text-muted)] hover:text-red-600 hover:bg-red-50">
                     <Trash2 size={14} />
                   </button>
                 </div>
@@ -456,7 +456,7 @@ function ConnectionsSection() {
             <div>
               <label className="block text-sm font-medium text-[var(--t-text-secondary)] mb-1">Name <span className="text-red-500">*</span></label>
               <input
-                className="w-full border border-[var(--t-border)] rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
+                className="w-full border border-[var(--t-border)] px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#0f62fe]"
                 value={form.name}
                 onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
                 placeholder="My Database"
@@ -479,7 +479,7 @@ function ConnectionsSection() {
               <div className="col-span-2">
                 <label className="block text-sm font-medium text-[var(--t-text-secondary)] mb-1">Host <span className="text-red-500">*</span></label>
                 <input
-                  className="w-full border border-[var(--t-border)] rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
+                  className="w-full border border-[var(--t-border)] px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#0f62fe]"
                   value={form.host}
                   onChange={e => setForm(f => ({ ...f, host: e.target.value }))}
                   placeholder="localhost"
@@ -488,7 +488,7 @@ function ConnectionsSection() {
               <div>
                 <label className="block text-sm font-medium text-[var(--t-text-secondary)] mb-1">Port</label>
                 <input
-                  className="w-full border border-[var(--t-border)] rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
+                  className="w-full border border-[var(--t-border)] px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#0f62fe]"
                   value={form.port}
                   onChange={e => setForm(f => ({ ...f, port: e.target.value }))}
                 />
@@ -497,7 +497,7 @@ function ConnectionsSection() {
             <div>
               <label className="block text-sm font-medium text-[var(--t-text-secondary)] mb-1">Database <span className="text-red-500">*</span></label>
               <input
-                className="w-full border border-[var(--t-border)] rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
+                className="w-full border border-[var(--t-border)] px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#0f62fe]"
                 value={form.database}
                 onChange={e => setForm(f => ({ ...f, database: e.target.value }))}
                 placeholder="mydb"
@@ -507,7 +507,7 @@ function ConnectionsSection() {
               <div>
                 <label className="block text-sm font-medium text-[var(--t-text-secondary)] mb-1">Username <span className="text-red-500">*</span></label>
                 <input
-                  className="w-full border border-[var(--t-border)] rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
+                  className="w-full border border-[var(--t-border)] px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#0f62fe]"
                   value={form.username}
                   onChange={e => setForm(f => ({ ...f, username: e.target.value }))}
                 />
@@ -516,7 +516,7 @@ function ConnectionsSection() {
                 <label className="block text-sm font-medium text-[var(--t-text-secondary)] mb-1">Password</label>
                 <input
                   type="password"
-                  className="w-full border border-[var(--t-border)] rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
+                  className="w-full border border-[var(--t-border)] px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#0f62fe]"
                   value={form.password}
                   onChange={e => setForm(f => ({ ...f, password: e.target.value }))}
                 />
@@ -533,19 +533,19 @@ function ConnectionsSection() {
             </label>
 
             {error && (
-              <div className="flex items-center gap-2 text-sm text-red-600 bg-red-50 rounded-lg px-3 py-2">
+              <div className="flex items-center gap-2 text-sm text-red-600 bg-red-50 px-3 py-2">
                 <AlertCircle size={14} /> {error}
               </div>
             )}
 
             <div className="flex justify-end gap-3 pt-2">
-              <button onClick={() => setShowModal(false)} className="px-4 py-2 text-sm rounded-lg border border-[var(--t-border)] text-[var(--t-text-secondary)] hover:bg-[var(--t-bg)]">
+              <button onClick={() => setShowModal(false)} className="px-4 py-2 text-sm border border-[var(--t-border)] text-[var(--t-text-secondary)] hover:bg-[var(--t-bg)]">
                 Cancel
               </button>
               <button
                 onClick={handleSubmit}
                 disabled={submitting}
-                className="px-4 py-2 text-sm rounded-lg bg-teal-600 text-white hover:bg-teal-700 disabled:opacity-60 flex items-center gap-2"
+                className="px-3 h-8 text-sm bg-[#0f62fe] text-white hover:bg-[#0353e9] disabled:opacity-60 flex items-center gap-2"
               >
                 {submitting && <Loader2 size={14} className="animate-spin" />}
                 {editTarget ? 'Save Changes' : 'Create'}
@@ -650,26 +650,26 @@ function ApiKeysSection() {
     <div>
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h2 className="text-xl font-bold text-[var(--t-text)]">API Keys</h2>
+          <h2 className="text-xl font-semibold text-[var(--t-text)]">API Keys</h2>
           <p className="text-sm text-[var(--t-text-muted)] mt-0.5">Manage access tokens for the Data Repository API</p>
         </div>
         <button
           onClick={() => { setForm({ name: '', permissions: 'read', expiresAt: '' }); setError(''); setShowModal(true); }}
-          className="flex items-center gap-2 px-4 py-2 bg-teal-600 text-white text-sm font-medium rounded-lg hover:bg-teal-700"
+          className="flex items-center gap-2 px-3 h-8 bg-[#0f62fe] text-white text-sm font-medium hover:bg-[#0353e9]"
         >
           <Plus size={16} /> New API Key
         </button>
       </div>
 
       {newKey && (
-        <div className="mb-4 p-4 bg-green-50 border border-green-200 rounded-xl">
+        <div className="mb-4 p-4 bg-green-50 border border-green-200">
           <p className="text-sm font-medium text-green-800 mb-2">API key created. Copy it now — it won't be shown again.</p>
           <div className="flex items-center gap-2">
-            <code className="flex-1 text-xs font-mono bg-[var(--t-panel)] border border-green-200 rounded px-3 py-2 text-green-900 truncate">{newKey}</code>
-            <button onClick={() => copyKey(newKey)} className="p-2 rounded-lg bg-green-600 text-white hover:bg-green-700">
+            <code className="flex-1 text-xs font-mono bg-[var(--t-panel)] border border-green-200 px-3 py-2 text-green-900 truncate">{newKey}</code>
+            <button onClick={() => copyKey(newKey)} className="p-2 bg-green-600 text-white hover:bg-green-700">
               {copied ? <Check size={16} /> : <Copy size={16} />}
             </button>
-            <button onClick={() => setNewKey(null)} className="p-2 rounded-lg text-green-700 hover:bg-green-100">
+            <button onClick={() => setNewKey(null)} className="p-2 text-green-700 hover:bg-green-100">
               <X size={16} />
             </button>
           </div>
@@ -678,7 +678,7 @@ function ApiKeysSection() {
 
       {loading ? (
         <div className="flex items-center justify-center py-20">
-          <Loader2 className="animate-spin text-teal-500" size={28} />
+          <Loader2 className="animate-spin text-[#0f62fe]" size={28} />
         </div>
       ) : keys.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-20 text-[var(--t-text-muted)]">
@@ -688,7 +688,7 @@ function ApiKeysSection() {
       ) : (
         <div className="space-y-3">
           {keys.map(k => (
-            <div key={k.id} className="bg-[var(--t-panel)] border border-[var(--t-border)] rounded-xl p-4 shadow-sm">
+            <div key={k.id} className="bg-[var(--t-panel)] border border-[var(--t-border)] p-4">
               <div className="flex items-start justify-between gap-4">
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
@@ -701,14 +701,14 @@ function ApiKeysSection() {
                     </span>
                   </div>
                   <div className="flex items-center gap-2 mt-2">
-                    <code className="text-xs font-mono text-[var(--t-text-muted)] bg-[var(--t-bg)] px-2 py-1 rounded">
+                    <code className="text-xs font-mono text-[var(--t-text-muted)] bg-[var(--t-bg)] px-2 py-1">
                       {revealed[k.id] ? k.key : maskKey(k.key)}
                     </code>
                     <button onClick={() => setRevealed(r => ({ ...r, [k.id]: !r[k.id] }))} className="text-[var(--t-text-muted)] hover:text-[var(--t-text-secondary)]">
                       {revealed[k.id] ? <EyeOff size={14} /> : <Eye size={14} />}
                     </button>
                     {revealed[k.id] && (
-                      <button onClick={() => copyKey(k.key)} className="text-[var(--t-text-muted)] hover:text-teal-600">
+                      <button onClick={() => copyKey(k.key)} className="text-[var(--t-text-muted)] hover:text-[#0f62fe]">
                         <Copy size={14} />
                       </button>
                     )}
@@ -721,11 +721,11 @@ function ApiKeysSection() {
                   <button
                     onClick={() => handleToggle(k)}
                     title={k.isActive ? 'Deactivate' : 'Activate'}
-                    className={`p-2 rounded-lg ${k.isActive ? 'text-green-600 hover:bg-green-50' : 'text-[var(--t-text-muted)] hover:bg-[var(--t-bg)]'}`}
+                    className={`p-2  ${k.isActive ? 'text-green-600 hover:bg-green-50' : 'text-[var(--t-text-muted)] hover:bg-[var(--t-bg)]'}`}
                   >
                     <RefreshCw size={16} />
                   </button>
-                  <button onClick={() => setDeleteTarget(k)} className="p-2 rounded-lg text-[var(--t-text-muted)] hover:text-red-600 hover:bg-red-50">
+                  <button onClick={() => setDeleteTarget(k)} className="p-2 text-[var(--t-text-muted)] hover:text-red-600 hover:bg-red-50">
                     <Trash2 size={16} />
                   </button>
                 </div>
@@ -741,7 +741,7 @@ function ApiKeysSection() {
             <div>
               <label className="block text-sm font-medium text-[var(--t-text-secondary)] mb-1">Name <span className="text-red-500">*</span></label>
               <input
-                className="w-full border border-[var(--t-border)] rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
+                className="w-full border border-[var(--t-border)] px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#0f62fe]"
                 value={form.name}
                 onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
                 placeholder="My app key"
@@ -772,26 +772,26 @@ function ApiKeysSection() {
               <label className="block text-sm font-medium text-[var(--t-text-secondary)] mb-1">Expires At (optional)</label>
               <input
                 type="date"
-                className="w-full border border-[var(--t-border)] rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
+                className="w-full border border-[var(--t-border)] px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#0f62fe]"
                 value={form.expiresAt}
                 onChange={e => setForm(f => ({ ...f, expiresAt: e.target.value }))}
               />
             </div>
 
             {error && (
-              <div className="flex items-center gap-2 text-sm text-red-600 bg-red-50 rounded-lg px-3 py-2">
+              <div className="flex items-center gap-2 text-sm text-red-600 bg-red-50 px-3 py-2">
                 <AlertCircle size={14} /> {error}
               </div>
             )}
 
             <div className="flex justify-end gap-3 pt-2">
-              <button onClick={() => setShowModal(false)} className="px-4 py-2 text-sm rounded-lg border border-[var(--t-border)] text-[var(--t-text-secondary)] hover:bg-[var(--t-bg)]">
+              <button onClick={() => setShowModal(false)} className="px-4 py-2 text-sm border border-[var(--t-border)] text-[var(--t-text-secondary)] hover:bg-[var(--t-bg)]">
                 Cancel
               </button>
               <button
                 onClick={handleCreate}
                 disabled={submitting}
-                className="px-4 py-2 text-sm rounded-lg bg-teal-600 text-white hover:bg-teal-700 disabled:opacity-60 flex items-center gap-2"
+                className="px-3 h-8 text-sm bg-[#0f62fe] text-white hover:bg-[#0353e9] disabled:opacity-60 flex items-center gap-2"
               >
                 {submitting && <Loader2 size={14} className="animate-spin" />}
                 Create Key
@@ -1057,12 +1057,12 @@ function TableDataSection({ table }: { table: RepoTable }) {
         <div className="flex items-center gap-2">
           <button
             onClick={() => loadData(page)}
-            className="p-2 text-[var(--t-text-muted)] hover:text-teal-600 rounded-lg hover:bg-teal-50"
+            className="p-2 text-[var(--t-text-muted)] hover:text-[#0f62fe] hover:bg-[#e0e0e0]"
             title="Refresh"
           >
             <RefreshCw size={14} />
           </button>
-          <div className="flex items-center gap-1 border border-[var(--t-border)] rounded-lg overflow-hidden">
+          <div className="flex items-center gap-1 border border-[var(--t-border)] overflow-hidden">
             <button
               onClick={exportCSV}
               disabled={exporting !== null}
@@ -1091,7 +1091,7 @@ function TableDataSection({ table }: { table: RepoTable }) {
               setShowAddRow(true);
               setEditRid(null);
             }}
-            className="flex items-center gap-1.5 px-3 py-1.5 bg-teal-600 text-white text-sm font-medium rounded-lg hover:bg-teal-700"
+            className="flex items-center gap-1.5 px-3 h-8 bg-[#0f62fe] text-white text-sm font-medium hover:bg-[#0353e9]"
           >
             <Plus size={14} /> Add Row
           </button>
@@ -1099,16 +1099,16 @@ function TableDataSection({ table }: { table: RepoTable }) {
       </div>
 
       {error && (
-        <div className="mb-3 flex items-center gap-2 text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2 flex-shrink-0">
+        <div className="mb-3 flex items-center gap-2 text-sm text-red-600 bg-red-50 border border-red-200 px-3 py-2 flex-shrink-0">
           <AlertCircle size={14} /> {error}
         </div>
       )}
 
       {/* Table */}
-      <div className="flex-1 overflow-auto rounded-xl border border-[var(--t-border)] bg-[var(--t-panel)] shadow-sm min-h-0">
+      <div className="flex-1 overflow-auto border border-[var(--t-border)] bg-[var(--t-panel)] min-h-0">
         {loading ? (
           <div className="flex items-center justify-center py-20">
-            <Loader2 className="animate-spin text-teal-500" size={28} />
+            <Loader2 className="animate-spin text-[#0f62fe]" size={28} />
           </div>
         ) : (
           <table className="w-full text-sm border-collapse">
@@ -1118,7 +1118,7 @@ function TableDataSection({ table }: { table: RepoTable }) {
                 {columns.map(col => (
                   <th key={col.name} className="px-3 py-2.5 text-left border-r border-[var(--t-border)] whitespace-nowrap min-w-[100px]">
                     <div className="text-xs font-semibold text-[var(--t-text-secondary)]">{col.name}</div>
-                    <div className="text-[10px] font-normal text-[var(--t-text-muted)] uppercase">{col.type}</div>
+                    <div className="text-[10px] font-normal text-[var(--t-text-muted)]">{col.type}</div>
                   </th>
                 ))}
                 <th className="w-20 px-2 py-2.5 text-center text-xs font-semibold text-[var(--t-text-muted)] sticky right-0 bg-[var(--t-bg)]"></th>
@@ -1127,22 +1127,22 @@ function TableDataSection({ table }: { table: RepoTable }) {
             <tbody>
               {/* Add Row inline form */}
               {showAddRow && (
-                <tr className="bg-teal-50 border-b border-teal-100">
-                  <td className="text-center px-3 py-2 text-xs text-teal-400 border-r border-teal-100 font-bold">+</td>
+                <tr className="bg-[#e0e0e0] border-b border-[#e0e0e0]">
+                  <td className="text-center px-3 py-2 text-xs text-[#0f62fe] border-r border-[#e0e0e0] font-semibold">+</td>
                   {columns.map(col => (
-                    <td key={col.name} className="px-2 py-1.5 border-r border-teal-100">
+                    <td key={col.name} className="px-2 py-1.5 border-r border-[#e0e0e0]">
                       <input
-                        className="w-full px-2 py-1 text-xs border border-teal-300 rounded focus:outline-none focus:ring-1 focus:ring-teal-500 bg-[var(--t-panel)] min-w-[80px]"
+                        className="w-full px-2 py-1 text-xs border border-[#0f62fe] focus:outline-none focus:ring-1 focus:ring-[#0f62fe] bg-[var(--t-panel)] min-w-[80px]"
                         value={newValues[col.name] ?? ''}
                         onChange={e => setNewValues(v => ({ ...v, [col.name]: e.target.value }))}
                         placeholder={col.name}
                       />
                     </td>
                   ))}
-                  <td className="px-2 py-1.5 sticky right-0 bg-teal-50">
+                  <td className="px-2 py-1.5 sticky right-0 bg-[#e0e0e0]">
                     <div className="flex items-center justify-center gap-1">
                       {newError && <span className="text-[10px] text-red-500 absolute -top-4 left-0 whitespace-nowrap">{newError}</span>}
-                      <button onClick={insertRow} disabled={savingNew} className="p-1 text-teal-600 hover:text-teal-800 disabled:opacity-50" title="Save">
+                      <button onClick={insertRow} disabled={savingNew} className="p-1 text-[#0f62fe] hover:text-[#0f62fe] disabled:opacity-50" title="Save">
                         {savingNew ? <Loader2 size={14} className="animate-spin" /> : <Check size={14} />}
                       </button>
                       <button onClick={() => { setShowAddRow(false); setNewError(''); }} className="p-1 text-[var(--t-text-muted)] hover:text-[var(--t-text-secondary)]" title="Cancel">
@@ -1165,8 +1165,8 @@ function TableDataSection({ table }: { table: RepoTable }) {
                   <tr
                     key={row._rid ?? i}
                     className={`border-b border-[var(--t-border-light)] transition-colors ${
-                      isEditing ? 'bg-teal-50' : i % 2 === 0 ? 'bg-[var(--t-panel)]' : 'bg-[var(--t-bg)]/40'
-                    } hover:bg-teal-50/30`}
+                      isEditing ? 'bg-[#e0e0e0]' : i % 2 === 0 ? 'bg-[var(--t-panel)]' : 'bg-[var(--t-bg)]/40'
+                    } hover:bg-[#e8e8e8]`}
                   >
                     <td className="text-center px-3 py-2 text-[11px] text-[var(--t-text-muted)] border-r border-[var(--t-border-light)] select-none">
                       {startRow + i}
@@ -1175,7 +1175,7 @@ function TableDataSection({ table }: { table: RepoTable }) {
                       <td key={col.name} className="px-3 py-1.5 border-r border-[var(--t-border-light)] max-w-[220px]">
                         {isEditing ? (
                           <input
-                            className="w-full px-1.5 py-0.5 text-xs border border-teal-300 rounded focus:outline-none focus:ring-1 focus:ring-teal-500 bg-[var(--t-panel)] min-w-[80px]"
+                            className="w-full px-1.5 py-0.5 text-xs border border-[#0f62fe] focus:outline-none focus:ring-1 focus:ring-[#0f62fe] bg-[var(--t-panel)] min-w-[80px]"
                             value={editValues[col.name] ?? ''}
                             onChange={e => setEditValues(v => ({ ...v, [col.name]: e.target.value }))}
                           />
@@ -1188,15 +1188,15 @@ function TableDataSection({ table }: { table: RepoTable }) {
                     ))}
                     <td
                       className={`px-2 py-1.5 sticky right-0 border-l border-[var(--t-border-light)] ${
-                        isEditing ? 'bg-teal-50' : i % 2 === 0 ? 'bg-[var(--t-panel)]' : 'bg-[var(--t-bg)]'
+                        isEditing ? 'bg-[#e0e0e0]' : i % 2 === 0 ? 'bg-[var(--t-panel)]' : 'bg-[var(--t-bg)]'
                       }`}
-                      style={{ boxShadow: '-4px 0 6px -2px rgba(0,0,0,0.04)' }}
+                      style={{ boxShadow: 'none' }}
                     >
                       <div className="flex items-center justify-center gap-0.5">
                         {isEditing ? (
                           <>
                             {editError && <span className="text-[10px] text-red-500 mr-0.5">{editError}</span>}
-                            <button onClick={saveEdit} disabled={savingEdit} className="p-1 text-teal-600 hover:text-teal-800 disabled:opacity-50" title="Save">
+                            <button onClick={saveEdit} disabled={savingEdit} className="p-1 text-[#0f62fe] hover:text-[#0f62fe] disabled:opacity-50" title="Save">
                               {savingEdit ? <Loader2 size={13} className="animate-spin" /> : <Check size={13} />}
                             </button>
                             <button onClick={() => { setEditRid(null); setEditError(''); }} className="p-1 text-[var(--t-text-muted)] hover:text-[var(--t-text-secondary)]" title="Cancel">
@@ -1205,7 +1205,7 @@ function TableDataSection({ table }: { table: RepoTable }) {
                           </>
                         ) : (
                           <>
-                            <button onClick={() => startEdit(row)} className="p-1 text-[var(--t-text-muted)] hover:text-teal-600 transition-colors" title="Edit row">
+                            <button onClick={() => startEdit(row)} className="p-1 text-[var(--t-text-muted)] hover:text-[#0f62fe] transition-colors" title="Edit row">
                               <Pencil size={13} />
                             </button>
                             <button
@@ -1235,7 +1235,7 @@ function TableDataSection({ table }: { table: RepoTable }) {
           <button
             onClick={() => goPage(page - 1)}
             disabled={page === 0 || loading}
-            className="px-3 py-1.5 rounded-lg border border-[var(--t-border)] hover:bg-[var(--t-bg)] disabled:opacity-40 disabled:cursor-not-allowed"
+            className="px-3 py-1.5 border border-[var(--t-border)] hover:bg-[var(--t-bg)] disabled:opacity-40 disabled:cursor-not-allowed"
           >
             ← Prev
           </button>
@@ -1243,7 +1243,7 @@ function TableDataSection({ table }: { table: RepoTable }) {
           <button
             onClick={() => goPage(page + 1)}
             disabled={page >= totalPages - 1 || loading}
-            className="px-3 py-1.5 rounded-lg border border-[var(--t-border)] hover:bg-[var(--t-bg)] disabled:opacity-40 disabled:cursor-not-allowed"
+            className="px-3 py-1.5 border border-[var(--t-border)] hover:bg-[var(--t-bg)] disabled:opacity-40 disabled:cursor-not-allowed"
           >
             Next →
           </button>
@@ -1272,22 +1272,22 @@ function SettingsModal({ onClose }: { onClose: () => void }) {
   ];
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-      <div className="bg-[var(--t-panel)] rounded-xl shadow-2xl w-[900px] max-w-[95vw] flex flex-col" style={{ height: '80vh' }}>
+      <div className="bg-[var(--t-panel)] w-[900px] max-w-[95vw] flex flex-col" style={{ height: '80vh' }}>
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b">
-          <div className="flex items-center gap-2 font-bold text-[var(--t-text)]">
-            <Settings size={16} className="text-teal-500" /> Settings
+          <div className="flex items-center gap-2 font-semibold text-[var(--t-text)]">
+            <Settings size={16} className="text-[#0f62fe]" /> Settings
           </div>
-          <button onClick={onClose} className="p-1 hover:bg-[var(--t-panel-hover)] rounded-lg text-[var(--t-text-muted)] hover:text-[var(--t-text-secondary)]">
+          <button onClick={onClose} className="p-1 hover:bg-[var(--t-panel-hover)] text-[var(--t-text-muted)] hover:text-[var(--t-text-secondary)]">
             <X size={16} />
           </button>
         </div>
         {/* Tab bar */}
-        <div className="flex border-b px-6 gap-1">
+        <div className="flex border-b border-[#e0e0e0] px-6 gap-0 overflow-x-auto">
           {TABS.map(t => (
             <button key={t.id} onClick={() => setTab(t.id)}
-              className={`flex items-center gap-1.5 px-3 py-2 text-xs font-medium border-b-2 -mb-px transition-colors ${
-                tab === t.id ? 'border-teal-500 text-teal-600' : 'border-transparent text-[var(--t-text-muted)] hover:text-[var(--t-text-secondary)]'
+              className={`flex items-center gap-1.5 h-10 px-4 text-sm font-normal border-b-2 flex-shrink-0 -mb-px transition-colors ${
+                tab === t.id ? 'border-[#0f62fe] text-[#161616]' : 'border-transparent text-[#525252] hover:text-[#161616]'
               }`}>
               {t.icon}{t.label}
             </button>
@@ -1401,13 +1401,13 @@ function LeftTreePanel({
         className={`w-full text-left flex items-center gap-1.5 py-1 px-2 transition-colors border-l-2 group ${
           isDragging ? 'opacity-40' :
           selectedTable?.id === t.id
-            ? 'bg-teal-50 border-l-teal-500 text-teal-800'
+            ? 'bg-[#e0e0e0] border-l-teal-500 text-[#0f62fe]'
             : 'border-l-transparent text-[var(--t-text-secondary)] hover:bg-[var(--t-bg)]'
         }`}
         style={{ paddingLeft: `${8 + depth * 16}px` }}
       >
         <GripVertical size={10} className="text-[var(--t-text-muted)] opacity-0 group-hover:opacity-100 cursor-grab flex-shrink-0" />
-        <Table2 size={11} className={selectedTable?.id === t.id ? 'text-teal-500' : 'text-[var(--t-text-muted)]'} />
+        <Table2 size={11} className={selectedTable?.id === t.id ? 'text-[#0f62fe]' : 'text-[var(--t-text-muted)]'} />
         <span className="flex-1 min-w-0 text-xs font-medium truncate">{t.name}</span>
         {t.rowCount > 0 && <span className="text-[10px] text-[var(--t-text-muted)] shrink-0">{t.rowCount.toLocaleString()}</span>}
         <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${
@@ -1431,7 +1431,7 @@ function LeftTreePanel({
         <div
           className={`flex items-center gap-1.5 py-1 px-2 group cursor-pointer transition-all ${
             isDragTarget
-              ? 'bg-teal-50 border-l-2 border-l-teal-500 border border-dashed border-teal-400 rounded-r-md mx-1'
+              ? 'bg-[#e0e0e0] border-l-2 border-l-teal-500 border border-dashed border-[#0f62fe] rounded-r-md mx-1'
               : 'border-l-2 border-l-transparent hover:bg-[var(--t-bg)]'
           }`}
           style={{ paddingLeft: `${8 + depth * 16}px` }}
@@ -1443,11 +1443,11 @@ function LeftTreePanel({
           <span className="w-3 text-[var(--t-text-muted)] flex-shrink-0">
             {hasContent ? (isCollapsed ? <ChevronRight size={11} /> : <ChevronDown size={11} />) : <span className="w-3" />}
           </span>
-          <FolderOpen size={12} className={isDragTarget ? 'text-teal-500' : 'text-amber-500'} />
+          <FolderOpen size={12} className={isDragTarget ? 'text-[#0f62fe]' : 'text-amber-500'} />
           {isEditing ? (
             <input
               autoFocus
-              className="flex-1 min-w-0 text-xs font-semibold text-[var(--t-text)] bg-[var(--t-panel)] border border-teal-400 rounded px-1 py-0.5 focus:outline-none"
+              className="flex-1 min-w-0 text-xs font-semibold text-[var(--t-text)] bg-[var(--t-panel)] border border-[#0f62fe] px-1 py-0.5 focus:outline-none"
               value={editFolderName}
               onChange={e => setEditFolderName(e.target.value)}
               onBlur={() => handleFolderRename(folder.id)}
@@ -1501,16 +1501,16 @@ function LeftTreePanel({
       {/* Header */}
       <div className="px-3 py-2.5 border-b border-[var(--t-border-light)]">
         <div className="flex items-center justify-between mb-2">
-          <h3 className="text-xs font-bold text-[var(--t-text-muted)] uppercase tracking-wider">Tables</h3>
+          <h3 className="text-xs font-semibold text-[var(--t-text-muted)]">Tables</h3>
           <div className="flex items-center gap-0.5">
-            <button onClick={onCreateFolder} className="p-1 rounded-md text-[var(--t-text-muted)] hover:text-amber-600 hover:bg-amber-50" title="New Folder">
+            <button onClick={onCreateFolder} className="p-1 text-[var(--t-text-muted)] hover:text-amber-600 hover:bg-amber-50" title="New Folder">
               <FolderPlus size={13} />
             </button>
-            <button onClick={onCreateTable} className="p-1 rounded-md text-teal-600 hover:bg-teal-50" title="Add Table">
+            <button onClick={onCreateTable} className="p-1 text-[#0f62fe] hover:bg-[#e0e0e0]" title="Add Table">
               <Plus size={13} />
             </button>
             {onOpenSettings && (
-              <button onClick={onOpenSettings} className="p-1 rounded-md text-[var(--t-text-muted)] hover:text-teal-600 hover:bg-teal-50" title="Settings (connections, API keys)">
+              <button onClick={onOpenSettings} className="p-1 text-[var(--t-text-muted)] hover:text-[#0f62fe] hover:bg-[#e0e0e0]" title="Settings (connections, API keys)">
                 <Settings size={13} />
               </button>
             )}
@@ -1519,7 +1519,7 @@ function LeftTreePanel({
         <div className="relative">
           <Search size={12} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[var(--t-text-muted)]" />
           <input
-            className="w-full pl-7 pr-3 py-1.5 text-xs border border-[var(--t-border)] rounded-lg focus:outline-none focus:ring-1 focus:ring-teal-500 bg-[var(--t-bg)]"
+            className="w-full pl-7 pr-3 py-1.5 text-xs border border-[var(--t-border)] focus:outline-none focus:ring-1 focus:ring-[#0f62fe] bg-[var(--t-bg)]"
             placeholder="Search..."
             value={search}
             onChange={e => setSearch(e.target.value)}
@@ -1530,7 +1530,7 @@ function LeftTreePanel({
       {/* Tree list */}
       <div
         className={`flex-1 overflow-y-auto py-1 transition-all ${
-          isRootDropTarget ? 'bg-teal-50/30 border-2 border-dashed border-teal-300 rounded-lg m-1' : ''
+          isRootDropTarget ? 'bg-[#e0e0e0] border-2 border-dashed border-[#0f62fe]  m-1' : ''
         }`}
         onDragOver={e => { e.preventDefault(); setDragOver('root'); }}
         onDragLeave={() => setDragOver(null)}
@@ -1538,7 +1538,7 @@ function LeftTreePanel({
       >
         {loading ? (
           <div className="flex items-center justify-center py-10">
-            <Loader2 size={16} className="animate-spin text-teal-400" />
+            <Loader2 size={16} className="animate-spin text-[#0f62fe]" />
           </div>
         ) : rootItems.length === 0 && search ? (
           <div className="py-10 text-center text-[var(--t-text-muted)] text-xs">No match</div>
@@ -1553,7 +1553,7 @@ function LeftTreePanel({
             )}
             {/* Drop zone hint at bottom when dragging */}
             {dragItem && (
-              <div className="mx-2 mt-2 py-3 text-center text-[10px] text-teal-500 border-2 border-dashed border-teal-300 rounded-lg bg-teal-50/50 transition-all">
+              <div className="mx-2 mt-2 py-3 text-center text-[10px] text-[#0f62fe] border-2 border-dashed border-[#0f62fe] bg-[#e0e0e0] transition-all">
                 Drop here to move to root
               </div>
             )}
@@ -1565,10 +1565,10 @@ function LeftTreePanel({
       {contextMenu && (
         <div
           ref={contextRef}
-          className="fixed z-[100] bg-[var(--t-panel)] border border-[var(--t-border)] rounded-lg shadow-xl py-1 min-w-[160px]"
+          className="fixed z-[100] bg-[var(--t-panel)] border border-[var(--t-border)] py-1 min-w-[160px]"
           style={{ left: contextMenu.x, top: contextMenu.y }}
         >
-          <div className="px-3 py-1.5 text-[10px] font-semibold text-[var(--t-text-muted)] uppercase tracking-wider border-b border-[var(--t-border-light)] mb-0.5">
+          <div className="px-3 py-1.5 text-[10px] font-semibold text-[var(--t-text-muted)] border-b border-[var(--t-border-light)] mb-0.5">
             {contextMenu.tableName}
           </div>
           {folders.length > 0 && (
@@ -1578,12 +1578,12 @@ function LeftTreePanel({
                   key={f.id}
                   onClick={() => { onMoveTable(contextMenu.tableId, f.id); setContextMenu(null); }}
                   className={`w-full text-left px-3 py-1.5 text-xs hover:bg-[var(--t-bg)] flex items-center gap-2 transition-colors ${
-                    contextMenu.folderId === f.id ? 'text-teal-600 font-medium' : 'text-[var(--t-text-secondary)]'
+                    contextMenu.folderId === f.id ? 'text-[#0f62fe] font-medium' : 'text-[var(--t-text-secondary)]'
                   }`}
                 >
                   <FolderOpen size={11} className="text-amber-500" />
                   Move to {f.name}
-                  {contextMenu.folderId === f.id && <Check size={10} className="ml-auto text-teal-500" />}
+                  {contextMenu.folderId === f.id && <Check size={10} className="ml-auto text-[#0f62fe]" />}
                 </button>
               ))}
             </>
@@ -1681,24 +1681,24 @@ function ApiSpecPanel({ tableId, tableName }: { tableId: string; tableName: stri
     <div className="flex-1 overflow-hidden flex flex-col">
       <div className="flex-shrink-0 px-5 py-3 bg-[var(--t-panel)] border-b border-[var(--t-border-light)] flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <Code size={14} className="text-teal-500" />
+          <Code size={14} className="text-[#0f62fe]" />
           <span className="text-sm font-semibold text-[var(--t-text)]">OpenAPI spec — {tableName}</span>
         </div>
         <div className="flex items-center gap-1">
-          <div className="inline-flex rounded border border-[var(--t-border)] overflow-hidden mr-2">
+          <div className="inline-flex border border-[var(--t-border)] overflow-hidden mr-2">
             <button
               onClick={() => setView('swagger')}
-              className={`px-2 py-1 text-[11px] font-medium ${view === 'swagger' ? 'bg-teal-500 text-white' : 'text-[var(--t-text-muted)] hover:bg-[var(--t-panel-hover)]'}`}
+              className={`px-2 py-1 text-[11px] font-medium ${view === 'swagger' ? 'bg-[#0f62fe] text-white' : 'text-[var(--t-text-muted)] hover:bg-[var(--t-panel-hover)]'}`}
             >Swagger</button>
             <button
               onClick={() => setView('raw')}
-              className={`px-2 py-1 text-[11px] font-medium ${view === 'raw' ? 'bg-teal-500 text-white' : 'text-[var(--t-text-muted)] hover:bg-[var(--t-panel-hover)]'}`}
+              className={`px-2 py-1 text-[11px] font-medium ${view === 'raw' ? 'bg-[#0f62fe] text-white' : 'text-[var(--t-text-muted)] hover:bg-[var(--t-panel-hover)]'}`}
             >Raw</button>
           </div>
           <button
             onClick={copy}
             disabled={!specText}
-            className="flex items-center gap-1 px-2 py-1 rounded text-[11px] font-medium text-[var(--t-text-muted)] hover:bg-[var(--t-panel-hover)] disabled:opacity-50"
+            className="flex items-center gap-1 px-2 py-1 text-[11px] font-medium text-[var(--t-text-muted)] hover:bg-[var(--t-panel-hover)] disabled:opacity-50"
             title="Copy to clipboard"
           >
             {copied ? <Check size={12} className="text-emerald-500" /> : <Copy size={12} />} Copy
@@ -1706,7 +1706,7 @@ function ApiSpecPanel({ tableId, tableName }: { tableId: string; tableName: stri
           <button
             onClick={download}
             disabled={!specText}
-            className="flex items-center gap-1 px-2 py-1 rounded text-[11px] font-medium text-[var(--t-text-muted)] hover:bg-[var(--t-panel-hover)] disabled:opacity-50"
+            className="flex items-center gap-1 px-2 py-1 text-[11px] font-medium text-[var(--t-text-muted)] hover:bg-[var(--t-panel-hover)] disabled:opacity-50"
             title="Download as JSON"
           >
             <Download size={12} /> Download
@@ -1716,10 +1716,10 @@ function ApiSpecPanel({ tableId, tableName }: { tableId: string; tableName: stri
       <div className="flex-1 overflow-auto bg-[var(--t-bg)]">
         {loading ? (
           <div className="flex items-center justify-center py-16">
-            <Loader2 size={20} className="animate-spin text-teal-400" />
+            <Loader2 size={20} className="animate-spin text-[#0f62fe]" />
           </div>
         ) : error ? (
-          <div className="m-4 flex items-center gap-2 text-sm text-amber-700 bg-amber-50 rounded-lg px-4 py-3">
+          <div className="m-4 flex items-center gap-2 text-sm text-amber-700 bg-amber-50 px-4 py-3">
             <AlertCircle size={16} /> {error}
           </div>
         ) : view === 'swagger' && memoSpec ? (
@@ -1967,7 +1967,7 @@ function SqlEditorPanel({ connections }: { connections: RepoConnection[] }) {
         <button
           onClick={() => runQuery()}
           disabled={activeTab.running || !connId || !activeTab.sql.trim()}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-teal-600 text-white hover:bg-teal-700 disabled:opacity-50 transition-colors"
+          className="flex items-center gap-1.5 px-3 h-8 text-xs font-medium bg-[#0f62fe] text-white hover:bg-[#0353e9] disabled:opacity-50 transition-colors"
           title="Run (Ctrl+Enter)"
         >
           {activeTab.running ? <Loader2 size={12} className="animate-spin" /> : <Play size={12} />}
@@ -1976,7 +1976,7 @@ function SqlEditorPanel({ connections }: { connections: RepoConnection[] }) {
         <button
           onClick={() => updateTab(activeTab.id, { sql: formatSql(activeTab.sql) })}
           disabled={!activeTab.sql.trim()}
-          className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium text-[var(--t-text-secondary)] hover:bg-[var(--t-panel-hover)] disabled:opacity-40 transition-colors"
+          className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium text-[var(--t-text-secondary)] hover:bg-[var(--t-panel-hover)] disabled:opacity-40 transition-colors"
           title="Format SQL"
         >
           <Code size={12} /> Format
@@ -1984,14 +1984,14 @@ function SqlEditorPanel({ connections }: { connections: RepoConnection[] }) {
         <div className="relative" ref={historyRef}>
           <button
             onClick={() => setShowHistory(!showHistory)}
-            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium text-[var(--t-text-secondary)] hover:bg-[var(--t-panel-hover)] transition-colors"
+            className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium text-[var(--t-text-secondary)] hover:bg-[var(--t-panel-hover)] transition-colors"
             title="Query History"
           >
             <Clock size={12} /> History
           </button>
           {showHistory && history.length > 0 && (
-            <div className="absolute top-full left-0 mt-1 w-96 max-h-72 overflow-y-auto bg-[var(--t-panel)] border border-[var(--t-border)] rounded-xl shadow-xl z-50">
-              <div className="px-3 py-2 border-b border-[var(--t-border-light)] text-[10px] font-semibold text-[var(--t-text-muted)] uppercase tracking-wider">Recent Queries</div>
+            <div className="absolute top-full left-0 mt-1 w-96 max-h-72 overflow-y-auto bg-[var(--t-panel)] border border-[var(--t-border)] z-50">
+              <div className="px-3 py-2 border-b border-[var(--t-border-light)] text-[10px] font-semibold text-[var(--t-text-muted)]">Recent Queries</div>
               {history.map((h, i) => (
                 <button
                   key={i}
@@ -2000,7 +2000,7 @@ function SqlEditorPanel({ connections }: { connections: RepoConnection[] }) {
                 >
                   <div className="flex items-center gap-2 mb-0.5">
                     <span className="text-[10px] text-[var(--t-text-muted)]">{h.time}</span>
-                    <span className="text-[10px] px-1.5 py-0.5 rounded bg-[var(--t-panel-hover)] text-[var(--t-text-muted)]">{h.connName}</span>
+                    <span className="text-[10px] px-1.5 py-0.5 bg-[var(--t-panel-hover)] text-[var(--t-text-muted)]">{h.connName}</span>
                   </div>
                   <div className="text-xs font-mono text-[var(--t-text-secondary)] truncate">{h.sql}</div>
                 </button>
@@ -2010,7 +2010,7 @@ function SqlEditorPanel({ connections }: { connections: RepoConnection[] }) {
         </div>
         <button
           onClick={() => setShowSchema(s => !s)}
-          className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors ${showSchema ? 'text-teal-600 bg-teal-50' : 'text-[var(--t-text-secondary)] hover:bg-[var(--t-panel-hover)]'}`}
+          className={`flex items-center gap-1.5 px-2.5 py-1.5  text-xs font-medium transition-colors ${showSchema ? 'text-[#0f62fe] bg-[#e0e0e0]' : 'text-[var(--t-text-secondary)] hover:bg-[var(--t-panel-hover)]'}`}
           title="Toggle Schema Browser"
         >
           <Table2 size={12} /> Schema
@@ -2018,10 +2018,10 @@ function SqlEditorPanel({ connections }: { connections: RepoConnection[] }) {
         <div className="flex-1" />
         {activeTab.result && !activeTab.result.error && activeTab.result.columns.length > 0 && (
           <div className="flex items-center gap-1">
-            <button onClick={exportCsv} className="flex items-center gap-1 px-2 py-1 rounded text-[10px] font-medium text-[var(--t-text-muted)] hover:bg-[var(--t-panel-hover)] transition-colors" title="Export CSV">
+            <button onClick={exportCsv} className="flex items-center gap-1 px-2 py-1 text-[10px] font-medium text-[var(--t-text-muted)] hover:bg-[var(--t-panel-hover)] transition-colors" title="Export CSV">
               <Download size={10} /> CSV
             </button>
-            <button onClick={exportXlsx} className="flex items-center gap-1 px-2 py-1 rounded text-[10px] font-medium text-[var(--t-text-muted)] hover:bg-[var(--t-panel-hover)] transition-colors" title="Export XLSX">
+            <button onClick={exportXlsx} className="flex items-center gap-1 px-2 py-1 text-[10px] font-medium text-[var(--t-text-muted)] hover:bg-[var(--t-panel-hover)] transition-colors" title="Export XLSX">
               <Download size={10} /> XLSX
             </button>
           </div>
@@ -2039,13 +2039,13 @@ function SqlEditorPanel({ connections }: { connections: RepoConnection[] }) {
             onClick={() => setActiveTabId(tab.id)}
             className={`group flex items-center gap-1.5 px-3 py-1.5 text-[11px] font-medium cursor-pointer border-b-2 transition-colors whitespace-nowrap ${
               activeTabId === tab.id
-                ? 'border-teal-500 text-teal-700 bg-[var(--t-panel)]'
-                : 'border-transparent text-[var(--t-text-muted)] hover:text-[var(--t-text-secondary)] hover:bg-[var(--t-panel-hover)]'
+                ? 'border-[#0f62fe] text-[#161616] bg-[var(--t-panel)]'
+                : 'border-transparent text-[#525252] hover:text-[#161616] hover:bg-[var(--t-panel-hover)]'
             }`}
           >
-            <Terminal size={10} className={activeTabId === tab.id ? 'text-teal-500' : 'text-[var(--t-text-muted)]'} />
+            <Terminal size={10} className={activeTabId === tab.id ? 'text-[#0f62fe]' : 'text-[var(--t-text-muted)]'} />
             {tab.name}
-            {tab.running && <Loader2 size={10} className="animate-spin text-teal-500" />}
+            {tab.running && <Loader2 size={10} className="animate-spin text-[#0f62fe]" />}
             {tabs.length > 1 && (
               <button
                 onClick={e => { e.stopPropagation(); closeTab(tab.id); }}
@@ -2056,7 +2056,7 @@ function SqlEditorPanel({ connections }: { connections: RepoConnection[] }) {
             )}
           </div>
         ))}
-        <button onClick={addTab} className="p-1 text-[var(--t-text-muted)] hover:text-teal-600 hover:bg-[var(--t-panel-hover)] rounded transition-colors ml-1" title="New Tab">
+        <button onClick={addTab} className="p-1 text-[var(--t-text-muted)] hover:text-[#0f62fe] hover:bg-[var(--t-panel-hover)] transition-colors ml-1" title="New Tab">
           <Plus size={12} />
         </button>
       </div>
@@ -2070,7 +2070,7 @@ function SqlEditorPanel({ connections }: { connections: RepoConnection[] }) {
               <div className="relative">
                 <Search size={11} className="absolute left-2 top-1/2 -translate-y-1/2 text-[var(--t-text-muted)]" />
                 <input
-                  className="w-full pl-7 pr-2 py-1 text-[11px] border border-[var(--t-border)] rounded-md focus:outline-none focus:ring-1 focus:ring-teal-500 bg-[var(--t-bg)]"
+                  className="w-full pl-7 pr-2 py-1 text-[11px] border border-[var(--t-border)] focus:outline-none focus:ring-1 focus:ring-[#0f62fe] bg-[var(--t-bg)]"
                   placeholder="Filter tables..."
                   value={schemaSearch}
                   onChange={e => setSchemaSearch(e.target.value)}
@@ -2080,7 +2080,7 @@ function SqlEditorPanel({ connections }: { connections: RepoConnection[] }) {
             <div className="flex-1 overflow-y-auto py-1">
               {schemaLoading ? (
                 <div className="flex items-center justify-center py-6">
-                  <Loader2 size={14} className="animate-spin text-teal-400" />
+                  <Loader2 size={14} className="animate-spin text-[#0f62fe]" />
                 </div>
               ) : filteredSchema.length === 0 ? (
                 <div className="text-center py-6 text-[11px] text-[var(--t-text-muted)]">No tables found</div>
@@ -2100,7 +2100,7 @@ function SqlEditorPanel({ connections }: { connections: RepoConnection[] }) {
                       <span className="flex-1 text-[11px] font-mono text-[var(--t-text-secondary)] truncate">{tbl.name}</span>
                       <button
                         onClick={e => { e.stopPropagation(); insertTableName(tbl.name); }}
-                        className="opacity-0 group-hover:opacity-100 text-[var(--t-text-muted)] hover:text-teal-600 p-0.5 transition-opacity"
+                        className="opacity-0 group-hover:opacity-100 text-[var(--t-text-muted)] hover:text-[#0f62fe] p-0.5 transition-opacity"
                         title="Insert table name"
                       >
                         <Plus size={9} />
@@ -2160,7 +2160,7 @@ function SqlEditorPanel({ connections }: { connections: RepoConnection[] }) {
               <button
                 onClick={() => updateTab(activeTab.id, { resultTab: 'results' })}
                 className={`px-3 py-1.5 text-[11px] font-medium border-b-2 transition-colors ${
-                  activeTab.resultTab === 'results' ? 'border-teal-500 text-teal-700' : 'border-transparent text-[var(--t-text-muted)] hover:text-[var(--t-text-secondary)]'
+                  activeTab.resultTab === 'results' ? 'border-[#0f62fe] text-[#161616]' : 'border-transparent text-[#525252] hover:text-[#161616]'
                 }`}
               >
                 <Table2 size={10} className="inline mr-1 -mt-0.5" />
@@ -2172,7 +2172,7 @@ function SqlEditorPanel({ connections }: { connections: RepoConnection[] }) {
               <button
                 onClick={() => updateTab(activeTab.id, { resultTab: 'messages' })}
                 className={`px-3 py-1.5 text-[11px] font-medium border-b-2 transition-colors ${
-                  activeTab.resultTab === 'messages' ? 'border-teal-500 text-teal-700' : 'border-transparent text-[var(--t-text-muted)] hover:text-[var(--t-text-secondary)]'
+                  activeTab.resultTab === 'messages' ? 'border-[#0f62fe] text-[#161616]' : 'border-transparent text-[#525252] hover:text-[#161616]'
                 }`}
               >
                 <Terminal size={10} className="inline mr-1 -mt-0.5" />
@@ -2199,7 +2199,7 @@ function SqlEditorPanel({ connections }: { connections: RepoConnection[] }) {
                     <div className="text-[var(--t-text-muted)] text-center py-8">No messages</div>
                   ) : (
                     activeTab.messages.map((msg, i) => (
-                      <div key={i} className={`px-2 py-1 rounded ${msg.startsWith('Error') ? 'text-red-600 bg-red-50' : 'text-[var(--t-text-secondary)] bg-[var(--t-bg)]'}`}>
+                      <div key={i} className={`px-2 py-1  ${msg.startsWith('Error') ? 'text-red-600 bg-red-50' : 'text-[var(--t-text-secondary)] bg-[var(--t-bg)]'}`}>
                         {msg}
                       </div>
                     ))
@@ -2207,11 +2207,11 @@ function SqlEditorPanel({ connections }: { connections: RepoConnection[] }) {
                 </div>
               ) : activeTab.running ? (
                 <div className="flex items-center justify-center py-16">
-                  <Loader2 size={20} className="animate-spin text-teal-400" />
+                  <Loader2 size={20} className="animate-spin text-[#0f62fe]" />
                   <span className="ml-2 text-xs text-[var(--t-text-muted)]">Executing query...</span>
                 </div>
               ) : activeTab.result?.error ? (
-                <div className="px-4 py-3 text-xs text-red-600 bg-red-50 flex items-start gap-2 m-3 rounded-lg">
+                <div className="px-4 py-3 text-xs text-red-600 bg-red-50 flex items-start gap-2 m-3">
                   <AlertCircle size={14} className="flex-shrink-0 mt-0.5" />
                   <pre className="whitespace-pre-wrap font-mono">{activeTab.result.error}</pre>
                 </div>
@@ -2589,6 +2589,11 @@ export default function DataRepository() {
 
   return (
     <div className="flex flex-col h-full bg-[var(--t-bg)] overflow-hidden">
+      {/* Compact page title — same h1 as every other screen, no extra toolbar. */}
+      <div className="pb-3 flex items-baseline gap-3 flex-shrink-0">
+        <h1 className="text-[var(--t-text)]">Data Repository</h1>
+        <p className="text-[12px] text-[var(--t-text-muted)] truncate">Tables managed by Orch with auto-generated CRUD APIs</p>
+      </div>
       {/* Main content — top wordmark bar removed; Settings now lives
           inline with the sidebar's New Folder / Add Table actions
           so the empty header doesn't waste vertical space. */}
@@ -2623,28 +2628,28 @@ export default function DataRepository() {
         {/* Right panel */}
         <main className="flex-1 overflow-hidden flex flex-col">
           {/* Tab bar */}
-          <div className="flex-shrink-0 bg-[var(--t-panel)] border-b border-[var(--t-border)] flex items-center gap-0 px-4">
+          <div className="flex-shrink-0 bg-[var(--t-panel)] border-b border-[var(--t-border)] flex items-center gap-0 px-4 overflow-x-auto">
             <button
               onClick={() => setRightTab('data')}
-              className={`px-3 py-2 text-xs font-medium border-b-2 transition-colors ${rightTab === 'data' ? 'border-teal-500 text-teal-700' : 'border-transparent text-[var(--t-text-muted)] hover:text-[var(--t-text-secondary)]'}`}
+              className={`h-10 px-4 text-sm font-normal border-b-2 flex-shrink-0 transition-colors ${rightTab === 'data' ? 'border-[#0f62fe] text-[#161616]' : 'border-transparent text-[#525252] hover:text-[#161616]'}`}
             >
               <Table2 size={12} className="inline mr-1 -mt-0.5" /> Data
             </button>
             <button
               onClick={() => setRightTab('properties')}
-              className={`px-3 py-2 text-xs font-medium border-b-2 transition-colors ${rightTab === 'properties' ? 'border-teal-500 text-teal-700' : 'border-transparent text-[var(--t-text-muted)] hover:text-[var(--t-text-secondary)]'}`}
+              className={`h-10 px-4 text-sm font-normal border-b-2 flex-shrink-0 transition-colors ${rightTab === 'properties' ? 'border-[#0f62fe] text-[#161616]' : 'border-transparent text-[#525252] hover:text-[#161616]'}`}
             >
               <Columns size={12} className="inline mr-1 -mt-0.5" /> Properties
             </button>
             <button
               onClick={() => setRightTab('spec')}
-              className={`px-3 py-2 text-xs font-medium border-b-2 transition-colors ${rightTab === 'spec' ? 'border-teal-500 text-teal-700' : 'border-transparent text-[var(--t-text-muted)] hover:text-[var(--t-text-secondary)]'}`}
+              className={`h-10 px-4 text-sm font-normal border-b-2 flex-shrink-0 transition-colors ${rightTab === 'spec' ? 'border-[#0f62fe] text-[#161616]' : 'border-transparent text-[#525252] hover:text-[#161616]'}`}
             >
               <Code size={12} className="inline mr-1 -mt-0.5" /> API Spec
             </button>
             <button
               onClick={() => setRightTab('sql')}
-              className={`px-3 py-2 text-xs font-medium border-b-2 transition-colors ${rightTab === 'sql' ? 'border-teal-500 text-teal-700' : 'border-transparent text-[var(--t-text-muted)] hover:text-[var(--t-text-secondary)]'}`}
+              className={`h-10 px-4 text-sm font-normal border-b-2 flex-shrink-0 transition-colors ${rightTab === 'sql' ? 'border-[#0f62fe] text-[#161616]' : 'border-transparent text-[#525252] hover:text-[#161616]'}`}
             >
               <Database size={12} className="inline mr-1 -mt-0.5" /> SQL Editor
             </button>
@@ -2657,7 +2662,7 @@ export default function DataRepository() {
                 {/* Table action bar */}
                 <div className="flex-shrink-0 px-5 py-2 bg-[var(--t-panel)] border-b border-[var(--t-border-light)] flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <Table2 size={14} className="text-teal-500" />
+                    <Table2 size={14} className="text-[#0f62fe]" />
                     <span className="text-sm font-semibold text-[var(--t-text)]">{selectedTable.name}</span>
                     {selectedTable.rowCount > 0 && <span className="text-[11px] text-[var(--t-text-muted)]">{selectedTable.rowCount.toLocaleString()} rows</span>}
                   </div>
@@ -2666,7 +2671,7 @@ export default function DataRepository() {
                       onChange={e => { const file = e.target.files?.[0]; if (file) handleImport(file); e.target.value = ''; }}
                     />
                     <button onClick={() => fileInputRef.current?.click()} disabled={importingId !== null}
-                      className="flex items-center gap-1 px-2 py-1 rounded text-[11px] font-medium text-[var(--t-text-muted)] hover:bg-[var(--t-panel-hover)] disabled:opacity-50" title="Import file">
+                      className="flex items-center gap-1 px-2 py-1 text-[11px] font-medium text-[var(--t-text-muted)] hover:bg-[var(--t-panel-hover)] disabled:opacity-50" title="Import file">
                       {importingId ? <Loader2 size={12} className="animate-spin" /> : <Upload size={12} />} Import
                     </button>
                     <button
@@ -2678,13 +2683,13 @@ export default function DataRepository() {
                           folderId: selectedTable.folderId ?? '',
                         });
                       }}
-                      className="flex items-center gap-1 px-2 py-1 rounded text-[11px] font-medium text-[var(--t-text-muted)] hover:text-teal-600 hover:bg-teal-500/10"
+                      className="flex items-center gap-1 px-2 py-1 text-[11px] font-medium text-[var(--t-text-muted)] hover:text-[#0f62fe] hover:bg-[#e8e8e8]"
                       title="Edit table properties"
                     >
                       <Pencil size={12} />
                     </button>
                     <button onClick={() => setDeleteTarget(selectedTable)}
-                      className="flex items-center gap-1 px-2 py-1 rounded text-[11px] font-medium text-[var(--t-text-muted)] hover:text-red-600 hover:bg-red-50" title="Remove from list">
+                      className="flex items-center gap-1 px-2 py-1 text-[11px] font-medium text-[var(--t-text-muted)] hover:text-red-600 hover:bg-red-50" title="Remove from list">
                       <Trash2 size={12} />
                     </button>
                   </div>
@@ -2715,7 +2720,7 @@ export default function DataRepository() {
               <div className="flex-1 overflow-hidden flex flex-col">
                 <div className="flex-shrink-0 px-5 py-3 bg-[var(--t-panel)] border-b border-[var(--t-border-light)]">
                   <div className="flex items-center gap-2 mb-2">
-                    <Table2 size={14} className="text-teal-500" />
+                    <Table2 size={14} className="text-[#0f62fe]" />
                     <span className="text-sm font-semibold text-[var(--t-text)]">{selectedTable.name}</span>
                     {structureEngine && <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-[var(--t-panel-hover)] text-[var(--t-text-muted)] font-medium">{structureEngine}</span>}
                   </div>
@@ -2729,16 +2734,16 @@ export default function DataRepository() {
                 <div className="flex-1 overflow-auto p-5">
                   {structureLoading ? (
                     <div className="flex items-center justify-center py-16">
-                      <Loader2 size={20} className="animate-spin text-teal-400" />
+                      <Loader2 size={20} className="animate-spin text-[#0f62fe]" />
                     </div>
                   ) : structureError ? (
-                    <div className="flex items-center gap-2 text-sm text-amber-700 bg-amber-50 rounded-lg px-4 py-3">
+                    <div className="flex items-center gap-2 text-sm text-amber-700 bg-amber-50 px-4 py-3">
                       <AlertCircle size={16} /> {structureError}
                     </div>
                   ) : structureCols.length === 0 ? (
                     <div className="text-center py-16 text-[var(--t-text-muted)] text-sm">No columns found</div>
                   ) : (
-                    <div className="rounded-xl border border-[var(--t-border)] overflow-hidden bg-[var(--t-panel)] shadow-sm">
+                    <div className="border border-[var(--t-border)] overflow-hidden bg-[var(--t-panel)]">
                       <table className="w-full text-sm border-collapse">
                         <thead>
                           <tr className="bg-[var(--t-bg)] border-b border-[var(--t-border)]">
@@ -2758,7 +2763,7 @@ export default function DataRepository() {
                                 <code className="text-xs font-mono font-medium text-[var(--t-text)]">{col.name}</code>
                               </td>
                               <td className="px-4 py-2">
-                                <span className="text-xs px-2 py-0.5 rounded bg-[var(--t-accent-light)] text-blue-700 font-medium">{col.type}</span>
+                                <span className="text-xs px-2 py-0.5 bg-[var(--t-accent-light)] text-blue-700 font-medium">{col.type}</span>
                               </td>
                               <td className="px-4 py-2 text-center">
                                 {col.nullable
@@ -2775,14 +2780,14 @@ export default function DataRepository() {
                                   <button
                                     onClick={() => selectedTable && runEncryptAction(selectedTable.id, col.name, true, 'preview')}
                                     disabled={encryptingCol === col.name}
-                                    className="inline-flex items-center gap-1 text-[11px] px-2 py-1 rounded bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500/20 disabled:opacity-50"
+                                    className="inline-flex items-center gap-1 text-[11px] px-2 py-1 bg-[#f4f4f4] text-emerald-500 hover:bg-[#e8e8e8] disabled:opacity-50"
                                     title="Decrypt this column (app-level AES-256-GCM)"
                                   ><Unlock size={11} /> Decrypt</button>
                                 ) : (
                                   <button
                                     onClick={() => { if (selectedTable && !isKeyColumn(col.name)) runEncryptAction(selectedTable.id, col.name, false, 'preview'); }}
                                     disabled={encryptingCol === col.name || isKeyColumn(col.name)}
-                                    className="inline-flex items-center gap-1 text-[11px] px-2 py-1 rounded bg-amber-500/10 text-amber-600 hover:bg-amber-500/20 disabled:opacity-40 disabled:cursor-not-allowed"
+                                    className="inline-flex items-center gap-1 text-[11px] px-2 py-1 bg-[#f4f4f4] text-amber-600 hover:bg-[#e8e8e8] disabled:opacity-40 disabled:cursor-not-allowed"
                                     title={isKeyColumn(col.name) ? 'Key/audit columns cannot be encrypted (random-IV ciphertext breaks lookups)' : 'Encrypt this column (app-level AES-256-GCM)'}
                                   ><Lock size={11} /> Encrypt</button>
                                 )}
@@ -2829,7 +2834,7 @@ export default function DataRepository() {
               <input
                 value={editTableForm.name}
                 onChange={(e) => setEditTableForm((f) => ({ ...f, name: e.target.value }))}
-                className="w-full px-3 py-1.5 text-sm rounded border border-[var(--t-border)] bg-[var(--t-input)] text-[var(--t-text)]"
+                className="w-full px-3 py-1.5 text-sm border border-[var(--t-border)] bg-[var(--t-input)] text-[var(--t-text)]"
               />
             </label>
             <label className="block">
@@ -2838,7 +2843,7 @@ export default function DataRepository() {
                 rows={3}
                 value={editTableForm.description}
                 onChange={(e) => setEditTableForm((f) => ({ ...f, description: e.target.value }))}
-                className="w-full px-3 py-1.5 text-sm rounded border border-[var(--t-border)] bg-[var(--t-input)] text-[var(--t-text)]"
+                className="w-full px-3 py-1.5 text-sm border border-[var(--t-border)] bg-[var(--t-input)] text-[var(--t-text)]"
               />
             </label>
             <label className="block">
@@ -2846,7 +2851,7 @@ export default function DataRepository() {
               <select
                 value={editTableForm.folderId}
                 onChange={(e) => setEditTableForm((f) => ({ ...f, folderId: e.target.value }))}
-                className="w-full px-3 py-1.5 text-sm rounded border border-[var(--t-border)] bg-[var(--t-input)] text-[var(--t-text)]"
+                className="w-full px-3 py-1.5 text-sm border border-[var(--t-border)] bg-[var(--t-input)] text-[var(--t-text)]"
               >
                 <option value="">— Root (no folder) —</option>
                 {folders.map((fl: any) => (
@@ -2857,12 +2862,12 @@ export default function DataRepository() {
             <div className="flex justify-end gap-2 pt-1">
               <button
                 onClick={() => setEditTable(null)}
-                className="px-3 py-1.5 text-xs rounded border border-[var(--t-border)] text-[var(--t-text-secondary)] hover:bg-[var(--t-panel-hover)]"
+                className="px-3 py-1.5 text-xs border border-[var(--t-border)] text-[var(--t-text-secondary)] hover:bg-[var(--t-panel-hover)]"
               >Cancel</button>
               <button
                 onClick={handleSaveEditTable}
                 disabled={editTableSaving}
-                className="px-3 py-1.5 text-xs rounded bg-teal-500 text-white font-medium hover:bg-teal-600 disabled:opacity-50"
+                className="px-3 h-8 text-xs bg-[#0f62fe] text-white font-medium hover:bg-[#0f62fe] disabled:opacity-50"
               >{editTableSaving ? 'Saving…' : 'Save'}</button>
             </div>
           </div>
@@ -2883,7 +2888,7 @@ export default function DataRepository() {
                 ? 'Reverts the column to plaintext (app-level AES-256-GCM). Existing rows are decrypted in place.'
                 : 'Encrypts the column with app-level AES-256-GCM — encrypt-on-write, decrypt-on-read through Orch’s API. Existing rows are migrated in place.'}
             </p>
-            <div className="text-[12px] p-3 rounded-lg border border-[var(--t-border)] bg-[var(--t-bg)] space-y-1">
+            <div className="text-[12px] p-3 border border-[var(--t-border)] bg-[var(--t-bg)] space-y-1">
               <div className="flex justify-between"><span className="text-[var(--t-text-muted)]">Column</span><code className="text-[var(--t-text)]">{encryptPreview.column}</code></div>
               {!encryptPreview.decrypt && (
                 <div className="flex justify-between"><span className="text-[var(--t-text-muted)]">Key version</span><span className="text-[var(--t-text)]">{encryptPreview.keyVersion != null ? `v${encryptPreview.keyVersion}` : '—'}</span></div>
@@ -2896,12 +2901,12 @@ export default function DataRepository() {
             <div className="flex justify-end gap-2 pt-1">
               <button
                 onClick={() => setEncryptPreview(null)}
-                className="px-3 py-1.5 text-xs rounded border border-[var(--t-border)] text-[var(--t-text-secondary)] hover:bg-[var(--t-panel-hover)]"
+                className="px-3 py-1.5 text-xs border border-[var(--t-border)] text-[var(--t-text-secondary)] hover:bg-[var(--t-panel-hover)]"
               >Cancel</button>
               <button
                 onClick={() => runEncryptAction(selectedTable.id, encryptPreview.column, encryptPreview.decrypt, 'apply')}
                 disabled={encryptingCol === encryptPreview.column}
-                className="px-3 py-1.5 text-xs rounded bg-amber-500 text-white font-medium hover:bg-amber-600 disabled:opacity-50"
+                className="px-3 py-1.5 text-xs bg-amber-500 text-white font-medium hover:bg-amber-600 disabled:opacity-50"
               >{encryptingCol === encryptPreview.column ? 'Applying…' : 'Apply'}</button>
             </div>
           </div>
@@ -2964,7 +2969,7 @@ export default function DataRepository() {
                 )}
 
                 {discoverError && (
-                  <div className="flex items-center gap-2 text-sm text-amber-700 bg-amber-50 rounded-lg px-3 py-2">
+                  <div className="flex items-center gap-2 text-sm text-amber-700 bg-amber-50 px-3 py-2">
                     <AlertCircle size={14} /> {discoverError}
                   </div>
                 )}
@@ -2975,7 +2980,7 @@ export default function DataRepository() {
                     <div className="relative">
                       <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--t-text-muted)]" />
                       <input
-                        className="w-full border border-[var(--t-border)] rounded-lg pl-9 pr-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
+                        className="w-full border border-[var(--t-border)] pl-9 pr-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#0f62fe]"
                         placeholder="Search tables..."
                         value={discoverSearch}
                         onChange={e => setDiscoverSearch(e.target.value)}
@@ -2984,7 +2989,7 @@ export default function DataRepository() {
                     <div className="flex items-center justify-between text-xs text-[var(--t-text-muted)]">
                       <span>{discoveredTables.length} available &middot; {selectedExisting.size} selected</span>
                       <button
-                        className="text-teal-600 hover:text-teal-700 font-medium"
+                        className="text-[#0f62fe] hover:text-[#0f62fe] font-medium"
                         onClick={() => {
                           const filtered = discoveredTables.filter(t => !discoverSearch || t.name.toLowerCase().includes(discoverSearch.toLowerCase()));
                           setSelectedExisting(prev => prev.size === filtered.length ? new Set() : new Set(filtered.map(t => t.name)));
@@ -2993,13 +2998,13 @@ export default function DataRepository() {
                         {selectedExisting.size === discoveredTables.filter(t => !discoverSearch || t.name.toLowerCase().includes(discoverSearch.toLowerCase())).length ? 'Deselect all' : 'Select all'}
                       </button>
                     </div>
-                    <div className="max-h-48 overflow-y-auto border border-[var(--t-border)] rounded-lg divide-y divide-[var(--t-border-light)]">
+                    <div className="max-h-48 overflow-y-auto border border-[var(--t-border)] divide-y divide-[var(--t-border-light)]">
                       {discoveredTables
                         .filter(t => !discoverSearch || t.name.toLowerCase().includes(discoverSearch.toLowerCase()))
                         .map(t => (
                           <label
                             key={t.name}
-                            className={`flex items-center gap-3 px-3 py-2 cursor-pointer hover:bg-[var(--t-bg)] transition-colors ${selectedExisting.has(t.name) ? 'bg-teal-50' : ''}`}
+                            className={`flex items-center gap-3 px-3 py-2 cursor-pointer hover:bg-[var(--t-bg)] transition-colors ${selectedExisting.has(t.name) ? 'bg-[#e0e0e0]' : ''}`}
                           >
                             <input
                               type="checkbox"
@@ -3042,7 +3047,7 @@ export default function DataRepository() {
                 Table Name {!createForm.connectionId && <span className="text-red-500">*</span>}
               </label>
               <input
-                className="w-full border border-[var(--t-border)] rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
+                className="w-full border border-[var(--t-border)] px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#0f62fe]"
                 value={createForm.name}
                 onChange={e => setCreateForm(f => ({ ...f, name: e.target.value }))}
                 placeholder={createForm.connectionId ? 'Type a table name to add manually...' : 'my_table'}
@@ -3051,7 +3056,7 @@ export default function DataRepository() {
             <div>
               <label className="block text-sm font-medium text-[var(--t-text-secondary)] mb-1">Description (optional)</label>
               <textarea
-                className="w-full border border-[var(--t-border)] rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 resize-none"
+                className="w-full border border-[var(--t-border)] px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#0f62fe] resize-none"
                 rows={2}
                 value={createForm.description}
                 onChange={e => setCreateForm(f => ({ ...f, description: e.target.value }))}
@@ -3059,21 +3064,21 @@ export default function DataRepository() {
             </div>
 
             {createError && (
-              <div className="flex items-center gap-2 text-sm text-red-600 bg-red-50 rounded-lg px-3 py-2">
+              <div className="flex items-center gap-2 text-sm text-red-600 bg-red-50 px-3 py-2">
                 <AlertCircle size={14} /> {createError}
               </div>
             )}
 
             {/* Actions */}
             <div className="flex justify-end gap-3 pt-2">
-              <button onClick={() => setShowCreateModal(false)} className="px-4 py-2 text-sm rounded-lg border border-[var(--t-border)] text-[var(--t-text-secondary)] hover:bg-[var(--t-bg)]">
+              <button onClick={() => setShowCreateModal(false)} className="px-4 py-2 text-sm border border-[var(--t-border)] text-[var(--t-text-secondary)] hover:bg-[var(--t-bg)]">
                 Cancel
               </button>
               {selectedExisting.size > 0 ? (
                 <button
                   onClick={handleAddExistingTables}
                   disabled={createSubmitting}
-                  className="px-4 py-2 text-sm rounded-lg bg-teal-600 text-white hover:bg-teal-700 disabled:opacity-60 flex items-center gap-2"
+                  className="px-3 h-8 text-sm bg-[#0f62fe] text-white hover:bg-[#0353e9] disabled:opacity-60 flex items-center gap-2"
                 >
                   {createSubmitting && <Loader2 size={14} className="animate-spin" />}
                   Add {selectedExisting.size} Table{selectedExisting.size > 1 ? 's' : ''}
@@ -3082,7 +3087,7 @@ export default function DataRepository() {
                 <button
                   onClick={handleCreateTable}
                   disabled={createSubmitting || !createForm.name}
-                  className="px-4 py-2 text-sm rounded-lg bg-teal-600 text-white hover:bg-teal-700 disabled:opacity-60 flex items-center gap-2"
+                  className="px-3 h-8 text-sm bg-[#0f62fe] text-white hover:bg-[#0353e9] disabled:opacity-60 flex items-center gap-2"
                 >
                   {createSubmitting && <Loader2 size={14} className="animate-spin" />}
                   Add Table
@@ -3100,7 +3105,7 @@ export default function DataRepository() {
             <div>
               <label className="block text-sm font-medium text-[var(--t-text-secondary)] mb-1">Folder Name <span className="text-red-500">*</span></label>
               <input
-                className="w-full border border-[var(--t-border)] rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
+                className="w-full border border-[var(--t-border)] px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#0f62fe]"
                 value={folderForm.name}
                 onChange={e => setFolderForm(f => ({ ...f, name: e.target.value }))}
                 placeholder="e.g. RESDB Tables"
@@ -3124,18 +3129,18 @@ export default function DataRepository() {
               />
             )}
             {folderError && (
-              <div className="flex items-center gap-2 text-sm text-red-600 bg-red-50 rounded-lg px-3 py-2">
+              <div className="flex items-center gap-2 text-sm text-red-600 bg-red-50 px-3 py-2">
                 <AlertCircle size={14} /> {folderError}
               </div>
             )}
             <div className="flex justify-end gap-3 pt-2">
-              <button onClick={() => setShowFolderModal(false)} className="px-4 py-2 text-sm rounded-lg border border-[var(--t-border)] text-[var(--t-text-secondary)] hover:bg-[var(--t-bg)]">
+              <button onClick={() => setShowFolderModal(false)} className="px-4 py-2 text-sm border border-[var(--t-border)] text-[var(--t-text-secondary)] hover:bg-[var(--t-bg)]">
                 Cancel
               </button>
               <button
                 onClick={handleCreateFolder}
                 disabled={folderSubmitting || !folderForm.name}
-                className="px-4 py-2 text-sm rounded-lg bg-teal-600 text-white hover:bg-teal-700 disabled:opacity-60 flex items-center gap-2"
+                className="px-3 h-8 text-sm bg-[#0f62fe] text-white hover:bg-[#0353e9] disabled:opacity-60 flex items-center gap-2"
               >
                 {folderSubmitting && <Loader2 size={14} className="animate-spin" />}
                 Create

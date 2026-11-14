@@ -88,7 +88,7 @@ export function ImportOpenApiButton({ projectId }: { projectId: string }) {
     <>
       <button
         onClick={() => fileRef.current?.click()}
-        className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium border border-[var(--t-border)] bg-[var(--t-panel)] text-[var(--t-text)] hover:bg-[var(--t-panel-hover)]"
+        className="inline-flex items-center gap-2 h-8 px-3 text-sm border border-[#0f62fe] text-[#0f62fe] bg-transparent hover:bg-[#0f62fe] hover:text-white"
       >
         <Upload className="w-3.5 h-3.5" /> Import OpenAPI
       </button>
@@ -102,45 +102,45 @@ export function ImportOpenApiButton({ projectId }: { projectId: string }) {
 
       {preview && (
         <div
-          className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
+          className="fixed inset-0 bg-[rgba(22,22,22,0.5)] z-50 flex items-center justify-center p-4"
           onClick={() => setPreview(null)}
         >
           <div
-            className="bg-[var(--t-panel)] border border-[var(--t-border)] rounded-xl w-full max-w-md p-5 space-y-4"
+            className="bg-[var(--t-panel)] border border-[var(--t-border)] rounded-none w-full max-w-md p-5 space-y-4"
             onClick={(e) => e.stopPropagation()}
           >
             <div>
-              <h2 className="text-base font-semibold text-[var(--t-text)]">Import OpenAPI</h2>
+              <h2 className="text-[20px] font-normal text-[var(--t-text)]">Import OpenAPI</h2>
               <p className="text-xs text-[var(--t-text-muted)] mt-0.5">
                 File <span className="font-mono">{preview.fileName}</span> contains{' '}
                 <strong className="text-[var(--t-accent)]">{preview.operationCount}</strong> operations
               </p>
             </div>
             <div>
-              <label className="block text-xs font-semibold text-[var(--t-text-muted)] mb-1 uppercase tracking-wider">
+              <label className="block text-xs text-[#525252] mb-1">
                 Backend URL (override)
               </label>
               <input
                 value={backendOverride}
                 onChange={(e) => setBackendOverride(e.target.value)}
                 placeholder="http://my-service.cluster.local:8080"
-                className="w-full px-3 py-2 rounded bg-[var(--t-bg)] border border-[var(--t-border)] text-[var(--t-text)] text-xs font-mono"
+                className="w-full px-3 py-2 text-[var(--t-text)] text-xs font-mono"
               />
-              <p className="text-[10px] text-[var(--t-text-muted)] mt-1">
+              <p className="text-[12px] text-[var(--t-text-muted)] mt-1">
                 Prefixed to every path. Leave empty to use <code>servers[0].url</code> from the spec.
               </p>
             </div>
             <div className="flex items-center justify-end gap-2">
               <button
                 onClick={() => setPreview(null)}
-                className="px-3 py-1.5 rounded text-xs text-[var(--t-text-muted)] hover:text-[var(--t-text)]"
+                className="h-8 px-3 text-sm inline-flex items-center bg-[#393939] text-white hover:bg-[#474747]"
               >
                 Cancel
               </button>
               <button
                 onClick={confirmImport}
                 disabled={busy}
-                className="px-4 py-1.5 rounded bg-[var(--t-accent)] text-white text-xs font-semibold flex items-center gap-1.5 disabled:opacity-50"
+                className="h-8 px-3 bg-[#0f62fe] text-white text-sm flex items-center gap-2 disabled:opacity-50 hover:bg-[#0353e9]"
               >
                 {busy ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Upload className="w-3.5 h-3.5" />}
                 Import {preview.operationCount}

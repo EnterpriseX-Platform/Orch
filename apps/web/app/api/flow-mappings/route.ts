@@ -1,16 +1,22 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { getTenantContext, featureGuard, tenantWhere, isForeign } from '@/lib/tenant'
 import { prisma } from '@/lib/prisma'
 
 // GET /api/flow-mappings
 export async function GET(request: NextRequest) {
   try {
+    const ctx = await getTenantContext(request)
+    const blocked = featureGuard(ctx, 'flows')
+    if (blocked) return blocked
     const { searchParams } = new URL(request.url)
     const flowId = searchParams.get('flowId')
     const isActive = searchParams.get('isActive')
     
+    const tenantFlowIds = (ctx.tenantId ? (await prisma.flowIntegration.findMany({ where: tenantWhere(ctx), select: { id: true } })).map((f) => f.id) : null)
     const mappings = await prisma.apiFlowMapping.findMany({
       where: {
         ...(flowId && { flowId }),
+        ...(tenantFlowIds && { AND: [{ flowId: { in: tenantFlowIds } }] }),
         ...(isActive !== null && { isActive: isActive === 'true' })
       },
       orderBy: [
@@ -32,8 +38,17 @@ export async function GET(request: NextRequest) {
 // POST /api/flow-mappings
 export async function POST(request: NextRequest) {
   try {
+    const ctx = await getTenantContext(request)
+    const blocked = featureGuard(ctx, 'flows')
+    if (blocked) return blocked
     const body = await request.json()
-    
+    if (ctx.tenantId) {
+      const flow = await prisma.flowIntegration.findUnique({ where: { id: body.flowId }, select: { tenantId: true } })
+      if (!flow || isForeign(ctx, flow)) {
+        return NextResponse.json({ error: 'Flow mapping not found' }, { status: 404 })
+      }
+    }
+
     const mapping = await prisma.apiFlowMapping.create({
       data: {
         apiId: body.apiId,
@@ -70,8 +85,18 @@ export async function POST(request: NextRequest) {
 // PUT /api/flow-mappings
 export async function PUT(request: NextRequest) {
   try {
+    const ctx = await getTenantContext(request)
+    const blocked = featureGuard(ctx, 'flows')
+    if (blocked) return blocked
     const body = await request.json()
     const { id, ...data } = body
+    if (ctx.tenantId) {
+      const current = await prisma.apiFlowMapping.findUnique({ where: { id }, select: { flowId: true } })
+      const flow = current ? await prisma.flowIntegration.findUnique({ where: { id: current.flowId }, select: { tenantId: true } }) : null
+      if (!flow || isForeign(ctx, flow)) {
+        return NextResponse.json({ error: 'Flow mapping not found' }, { status: 404 })
+      }
+    }
     
     const mapping = await prisma.apiFlowMapping.update({
       where: { id },
@@ -91,6 +116,9 @@ export async function PUT(request: NextRequest) {
 // DELETE /api/flow-mappings?id=xxx
 export async function DELETE(request: NextRequest) {
   try {
+    const ctx = await getTenantContext(request)
+    const blocked = featureGuard(ctx, 'flows')
+    if (blocked) return blocked
     const { searchParams } = new URL(request.url)
     const id = searchParams.get('id')
     
@@ -101,6 +129,14 @@ export async function DELETE(request: NextRequest) {
       )
     }
     
+    if (ctx.tenantId) {
+      const current = await prisma.apiFlowMapping.findUnique({ where: { id }, select: { flowId: true } })
+      const flow = current ? await prisma.flowIntegration.findUnique({ where: { id: current.flowId }, select: { tenantId: true } }) : null
+      if (!flow || isForeign(ctx, flow)) {
+        return NextResponse.json({ error: 'Flow mapping not found' }, { status: 404 })
+      }
+    }
+
     await prisma.apiFlowMapping.delete({
       where: { id }
     })

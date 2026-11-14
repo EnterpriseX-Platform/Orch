@@ -61,7 +61,7 @@ export function FieldMappingsSection({ projectId }: { projectId: string }) {
       <div className="flex items-center justify-end mb-3">
         <button
           onClick={() => setShowCreate(true)}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold text-white bg-[var(--t-accent)] hover:bg-[#2563EB]"
+          className="flex items-center gap-2 h-8 px-3 text-sm text-white bg-[#0f62fe] hover:bg-[#0353e9]"
         >
           <Plus className="w-3.5 h-3.5" /> New Mapping
         </button>
@@ -72,10 +72,10 @@ export function FieldMappingsSection({ projectId }: { projectId: string }) {
       ) : items.length === 0 ? (
         <Empty onCreate={() => setShowCreate(true)} />
       ) : (
-        <div className="rounded-lg bg-[var(--t-panel)] border border-[var(--t-border)] overflow-hidden">
+        <div className="rounded-none bg-[var(--t-panel)] border border-[var(--t-border)] overflow-hidden">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-[var(--t-border)] bg-[var(--t-bg)]">
+              <tr className="bg-[#e0e0e0] h-10">
                 <Th>Name</Th>
                 <Th>Ref Type</Th>
                 <Th>Ref ID Path</Th>
@@ -91,12 +91,12 @@ export function FieldMappingsSection({ projectId }: { projectId: string }) {
                     <div className="font-medium text-[var(--t-text)]">{fm.name}</div>
                     {fm.description && <div className="text-xs text-[var(--t-text-muted)]">{fm.description}</div>}
                     {!fm.projectId && (
-                      <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-400 mt-1 inline-block">global</span>
+                      <span className="cds-tag text-[12px] px-2 py-0.5 bg-[#fff1e6] text-[#8a3800] mt-1 inline-block">global</span>
                     )}
                   </td>
                   <td className="px-4 py-2.5">
                     {fm.refType ? (
-                      <span className="inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded bg-[var(--t-accent)]/15 text-[var(--t-accent)]">
+                      <span className="inline-flex items-center gap-1 text-xs px-2 py-0.5 cds-tag bg-[#d0e2ff] text-[#0043ce]">
                         <Tag className="w-3 h-3" />{fm.refType}
                       </span>
                     ) : <span className="text-[var(--t-text-muted)] text-xs">—</span>}
@@ -109,7 +109,7 @@ export function FieldMappingsSection({ projectId }: { projectId: string }) {
                   </td>
                   <td className="px-4 py-2.5">
                     <div className="flex items-center gap-2">
-                      <button onClick={() => setEditing(fm)} className="p-1.5 rounded hover:bg-[var(--t-panel-hover)]" title="Edit">
+                      <button onClick={() => setEditing(fm)} className="p-1.5 hover:bg-[#e8e8e8]" title="Edit">
                         <Pencil className="w-3.5 h-3.5 text-[var(--t-text-muted)]" />
                       </button>
                       <button
@@ -120,10 +120,10 @@ export function FieldMappingsSection({ projectId }: { projectId: string }) {
                             variant: 'danger',
                           })) del.mutate(fm.id)
                         }}
-                        className="p-1.5 rounded hover:bg-red-500/10"
+                        className="p-1.5 rounded-none hover:bg-[#e8e8e8]"
                         title="Delete"
                       >
-                        <Trash2 className="w-3.5 h-3.5 text-red-400" />
+                        <Trash2 className="w-3.5 h-3.5 text-[#da1e28]" />
                       </button>
                     </div>
                   </td>
@@ -147,16 +147,16 @@ export function FieldMappingsSection({ projectId }: { projectId: string }) {
 }
 
 function Th({ children }: { children: React.ReactNode }) {
-  return <th className="text-left px-4 py-2 text-[10px] font-semibold uppercase tracking-wider text-[var(--t-text-muted)]">{children}</th>
+  return <th className="text-left px-4 py-2 text-[12px] text-[#525252]">{children}</th>
 }
 
 function Empty({ onCreate }: { onCreate: () => void }) {
   return (
-    <div className="text-center py-12 rounded-lg bg-[var(--t-panel)] border border-dashed border-[var(--t-border)]">
+    <div className="text-center py-12 rounded-none bg-[var(--t-panel)] border border-dashed border-[var(--t-border)]">
       <Tag className="w-8 h-8 text-[var(--t-text-muted)] mx-auto mb-2" />
       <p className="text-sm text-[var(--t-text)]">No field mappings yet</p>
       <p className="text-xs text-[var(--t-text-muted)] mt-1 mb-3">Create a reusable extraction template</p>
-      <button onClick={onCreate} className="text-xs px-3 py-1.5 rounded bg-[var(--t-accent)] text-white">
+      <button onClick={onCreate} className="text-sm h-8 px-3 bg-[#0f62fe] text-white inline-flex items-center gap-2 hover:bg-[#0353e9]">
         Create one
       </button>
     </div>
@@ -184,10 +184,10 @@ function Editor({
   })
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4" onClick={onClose}>
-      <div className="bg-[var(--t-panel)] border border-[var(--t-border)] rounded-xl w-full max-w-2xl max-h-[90vh] overflow-auto" onClick={(e) => e.stopPropagation()}>
+    <div className="fixed inset-0 z-50 bg-[rgba(22,22,22,0.5)] flex items-center justify-center p-4" onClick={onClose}>
+      <div className="bg-[var(--t-panel)] border border-[var(--t-border)] rounded-none w-full max-w-2xl max-h-[90vh] overflow-auto" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between px-5 py-3 border-b border-[var(--t-border)]">
-          <h2 className="text-lg font-semibold text-[var(--t-text)]">{isEdit ? 'Edit Field Mapping' : 'New Field Mapping'}</h2>
+          <h2 className="text-[20px] font-normal text-[var(--t-text)]">{isEdit ? 'Edit Field Mapping' : 'New Field Mapping'}</h2>
           <button onClick={onClose} className="text-[var(--t-text-muted)] hover:text-[var(--t-text)]">✕</button>
         </div>
 
@@ -270,11 +270,11 @@ function Editor({
         </div>
 
         <div className="px-5 py-3 border-t border-[var(--t-border)] flex justify-end gap-2">
-          <button onClick={onClose} className="px-4 py-2 text-sm rounded text-[var(--t-text-secondary)] hover:bg-[var(--t-panel-hover)]">Cancel</button>
+          <button onClick={onClose} className="h-8 px-3 text-sm inline-flex items-center gap-2 bg-[#393939] text-white hover:bg-[#474747]">Cancel</button>
           <button
             onClick={() => save.mutate()}
             disabled={!form.name || save.isPending}
-            className="px-4 py-2 text-sm rounded bg-[var(--t-accent)] text-white disabled:opacity-50"
+            className="h-8 px-3 text-sm bg-[#0f62fe] text-white disabled:opacity-50 inline-flex items-center gap-2 hover:bg-[#0353e9]"
           >
             {save.isPending ? <Loader2 className="w-4 h-4 animate-spin inline mr-1" /> : null}
             Save
@@ -310,11 +310,11 @@ function sanitize(form: Partial<FM>): any {
 }
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
-  return <div><p className="text-xs font-semibold uppercase tracking-wider text-[var(--t-text-muted)] mb-2">{title}</p>{children}</div>
+  return <div><p className="text-xs text-[#525252] mb-2">{title}</p>{children}</div>
 }
 function Grid({ children }: { children: React.ReactNode }) {
   return <div className="grid grid-cols-1 md:grid-cols-2 gap-3">{children}</div>
 }
 function Field({ label, hint, children }: { label: string; hint?: string; children: React.ReactNode }) {
-  return <div><label className="block text-xs font-medium text-[var(--t-text-secondary)] mb-1">{label}</label>{children}{hint && <p className="text-[10px] text-[var(--t-text-muted)] mt-0.5">{hint}</p>}</div>
+  return <div><label className="block text-xs text-[#525252] mb-1">{label}</label>{children}{hint && <p className="text-[12px] text-[var(--t-text-muted)] mt-0.5">{hint}</p>}</div>
 }

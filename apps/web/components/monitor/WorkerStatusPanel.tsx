@@ -76,7 +76,7 @@ export function WorkerStatusPanel() {
 
   if (error) {
     return (
-      <div className="flex items-center gap-2 text-red-500">
+      <div className="flex items-center gap-2 text-[#da1e28]">
         <AlertCircle className="w-4 h-4" />
         <span className="text-sm">{error}</span>
       </div>
@@ -95,11 +95,9 @@ export function WorkerStatusPanel() {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <Card>
           <CardContent className="p-4 flex items-center gap-3">
-            <div className="p-2 bg-blue-100 rounded-lg">
-              <Cpu className="w-4 h-4 text-blue-600" />
-            </div>
+            <Cpu className="w-4 h-4 text-[#525252]" />
             <div>
-              <div className="text-2xl font-bold">{stats.total}</div>
+              <div className="text-2xl font-light">{stats.total}</div>
               <div className="text-xs text-muted-foreground">Total Workers</div>
             </div>
           </CardContent>
@@ -107,11 +105,9 @@ export function WorkerStatusPanel() {
 
         <Card>
           <CardContent className="p-4 flex items-center gap-3">
-            <div className="p-2 bg-green-100 rounded-lg">
-              <CheckCircle className="w-4 h-4 text-green-600" />
-            </div>
+            <CheckCircle className="w-4 h-4 text-[#525252]" />
             <div>
-              <div className="text-2xl font-bold text-green-600">{stats.running}</div>
+              <div className="text-2xl font-light">{stats.running}</div>
               <div className="text-xs text-muted-foreground">Running</div>
             </div>
           </CardContent>
@@ -119,11 +115,9 @@ export function WorkerStatusPanel() {
 
         <Card>
           <CardContent className="p-4 flex items-center gap-3">
-            <div className="p-2 bg-red-100 rounded-lg">
-              <AlertCircle className="w-4 h-4 text-red-600" />
-            </div>
+            <AlertCircle className="w-4 h-4 text-[#525252]" />
             <div>
-              <div className="text-2xl font-bold text-red-600">{stats.error}</div>
+              <div className="text-2xl font-light">{stats.error}</div>
               <div className="text-xs text-muted-foreground">Errors</div>
             </div>
           </CardContent>
@@ -131,11 +125,9 @@ export function WorkerStatusPanel() {
 
         <Card>
           <CardContent className="p-4 flex items-center gap-3">
-            <div className="p-2 bg-gray-100 rounded-lg">
-              <Clock className="w-4 h-4 text-gray-600" />
-            </div>
+            <Clock className="w-4 h-4 text-[#525252]" />
             <div>
-              <div className="text-2xl font-bold">{stats.stopped}</div>
+              <div className="text-2xl font-light">{stats.stopped}</div>
               <div className="text-xs text-muted-foreground">Stopped</div>
             </div>
           </CardContent>
@@ -186,7 +178,7 @@ export function WorkerStatusPanel() {
                         {worker.processed.toLocaleString()}
                       </td>
                       <td className="p-2 text-right font-mono text-xs">
-                        <span className={worker.failed > 0 ? 'text-red-500' : ''}>
+                        <span className={worker.failed > 0 ? 'text-[#da1e28]' : ''}>
                           {worker.failed.toLocaleString()}
                         </span>
                       </td>
@@ -204,16 +196,16 @@ export function WorkerStatusPanel() {
 
 function WorkerStatusBadge({ status }: { status: string }) {
   const statusConfig: Record<string, { color: string; bg: string }> = {
-    'running': { color: 'text-green-700', bg: 'bg-green-100' },
-    'stopped': { color: 'text-gray-700', bg: 'bg-gray-100' },
-    'paused': { color: 'text-yellow-700', bg: 'bg-yellow-100' },
-    'error': { color: 'text-red-700', bg: 'bg-red-100' },
+    'running': { color: 'text-[#0e6027]', bg: 'bg-[#defbe6]' },
+    'stopped': { color: 'text-[#525252]', bg: 'bg-[#e0e0e0]' },
+    'paused': { color: 'text-[#8a3800]', bg: 'bg-[#fcf4d6]' },
+    'error': { color: 'text-[#a2191f]', bg: 'bg-[#ffd7d9]' },
   };
 
-  const config = statusConfig[status.toLowerCase()] || { color: 'text-gray-700', bg: 'bg-gray-100' };
+  const config = statusConfig[status.toLowerCase()] || { color: 'text-[#525252]', bg: 'bg-[#e0e0e0]' };
 
   return (
-    <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${config.bg} ${config.color}`}>
+    <span className={`inline-flex items-center px-2 py-0.5 cds-tag text-xs font-medium ${config.bg} ${config.color}`}>
       {status.charAt(0).toUpperCase() + status.slice(1)}
     </span>
   );

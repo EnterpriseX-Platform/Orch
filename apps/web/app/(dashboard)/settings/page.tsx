@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { apiClient } from '@/lib/api'
 import {
@@ -34,13 +34,15 @@ import {
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { WorkersTab } from './WorkersTab'
+import { TenantsPanel } from '@/components/settings/TenantsPanel'
+import { Building2 } from 'lucide-react'
 import { SystemConfigPanel } from '@/components/settings/SystemConfigPanel'
 import { RetentionPanel } from '@/components/settings/RetentionPanel'
 import { EncryptionPanel } from '@/components/settings/EncryptionPanel'
 import { EncryptionKeyPanel } from '@/components/settings/EncryptionKeyPanel'
 import { confirmDialog } from '@/components/common/ConfirmDialog'
 
-const FONT = "'Prompt', sans-serif"
+const FONT = '"IBM Plex Sans Thai", "IBM Plex Sans", "Sarabun", system-ui, sans-serif'
 
 const THEME = {
   bg: 'var(--t-bg)',
@@ -54,10 +56,10 @@ const THEME = {
 }
 
 const ROLE_COLORS: Record<string, { bg: string; color: string; border: string }> = {
-  admin: { bg: '#EF444418', color: '#EF4444', border: '#EF444435' },
-  user: { bg: '#3B82F618', color: '#3B82F6', border: '#3B82F635' },
-  viewer: { bg: '#8B92A518', color: '#8B92A5', border: '#8B92A535' },
-  operator: { bg: '#10B98118', color: '#10B981', border: '#10B98135' },
+  admin: { bg: '#ffd7d9', color: '#a2191f', border: 'transparent' },
+  user: { bg: '#d0e2ff', color: '#0043ce', border: 'transparent' },
+  viewer: { bg: '#e0e0e0', color: '#161616', border: 'transparent' },
+  operator: { bg: '#a7f0ba', color: '#0e6027', border: 'transparent' },
 }
 
 const ROLE_LABELS: Record<string, string> = {
@@ -147,6 +149,7 @@ const defaultOidc: OidcConfig = {
 
 const tabs = [
   { id: 'users', label: 'Users', icon: Users },
+  { id: 'tenants', label: 'Tenants', icon: Building2 },
   // "Environment" now renders the same SystemConfigPanel that was
   // previously at /orch/system-config — one source of truth for runtime
   // config with validation, history, project-scoped overrides, search.
@@ -174,7 +177,7 @@ function SystemStatusCard({
   children: React.ReactNode
 }) {
   return (
-    <div className="bg-[var(--t-panel)] rounded-lg p-4 border border-[var(--t-border)]">
+    <div className="bg-[var(--t-panel)] rounded-none p-4 border border-[var(--t-border)]">
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
           <Icon className="w-4 h-4" style={{ color: THEME.text.muted }} />
@@ -185,9 +188,9 @@ function SystemStatusCard({
             className="px-2 py-0.5 rounded-full font-medium"
             style={{
               fontSize: 11,
-              background: statusColor === 'green' ? '#10B98118' : '#EF444418',
-              color: statusColor === 'green' ? '#10B981' : '#EF4444',
-              border: `1px solid ${statusColor === 'green' ? '#10B98135' : '#EF444435'}`
+              background: statusColor === 'green' ? '#24a14818' : '#da1e2818',
+              color: statusColor === 'green' ? '#24a148' : '#da1e28',
+              border: `1px solid ${statusColor === 'green' ? '#24a14835' : '#da1e2835'}`
             }}
           >
             {status}
@@ -220,6 +223,11 @@ function ResponsiveGrid({ children, className = '' }: { children: React.ReactNod
 export default function SettingsPage() {
   const queryClient = useQueryClient()
   const [activeTab, setActiveTab] = useState('users')
+  // Deep link: /settings?tab=tenants (used by the tenant switcher)
+  useEffect(() => {
+    const t = new URLSearchParams(window.location.search).get('tab')
+    if (t && tabs.some((x) => x.id === t)) setActiveTab(t)
+  }, [])
   
   // Users state
   const [searchQuery, setSearchQuery] = useState('')
@@ -377,14 +385,14 @@ export default function SettingsPage() {
     <div style={{ fontFamily: FONT }} className="w-full max-w-full">
       {/* Header */}
       <div className="mb-5">
-        <h1 style={{ fontSize: 22 }} className="font-bold text-[var(--t-text)]">System Settings</h1>
+        <h1 style={{ fontSize: 20 }} className="font-normal text-[var(--t-text)]">System Settings</h1>
         <p style={{ fontSize: 12 }} className="text-[var(--t-text-muted)] mt-1">
           Manage users, environment variables, OIDC, and system configuration
         </p>
       </div>
 
       {/* Tabs - Responsive */}
-      <div className="flex items-center gap-1 mb-4" style={{ borderBottom: `1px solid var(--t-border)` }}>
+      <div className="flex items-center gap-1 mb-4 overflow-x-auto min-w-0 [scrollbar-width:thin]" style={{ borderBottom: `1px solid var(--t-border)` }}>
         {tabs.map(tab => {
           const Icon = tab.icon
           const isActive = activeTab === tab.id
@@ -397,8 +405,8 @@ export default function SettingsPage() {
                 padding: '8px 14px',
                 fontSize: 13,
                 fontWeight: 500,
-                color: isActive ? '#3B82F6' : 'var(--t-text-secondary)',
-                borderBottom: `2px solid ${isActive ? '#3B82F6' : 'transparent'}`,
+                color: isActive ? '#0f62fe' : 'var(--t-text-secondary)',
+                borderBottom: `2px solid ${isActive ? '#0f62fe' : 'transparent'}`,
                 marginBottom: -1,
               }}
             >
@@ -422,16 +430,17 @@ export default function SettingsPage() {
                 style={{
                   display: 'flex',
                   alignItems: 'center',
-                  gap: 6,
-                  padding: '6px 14px',
+                  height: 32,
+                  gap: 8,
+                  padding: '0 12px',
                   background: THEME.accent,
                   color: '#FFFFFF',
-                  fontSize: 13,
-                  fontWeight: 600,
-                  borderRadius: 8,
+                  fontSize: 14,
+                  fontWeight: 400,
+                  borderRadius: 0,
                   transition: 'all 0.15s ease',
                 }}
-                className="hover:bg-[#2563EB]"
+                className="hover:bg-[#0353e9]"
               >
                 <Plus className="w-4 h-4" />
                 Add User
@@ -445,13 +454,14 @@ export default function SettingsPage() {
                   key={tab.id}
                   onClick={() => setActiveFilter(tab.id)}
                   style={{
-                    padding: '4px 10px',
-                    fontSize: 12,
-                    fontWeight: 500,
-                    borderRadius: 6,
-                    border: activeFilter === tab.id ? 'none' : `1px solid ${THEME.border}`,
-                    background: activeFilter === tab.id ? THEME.accent : THEME.panel,
-                    color: activeFilter === tab.id ? '#FFFFFF' : THEME.text.muted,
+                    height: 32,
+                    padding: '0 12px',
+                    fontSize: 14,
+                    fontWeight: 400,
+                    borderRadius: 0,
+                    border: 'none',
+                    background: activeFilter === tab.id ? '#e0e0e0' : 'transparent',
+                    color: activeFilter === tab.id ? '#161616' : '#525252',
                     transition: 'all 0.15s ease',
                   }}
                 >
@@ -472,10 +482,7 @@ export default function SettingsPage() {
                   style={{
                     width: '100%',
                     padding: '6px 12px 6px 36px',
-                    background: 'var(--t-input)',
-                    border: `1px solid ${THEME.border}`,
-                    borderRadius: 8,
-                    fontSize: 13,
+                    fontSize: 14,
                     color: THEME.text.primary,
                     outline: 'none',
                   }}
@@ -499,25 +506,13 @@ export default function SettingsPage() {
                       padding: '10px 12px',
                       background: THEME.panel,
                       border: `1px solid ${THEME.border}`,
-                      borderRadius: 10,
+                      borderRadius: 0,
                       transition: 'all 0.15s ease',
                     }}
-                    className="hover:border-[#3B82F6] group"
+                    className="hover:bg-[#e8e8e8] group"
                   >
                     {/* Avatar Icon Box */}
-                    <div style={{
-                      width: 36,
-                      height: 28,
-                      background: THEME.bg,
-                      border: `1px solid ${THEME.border}`,
-                      borderRadius: 6,
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      flexShrink: 0,
-                    }}>
-                      <UserIcon className="w-4 h-4" style={{ color: user.isActive ? '#60A5FA' : 'var(--t-text-muted)' }} />
-                    </div>
+                    <UserIcon className="w-4 h-4 shrink-0" style={{ color: '#525252' }} />
 
                     {/* Main Info */}
                     <div style={{ flex: 1, minWidth: 0 }}>
@@ -529,17 +524,17 @@ export default function SettingsPage() {
                           overflow: 'hidden',
                           textOverflow: 'ellipsis',
                           whiteSpace: 'nowrap',
-                        }} className="group-hover:text-[#3B82F6] transition-colors">
+                        }} className="group-hover:text-[#0f62fe] transition-colors">
                           {user.firstName} {user.lastName}
                         </h3>
                         {user.roles.map(role => (
                           <span
                             key={role}
+                            className="cds-tag"
                             style={{
-                              padding: '1px 5px',
-                              fontSize: 10,
-                              fontWeight: 600,
-                              borderRadius: 6,
+                              padding: '1px 8px',
+                              fontSize: 12,
+                              fontWeight: 400,
                               background: ROLE_COLORS[role]?.bg || ROLE_COLORS.user.bg,
                               color: ROLE_COLORS[role]?.color || ROLE_COLORS.user.color,
                               border: `1px solid ${ROLE_COLORS[role]?.border || ROLE_COLORS.user.border}`,
@@ -549,7 +544,7 @@ export default function SettingsPage() {
                           </span>
                         ))}
                       </div>
-                      <p style={{ fontSize: 11, color: THEME.text.muted }}>
+                      <p style={{ fontSize: 12, color: '#525252' }}>
                         {user.username} · {user.email}
                       </p>
                     </div>
@@ -559,33 +554,31 @@ export default function SettingsPage() {
                       {user.department && (
                         <div style={{ textAlign: 'center' }}>
                           <p style={{ fontSize: 13, fontWeight: 600, color: THEME.text.primary }}>{user.department}</p>
-                          <p style={{ fontSize: 11, color: THEME.text.muted }}>Dept</p>
+                          <p style={{ fontSize: 12, color: '#525252' }}>Dept</p>
                         </div>
                       )}
                       <div style={{ textAlign: 'center' }}>
                         <p style={{ fontSize: 13, fontWeight: 600, color: THEME.text.primary }}>{user.roles.length}</p>
-                        <p style={{ fontSize: 11, color: THEME.text.muted }}>Roles</p>
+                        <p style={{ fontSize: 12, color: '#525252' }}>Roles</p>
                       </div>
                     </div>
 
                     {/* Status Badge */}
-                    <div style={{
+                    <div className="cds-tag" style={{
                       display: 'flex',
                       alignItems: 'center',
                       gap: 4,
                       padding: '2px 8px',
-                      fontSize: 11,
-                      fontWeight: 500,
-                      borderRadius: 6,
-                      background: user.isActive ? '#10B98115' : 'var(--t-panel-hover)',
-                      border: `1px solid ${user.isActive ? '#10B98130' : 'color-mix(in srgb, var(--t-text-muted) 19%, transparent)'}`,
-                      color: user.isActive ? '#10B981' : 'var(--t-text-muted)',
+                      fontSize: 12,
+                      fontWeight: 400,
+                      background: user.isActive ? '#a7f0ba' : '#e0e0e0',
+                      color: user.isActive ? '#0e6027' : '#161616',
                     }}>
                       <span style={{
                         width: 5,
                         height: 5,
                         borderRadius: '50%',
-                        background: user.isActive ? '#10B981' : 'var(--t-text-muted)',
+                        background: user.isActive ? '#24a148' : 'var(--t-text-muted)',
                       }} />
                       {user.isActive ? 'Active' : 'Inactive'}
                     </div>
@@ -594,7 +587,7 @@ export default function SettingsPage() {
                     <div className="flex items-center gap-1">
                       <button
                         onClick={() => setEditingUser(user)}
-                        className="p-1.5 rounded-md transition-colors hover:bg-[var(--t-panel-hover)]"
+                        className="p-1.5 rounded-none transition-colors hover:bg-[var(--t-panel-hover)]"
                         style={{ color: 'var(--t-text-muted)' }}
                       >
                         <Edit2 className="w-3.5 h-3.5" />
@@ -607,8 +600,8 @@ export default function SettingsPage() {
                             variant: 'danger',
                           })) deleteMutation.mutate(user.id)
                         }}
-                        className="p-1.5 rounded-md transition-colors hover:bg-[#EF444418]"
-                        style={{ color: '#EF4444' }}
+                        className="p-1.5 rounded-none transition-colors hover:bg-[#e8e8e8]"
+                        style={{ color: '#da1e28' }}
                       >
                         <Trash2 className="w-3.5 h-3.5" />
                       </button>
@@ -631,14 +624,14 @@ export default function SettingsPage() {
              reload-cache). Old form is kept only as back-compat for
              the /api/env-config endpoint. */}
         {activeTab === 'env' && (
-          <div className="bg-[var(--t-panel)] border border-[var(--t-border)] rounded-lg p-4 md:p-5">
+          <div className="bg-[var(--t-panel)] border border-[var(--t-border)] rounded-none p-4 md:p-5">
             <SystemConfigPanel embedded />
           </div>
         )}
 
         {/* Retention Tab — cleanup policy for audit/log/event tables */}
         {activeTab === 'retention' && (
-          <div className="bg-[var(--t-panel)] border border-[var(--t-border)] rounded-lg p-4 md:p-5">
+          <div className="bg-[var(--t-panel)] border border-[var(--t-border)] rounded-none p-4 md:p-5">
             <RetentionPanel />
           </div>
         )}
@@ -649,7 +642,7 @@ export default function SettingsPage() {
           <div className="space-y-4">
             {/* App-level AES-GCM key manager (Data Repository column encryption). */}
             <EncryptionKeyPanel />
-            <div className="bg-[var(--t-panel)] border border-[var(--t-border)] rounded-lg p-4 md:p-5">
+            <div className="bg-[var(--t-panel)] border border-[var(--t-border)] rounded-none p-4 md:p-5">
               <EncryptionPanel />
             </div>
           </div>
@@ -657,13 +650,13 @@ export default function SettingsPage() {
 
         {/* OIDC Tab */}
         {activeTab === 'oidc' && (
-          <div className="bg-[var(--t-panel)] border border-[var(--t-border)] rounded-lg p-4 md:p-5">
+          <div className="bg-[var(--t-panel)] border border-[var(--t-border)] rounded-none p-4 md:p-5">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
               <h2 className="text-base font-semibold text-[var(--t-text)]">OIDC / SSO Authentication</h2>
               {hasOidcChanges && (
                 <button
                   onClick={handleSaveOidc}
-                  className="flex items-center justify-center gap-2 px-4 py-2 bg-[#3B82F6] text-white text-sm font-semibold rounded-md hover:bg-[#2563EB] transition-colors w-full sm:w-auto"
+                  className="flex items-center justify-center gap-2 h-8 px-3 bg-[#0f62fe] text-white text-sm hover:bg-[#0353e9] w-full sm:w-auto"
                 >
                   <Save className="w-4 h-4" />
                   Save Changes
@@ -672,14 +665,14 @@ export default function SettingsPage() {
             </div>
 
             <label className={`
-              flex items-center gap-3 p-4 rounded-lg border cursor-pointer mb-5
-              ${oidc.enabled ? 'bg-[var(--t-panel-hover)] border-[#3B82F6]' : 'bg-[var(--t-bg)] border-[var(--t-border)]'}
+              flex items-center gap-3 p-4 rounded-none border cursor-pointer mb-5
+              ${oidc.enabled ? 'bg-[var(--t-panel-hover)] border-[#0f62fe]' : 'bg-[var(--t-bg)] border-[var(--t-border)]'}
             `}>
               <input
                 type="checkbox"
                 checked={oidc.enabled}
                 onChange={(e) => { setOidc({ ...oidc, enabled: e.target.checked }); setHasOidcChanges(true) }}
-                className="w-5 h-5 rounded"
+                className="w-5 h-5 rounded-none"
               />
               <div>
                 <div className="text-base font-semibold text-[var(--t-text)]">Enable OIDC Authentication</div>
@@ -690,51 +683,51 @@ export default function SettingsPage() {
             {oidc.enabled && (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-[var(--t-text-secondary)] mb-1.5">Provider Name</label>
+                  <label className="block text-xs text-[#525252] mb-1.5">Provider Name</label>
                   <input
                     value={oidc.provider}
                     onChange={(e) => { setOidc({ ...oidc, provider: e.target.value }); setHasOidcChanges(true) }}
                     placeholder="e.g., Keycloak"
-                    className="w-full px-3 py-2 text-base bg-[var(--t-input)] text-[var(--t-text)] border border-[var(--t-border)] rounded-md outline-none focus:border-[#3B82F6] placeholder:text-[var(--t-text-muted)]"
+                    className="w-full px-3 py-2 text-base text-[var(--t-text)] outline-none placeholder:text-[var(--t-text-muted)]"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-[var(--t-text-secondary)] mb-1.5">Client ID</label>
+                  <label className="block text-xs text-[#525252] mb-1.5">Client ID</label>
                   <input
                     value={oidc.clientId}
                     onChange={(e) => { setOidc({ ...oidc, clientId: e.target.value }); setHasOidcChanges(true) }}
                     placeholder="your-client-id"
-                    className="w-full px-3 py-2 text-base bg-[var(--t-input)] text-[var(--t-text)] border border-[var(--t-border)] rounded-md outline-none focus:border-[#3B82F6] placeholder:text-[var(--t-text-muted)]"
+                    className="w-full px-3 py-2 text-base text-[var(--t-text)] outline-none placeholder:text-[var(--t-text-muted)]"
                   />
                 </div>
 
                 <div className="md:col-span-2">
-                  <label className="block text-sm font-medium text-[var(--t-text-secondary)] mb-1.5">Client Secret</label>
+                  <label className="block text-xs text-[#525252] mb-1.5">Client Secret</label>
                   <input
                     type="password"
                     value={oidc.clientSecret}
                     onChange={(e) => { setOidc({ ...oidc, clientSecret: e.target.value }); setHasOidcChanges(true) }}
                     placeholder="••••••••"
-                    className="w-full px-3 py-2 text-base bg-[var(--t-input)] text-[var(--t-text)] border border-[var(--t-border)] rounded-md outline-none focus:border-[#3B82F6] placeholder:text-[var(--t-text-muted)]"
+                    className="w-full px-3 py-2 text-base text-[var(--t-text)] outline-none placeholder:text-[var(--t-text-muted)]"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-[var(--t-text-secondary)] mb-1.5">Issuer URL</label>
+                  <label className="block text-xs text-[#525252] mb-1.5">Issuer URL</label>
                   <input
                     value={oidc.issuerUrl}
                     onChange={(e) => { setOidc({ ...oidc, issuerUrl: e.target.value }); setHasOidcChanges(true) }}
                     placeholder="https://auth.example.com"
-                    className="w-full px-3 py-2 text-base bg-[var(--t-input)] text-[var(--t-text)] border border-[var(--t-border)] rounded-md outline-none focus:border-[#3B82F6] placeholder:text-[var(--t-text-muted)]"
+                    className="w-full px-3 py-2 text-base text-[var(--t-text)] outline-none placeholder:text-[var(--t-text-muted)]"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-[var(--t-text-secondary)] mb-1.5">Redirect URI</label>
+                  <label className="block text-xs text-[#525252] mb-1.5">Redirect URI</label>
                   <input
                     value={oidc.redirectUri}
                     onChange={(e) => { setOidc({ ...oidc, redirectUri: e.target.value }); setHasOidcChanges(true) }}
                     placeholder="https://app.com/callback"
-                    className="w-full px-3 py-2 text-base bg-[var(--t-input)] text-[var(--t-text)] border border-[var(--t-border)] rounded-md outline-none focus:border-[#3B82F6] placeholder:text-[var(--t-text-muted)]"
+                    className="w-full px-3 py-2 text-base text-[var(--t-text)] outline-none placeholder:text-[var(--t-text-muted)]"
                   />
                 </div>
               </div>
@@ -821,9 +814,11 @@ export default function SettingsPage() {
           </div>
         )}
 
+        {activeTab === 'tenants' && <TenantsPanel />}
+
         {/* Workers Tab */}
         {activeTab === 'workers' && (
-          <div className="bg-[var(--t-panel)] border border-[var(--t-border)] rounded-lg p-4 md:p-5">
+          <div className="bg-[var(--t-panel)] border border-[var(--t-border)] rounded-none p-4 md:p-5">
             <WorkersTab />
           </div>
         )}
@@ -888,70 +883,70 @@ function UserModal({ user, onClose, onSubmit, isLoading }: UserModalProps) {
 
   return (
     <div 
-      className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+      className="fixed inset-0 bg-[rgba(22,22,22,0.5)] flex items-center justify-center z-50 p-4"
       onClick={onClose}
     >
       <div 
-        className="bg-[var(--t-panel)] border border-[var(--t-border)] rounded-lg p-6 w-full max-w-md max-h-[90vh] overflow-y-auto"
+        className="bg-[var(--t-panel)] border border-[var(--t-border)] rounded-none p-6 w-full max-w-md max-h-[90vh] overflow-y-auto"
         onClick={e => e.stopPropagation()}
       >
-        <h2 className="text-lg font-semibold text-[var(--t-text)] mb-5">
+        <h2 className="text-[20px] font-normal text-[var(--t-text)] mb-5">
           {user ? 'Edit User' : 'Create New User'}
         </h2>
         
         <form onSubmit={handleSubmit}>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
             <div>
-              <label className="block text-sm font-medium text-[var(--t-text-secondary)] mb-1">Username *</label>
+              <label className="block text-xs text-[#525252] mb-1">Username *</label>
               <input
                 value={formData.username}
                 onChange={(e) => setFormData({ ...formData, username: e.target.value })}
                 required
-                className="w-full px-3 py-2 text-base bg-[var(--t-input)] text-[var(--t-text)] border border-[var(--t-border)] rounded-md outline-none focus:border-[#3B82F6] placeholder:text-[var(--t-text-muted)]"
+                className="w-full px-3 py-2 text-base text-[var(--t-text)] outline-none placeholder:text-[var(--t-text-muted)]"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-[var(--t-text-secondary)] mb-1">Email *</label>
+              <label className="block text-xs text-[#525252] mb-1">Email *</label>
               <input
                 type="email"
                 value={formData.email}
                 onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                 required
-                className="w-full px-3 py-2 text-base bg-[var(--t-input)] text-[var(--t-text)] border border-[var(--t-border)] rounded-md outline-none focus:border-[#3B82F6] placeholder:text-[var(--t-text-muted)]"
+                className="w-full px-3 py-2 text-base text-[var(--t-text)] outline-none placeholder:text-[var(--t-text-muted)]"
               />
             </div>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
             <div>
-              <label className="block text-sm font-medium text-[var(--t-text-secondary)] mb-1">First Name</label>
+              <label className="block text-xs text-[#525252] mb-1">First Name</label>
               <input
                 value={formData.firstName}
                 onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
-                className="w-full px-3 py-2 text-base bg-[var(--t-input)] text-[var(--t-text)] border border-[var(--t-border)] rounded-md outline-none focus:border-[#3B82F6] placeholder:text-[var(--t-text-muted)]"
+                className="w-full px-3 py-2 text-base text-[var(--t-text)] outline-none placeholder:text-[var(--t-text-muted)]"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-[var(--t-text-secondary)] mb-1">Last Name</label>
+              <label className="block text-xs text-[#525252] mb-1">Last Name</label>
               <input
                 value={formData.lastName}
                 onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
-                className="w-full px-3 py-2 text-base bg-[var(--t-input)] text-[var(--t-text)] border border-[var(--t-border)] rounded-md outline-none focus:border-[#3B82F6] placeholder:text-[var(--t-text-muted)]"
+                className="w-full px-3 py-2 text-base text-[var(--t-text)] outline-none placeholder:text-[var(--t-text-muted)]"
               />
             </div>
           </div>
 
           <div className="mb-3">
-            <label className="block text-sm font-medium text-[var(--t-text-secondary)] mb-1">Department</label>
+            <label className="block text-xs text-[#525252] mb-1">Department</label>
             <input
               value={formData.department}
               onChange={(e) => setFormData({ ...formData, department: e.target.value })}
-              className="w-full px-3 py-2 text-base bg-[var(--t-input)] text-[var(--t-text)] border border-[var(--t-border)] rounded-md outline-none focus:border-[#3B82F6] placeholder:text-[var(--t-text-muted)]"
+              className="w-full px-3 py-2 text-base text-[var(--t-text)] outline-none placeholder:text-[var(--t-text-muted)]"
             />
           </div>
 
           <div className="mb-4">
-            <label className="block text-sm font-medium text-[var(--t-text-secondary)] mb-1">
+            <label className="block text-xs text-[#525252] mb-1">
               Password {user ? '(leave blank to keep current)' : '*'}
             </label>
             <input
@@ -959,12 +954,12 @@ function UserModal({ user, onClose, onSubmit, isLoading }: UserModalProps) {
               value={formData.password}
               onChange={(e) => setFormData({ ...formData, password: e.target.value })}
               required={!user}
-              className="w-full px-3 py-2 text-base bg-[var(--t-input)] text-[var(--t-text)] border border-[var(--t-border)] rounded-md outline-none focus:border-[#3B82F6] placeholder:text-[var(--t-text-muted)]"
+              className="w-full px-3 py-2 text-base text-[var(--t-text)] outline-none placeholder:text-[var(--t-text-muted)]"
             />
           </div>
 
           <div className="mb-4">
-            <label className="block text-sm font-medium text-[var(--t-text-secondary)] mb-2">Roles</label>
+            <label className="block text-xs text-[#525252] mb-2">Roles</label>
             <div className="flex flex-wrap gap-2">
               {availableRoles.map((role) => (
                 <button
@@ -972,7 +967,7 @@ function UserModal({ user, onClose, onSubmit, isLoading }: UserModalProps) {
                   type="button"
                   onClick={() => toggleRole(role)}
                   className={`
-                    px-3 py-1.5 text-sm rounded-md border transition-colors
+                    px-3 py-1.5 text-sm rounded-none border transition-colors
                     ${formData.roles.includes(role)
                       ? 'bg-opacity-10'
                       : 'bg-[var(--t-input)] text-[var(--t-text-secondary)] border-[var(--t-border)]'
@@ -996,7 +991,7 @@ function UserModal({ user, onClose, onSubmit, isLoading }: UserModalProps) {
               type="checkbox"
               checked={formData.isActive}
               onChange={(e) => setFormData({ ...formData, isActive: e.target.checked })}
-              className="rounded"
+              className="rounded-none"
             />
             Active
           </label>
@@ -1005,14 +1000,14 @@ function UserModal({ user, onClose, onSubmit, isLoading }: UserModalProps) {
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 text-sm bg-[var(--t-bg)] text-[var(--t-text-secondary)] border border-[var(--t-border)] rounded-md hover:bg-[var(--t-panel-hover)] transition-colors"
+              className="h-8 px-3 text-sm inline-flex items-center gap-2 bg-[#393939] text-white hover:bg-[#474747]"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={isLoading}
-              className="px-4 py-2 text-sm bg-[#3B82F6] text-white rounded-md hover:bg-[#2563EB] transition-colors disabled:opacity-50"
+              className="h-8 px-3 text-sm bg-[#0f62fe] text-white hover:bg-[#0353e9] disabled:opacity-50 inline-flex items-center gap-2"
             >
               {isLoading ? 'Saving...' : (user ? 'Update' : 'Create')}
             </button>

@@ -7,7 +7,7 @@ import { toast } from 'sonner'
 import { ArrowLeft, Copy, Key, Plus, Trash2, Check, X } from 'lucide-react'
 import { confirmDialog } from '@/components/common/ConfirmDialog'
 
-const FONT = "'Prompt', sans-serif"
+const FONT = '"IBM Plex Sans Thai", "IBM Plex Sans", "Sarabun", system-ui, sans-serif'
 const THEME = {
   bg: 'var(--t-bg)',
   panel: 'var(--t-panel)',
@@ -129,7 +129,7 @@ export default function ApiKeysPage() {
           <ArrowLeft size={18} />
         </Link>
         <Key size={22} />
-        <h1 style={{ fontSize: 20, fontWeight: 600, margin: 0 }}>API Keys</h1>
+        <h1 style={{ fontSize: 20, fontWeight: 400, margin: 0 }}>API Keys</h1>
         <div style={{ marginLeft: 'auto' }}>
           <button
             onClick={() => setShowCreate(true)}
@@ -137,11 +137,11 @@ export default function ApiKeysPage() {
               display: 'flex',
               alignItems: 'center',
               gap: 6,
-              padding: '8px 14px',
+              padding: '0 12px', height: 32,
               background: THEME.accent,
               color: '#fff',
               border: 'none',
-              borderRadius: 6,
+              borderRadius: 0,
               cursor: 'pointer',
               fontFamily: FONT,
               fontSize: 13,
@@ -156,7 +156,7 @@ export default function ApiKeysPage() {
         style={{
           background: THEME.panel,
           border: `1px solid ${THEME.border}`,
-          borderRadius: 8,
+          borderRadius: 0,
           overflow: 'hidden',
         }}
       >
@@ -206,8 +206,8 @@ export default function ApiKeysPage() {
                       style={{
                         background: 'transparent',
                         border: `1px solid ${THEME.border}`,
-                        color: '#F87171',
-                        borderRadius: 4,
+                        color: '#da1e28',
+                        borderRadius: 0,
                         padding: '4px 10px',
                         cursor: 'pointer',
                         fontFamily: FONT,
@@ -246,7 +246,7 @@ export default function ApiKeysPage() {
             style={{
               background: THEME.panel,
               border: `1px solid ${THEME.border}`,
-              borderRadius: 8,
+              borderRadius: 0,
               padding: 24,
               width: 420,
             }}
@@ -266,7 +266,7 @@ export default function ApiKeysPage() {
                   background: THEME.bg,
                   border: `1px solid ${THEME.border}`,
                   color: THEME.text.primary,
-                  borderRadius: 6,
+                  borderRadius: 0,
                   fontSize: 13,
                   fontFamily: FONT,
                 }}
@@ -286,7 +286,7 @@ export default function ApiKeysPage() {
                   background: THEME.bg,
                   border: `1px solid ${THEME.border}`,
                   color: THEME.text.primary,
-                  borderRadius: 6,
+                  borderRadius: 0,
                   fontSize: 13,
                   fontFamily: FONT,
                 }}
@@ -300,7 +300,7 @@ export default function ApiKeysPage() {
                   background: 'transparent',
                   border: `1px solid ${THEME.border}`,
                   color: THEME.text.primary,
-                  borderRadius: 6,
+                  borderRadius: 0,
                   cursor: 'pointer',
                   fontFamily: FONT,
                   fontSize: 13,
@@ -312,11 +312,11 @@ export default function ApiKeysPage() {
                 onClick={handleCreate}
                 disabled={creating}
                 style={{
-                  padding: '8px 14px',
+                  padding: '0 12px', height: 32,
                   background: THEME.accent,
                   border: 'none',
                   color: '#fff',
-                  borderRadius: 6,
+                  borderRadius: 0,
                   cursor: 'pointer',
                   fontFamily: FONT,
                   fontSize: 13,
@@ -347,7 +347,7 @@ export default function ApiKeysPage() {
             style={{
               background: THEME.panel,
               border: `1px solid ${THEME.border}`,
-              borderRadius: 8,
+              borderRadius: 0,
               padding: 24,
               width: 480,
             }}
@@ -356,14 +356,14 @@ export default function ApiKeysPage() {
               <Key size={18} />
               <h2 style={{ margin: 0, fontSize: 16, fontWeight: 600 }}>Your API key</h2>
             </div>
-            <p style={{ fontSize: 12, color: '#FBBF24', margin: '0 0 12px' }}>
+            <p style={{ fontSize: 12, color: '#ba4e00', margin: '0 0 12px' }}>
               Store this key securely — the system cannot show it again after you close this window.
             </p>
             <div
               style={{
                 background: THEME.bg,
                 border: `1px solid ${THEME.border}`,
-                borderRadius: 6,
+                borderRadius: 0,
                 padding: 12,
                 fontFamily: 'monospace',
                 fontSize: 13,
@@ -381,7 +381,7 @@ export default function ApiKeysPage() {
                   background: 'transparent',
                   border: `1px solid ${THEME.border}`,
                   color: THEME.text.primary,
-                  borderRadius: 6,
+                  borderRadius: 0,
                   cursor: 'pointer',
                   fontFamily: FONT,
                   fontSize: 13,
@@ -399,11 +399,11 @@ export default function ApiKeysPage() {
                   setCopied(false)
                 }}
                 style={{
-                  padding: '8px 14px',
+                  padding: '0 12px', height: 32,
                   background: THEME.accent,
                   border: 'none',
                   color: '#fff',
-                  borderRadius: 6,
+                  borderRadius: 0,
                   cursor: 'pointer',
                   fontFamily: FONT,
                   fontSize: 13,

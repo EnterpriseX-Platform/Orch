@@ -5,6 +5,7 @@
 //   DELETE body { rid, originalRow }                   → delete
 import { NextRequest } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { getTenantContext, featureGuard, isForeign } from '@/lib/tenant'
 import {
   describe as routerDescribe,
   insertRow as routerInsert,
@@ -31,8 +32,13 @@ function parseRid(rid: string | undefined): number | null {
 }
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const ctx = await getTenantContext(req)
+  const blocked = featureGuard(ctx, 'dataRepository')
+  if (blocked) return blocked
   try {
     const { id } = await params
+    const owner = await prisma.repoTable.findUnique({ where: { id }, select: { tenantId: true } })
+    if (isForeign(ctx, owner)) return fail('Not found', 404)
     const t = await loadTable(id)
     const body = await req.json()
     // Reference sends raw column values; keep that contract.
@@ -55,8 +61,13 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
 }
 
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const ctx = await getTenantContext(req)
+  const blocked = featureGuard(ctx, 'dataRepository')
+  if (blocked) return blocked
   try {
     const { id } = await params
+    const owner = await prisma.repoTable.findUnique({ where: { id }, select: { tenantId: true } })
+    if (isForeign(ctx, owner)) return fail('Not found', 404)
     const t = await loadTable(id)
     const body = await req.json()
     const rowId = parseRid(body?.rid)
@@ -69,8 +80,13 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 }
 
 export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const ctx = await getTenantContext(req)
+  const blocked = featureGuard(ctx, 'dataRepository')
+  if (blocked) return blocked
   try {
     const { id } = await params
+    const owner = await prisma.repoTable.findUnique({ where: { id }, select: { tenantId: true } })
+    if (isForeign(ctx, owner)) return fail('Not found', 404)
     const t = await loadTable(id)
     const body = await req.json().catch(() => ({}))
     const rowId = parseRid(body?.rid)

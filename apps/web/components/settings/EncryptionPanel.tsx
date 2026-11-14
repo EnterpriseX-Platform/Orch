@@ -27,7 +27,7 @@ type Row = {
   suggested: boolean
 }
 
-const FONT = "'Prompt', sans-serif"
+const FONT = '"IBM Plex Sans Thai", "IBM Plex Sans", "Sarabun", system-ui, sans-serif'
 
 export function EncryptionPanel() {
   const { data, isLoading, refetch } = useQuery({
@@ -117,17 +117,17 @@ export function EncryptionPanel() {
       {/* Header */}
       <div className="flex items-start justify-between gap-3">
         <div>
-          <h2 className="text-base font-semibold text-[var(--t-text)] flex items-center gap-2">
-            <Lock className="w-4 h-4 text-[#10B981]" /> At-rest Encryption
+          <h2 className="text-base font-normal text-[var(--t-text)] flex items-center gap-2">
+            <Lock className="w-4 h-4 text-[#525252]" /> At-rest Encryption
           </h2>
         </div>
         <div className={
-          'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium border ' +
+          'cds-tag inline-flex items-center gap-1.5 px-2 py-0.5 text-xs ' +
           (engine === 'postgres'
-            ? 'bg-blue-500/10 text-blue-300 border-blue-500/30'
+            ? 'bg-[#d0e2ff] text-[#0043ce]'
             : engine === 'oracle'
-              ? 'bg-red-500/10 text-red-300 border-red-500/30'
-              : 'bg-slate-500/10 text-slate-300 border-slate-500/30')
+              ? 'bg-[#ffd7d9] text-[#a2191f]'
+              : 'bg-[#e0e0e0] text-[#161616]')
         }>
           <Database className="w-3.5 h-3.5" />
           Engine: {engine}
@@ -141,10 +141,10 @@ export function EncryptionPanel() {
             key={f}
             onClick={() => setFilter(f)}
             className={
-              'px-3 py-1.5 text-xs font-medium rounded-md transition-colors ' +
+              'h-8 px-3 text-sm ' +
               (filter === f
-                ? 'bg-[var(--t-accent)] text-white'
-                : 'bg-[var(--t-input)] text-[var(--t-text-secondary)] border border-[var(--t-border)]')
+                ? 'bg-[#e0e0e0] text-[#161616]'
+                : 'bg-transparent text-[#525252] hover:bg-[#e8e8e8]')
             }
           >
             {f === 'SUGGESTED' ? 'Sensitive (suggested)' : f === 'ENCRYPTED' ? 'Encrypted' : 'All columns'}
@@ -155,7 +155,7 @@ export function EncryptionPanel() {
           placeholder="Filter by table or column..."
           value={search}
           onChange={e => setSearch(e.target.value)}
-          className="flex-1 min-w-[200px] px-3 py-1.5 text-sm rounded-md border border-[var(--t-border)] bg-[var(--t-input)] text-[var(--t-text)]"
+          className="flex-1 min-w-[200px] px-3 py-1.5 text-sm text-[var(--t-text)]"
         />
         <span className="text-xs text-[var(--t-text-muted)]">
           {selected.size} selected · {filtered.length} of {rows.length}
@@ -163,10 +163,10 @@ export function EncryptionPanel() {
       </div>
 
       {/* Table */}
-      <div className="rounded-lg border border-[var(--t-border)] overflow-hidden">
+      <div className="rounded-none border border-[var(--t-border)] overflow-hidden">
         <table className="w-full text-sm">
-          <thead className="bg-[var(--t-bg)] border-b border-[var(--t-border)]">
-            <tr className="text-left text-[10px] font-semibold uppercase tracking-wider text-[var(--t-text-muted)]">
+          <thead className="bg-[#e0e0e0]">
+            <tr className="text-left text-[12px] font-semibold text-[#161616] h-10">
               <th className="px-4 py-2 w-10"></th>
               <th className="px-4 py-2">Table</th>
               <th className="px-4 py-2">Column</th>
@@ -200,18 +200,18 @@ export function EncryptionPanel() {
                     <td className="px-4 py-2 align-middle text-xs text-[var(--t-text-muted)]">{r.dataType}</td>
                     <td className="px-4 py-2 align-middle">
                       {r.encrypted ? (
-                        <span className="inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">
+                        <span className="cds-tag inline-flex items-center gap-1 text-[12px] px-2 py-0.5 bg-[#a7f0ba] text-[#0e6027]">
                           <Lock className="w-3 h-3" /> Encrypted
                         </span>
                       ) : (
-                        <span className="inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded bg-slate-500/15 text-slate-300 border border-slate-500/30">
+                        <span className="cds-tag inline-flex items-center gap-1 text-[12px] px-2 py-0.5 bg-[#e0e0e0] text-[#161616]">
                           <Unlock className="w-3 h-3" /> Plain
                         </span>
                       )}
                     </td>
                     <td className="px-4 py-2 align-middle">
                       {r.suggested ? (
-                        <span className="inline-flex items-center gap-1 text-[11px] text-amber-400">
+                        <span className="inline-flex items-center gap-1 text-[11px] text-[#8a3800]">
                           <AlertTriangle className="w-3 h-3" /> Suggested
                         </span>
                       ) : (
@@ -232,7 +232,7 @@ export function EncryptionPanel() {
           <button
             onClick={() => previewMutation.mutate('encrypt')}
             disabled={previewMutation.isPending}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-md bg-[var(--t-input)] text-[var(--t-text)] border border-[var(--t-border)] hover:bg-[var(--t-panel-hover)]"
+            className="inline-flex items-center gap-2 h-8 px-3 text-sm border border-[#0f62fe] text-[#0f62fe] bg-transparent hover:bg-[#0f62fe] hover:text-white"
           >
             <Eye className="w-3.5 h-3.5" /> Preview DDL
           </button>
@@ -247,7 +247,7 @@ export function EncryptionPanel() {
               if (ok) applyMutation.mutate('encrypt')
             }}
             disabled={applyMutation.isPending}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-md bg-[var(--t-accent)] text-white hover:bg-[#2563EB]"
+            className="inline-flex items-center gap-2 h-8 px-3 text-sm bg-[#0f62fe] text-white hover:bg-[#0353e9]"
           >
             {applyMutation.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Zap className="w-3.5 h-3.5" />}
             Apply Encryption
@@ -257,14 +257,14 @@ export function EncryptionPanel() {
 
       {/* Preview overlay */}
       {previewDdl && (
-        <div className="rounded-lg border border-[var(--t-border)] bg-[var(--t-bg)] overflow-hidden">
+        <div className="border border-[#e0e0e0] bg-[#f4f4f4] overflow-hidden">
           <div className="px-4 py-2 border-b border-[var(--t-border)] flex items-center justify-between">
-            <div className="text-xs font-semibold uppercase tracking-wider text-[var(--t-text-muted)]">
+            <div className="text-xs text-[#525252]">
               {previewMode === 'decrypt' ? 'Decrypt DDL Preview' : 'Encrypt DDL Preview'} ({engine})
             </div>
             <button
               onClick={() => setPreviewDdl(null)}
-              className="text-xs text-[var(--t-text-muted)] hover:text-[var(--t-text)]"
+              className="h-8 px-3 text-sm text-[#0f62fe] hover:bg-[#e8e8e8]"
             >
               Close
             </button>
@@ -275,7 +275,7 @@ export function EncryptionPanel() {
           <div className="px-4 py-2 border-t border-[var(--t-border)] flex justify-end gap-2">
             <button
               onClick={() => navigator.clipboard.writeText(previewDdl.join('\n\n')).then(() => toast.success('Copied'))}
-              className="text-xs px-3 py-1.5 rounded-md bg-[var(--t-input)] text-[var(--t-text)] border border-[var(--t-border)]"
+              className="inline-flex items-center h-8 px-3 text-sm bg-[#393939] text-white hover:bg-[#474747]"
             >
               <Check className="w-3 h-3 inline mr-1" /> Copy SQL
             </button>

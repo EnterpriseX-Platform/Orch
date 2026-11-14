@@ -5,6 +5,7 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { getTenantContext, featureGuard, isForeign } from '@/lib/tenant'
 import { getBrokerUrl } from '@/lib/system-config'
 
 export async function POST(
@@ -12,6 +13,9 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const ctx = await getTenantContext(request)
+    const blocked = featureGuard(ctx, 'flows')
+    if (blocked) return blocked
     const { id } = await params
     const ORCH_BROKER_URL = await getBrokerUrl()
     
@@ -20,7 +24,7 @@ export async function POST(
       where: { id },
     })
 
-    if (!flow) {
+    if (!flow || isForeign(ctx, flow)) {
       return NextResponse.json(
         { error: 'Flow not found' },
         { status: 404 }

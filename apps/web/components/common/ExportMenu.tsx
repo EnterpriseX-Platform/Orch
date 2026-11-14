@@ -38,12 +38,12 @@ export function ExportMenu<T>({
         type="button"
         onClick={() => setOpen((v) => !v)}
         disabled={disabled}
-        className="px-3 py-1.5 rounded text-xs bg-[var(--t-bg)] border border-[var(--t-border)] text-[var(--t-text)] flex items-center gap-1.5 disabled:opacity-50 hover:bg-[var(--t-panel-hover)]"
+        className="h-8 px-3 text-sm flex items-center gap-2 disabled:opacity-50 border border-[#0f62fe] text-[#0f62fe] bg-transparent hover:bg-[#0f62fe] hover:text-white"
       >
         <Download className="w-3.5 h-3.5" /> {label}
       </button>
       {open && !disabled && (
-        <div className="absolute right-0 mt-1 z-50 min-w-[160px] rounded-md border border-[var(--t-border)] bg-[var(--t-panel)] shadow-lg overflow-hidden">
+        <div className="absolute right-0 mt-1 z-50 min-w-[160px] border border-[#e0e0e0] bg-white overflow-hidden">
           <MenuItem
             icon={<FileDown className="w-3.5 h-3.5" />}
             onClick={() => { setOpen(false); exportData('csv', getInput('csv')) }}
@@ -51,13 +51,13 @@ export function ExportMenu<T>({
             CSV (.csv)
           </MenuItem>
           <MenuItem
-            icon={<FileSpreadsheet className="w-3.5 h-3.5 text-emerald-500" />}
+            icon={<FileSpreadsheet className="w-3.5 h-3.5 text-[#24a148]" />}
             onClick={() => { setOpen(false); exportData('excel', getInput('excel')) }}
           >
             Excel (.xlsx)
           </MenuItem>
           <MenuItem
-            icon={<FileText className="w-3.5 h-3.5 text-red-500" />}
+            icon={<FileText className="w-3.5 h-3.5 text-[#da1e28]" />}
             onClick={() => { setOpen(false); exportData('pdf', getInput('pdf')) }}
           >
             PDF (.pdf)
@@ -72,7 +72,7 @@ function MenuItem({ icon, children, onClick }: { icon: React.ReactNode; children
   return (
     <button
       onClick={onClick}
-      className="w-full px-3 py-2 text-xs flex items-center gap-2 text-[var(--t-text)] hover:bg-[var(--t-panel-hover)] text-left"
+      className="w-full h-10 px-4 text-sm flex items-center gap-2 text-[#161616] hover:bg-[#e8e8e8] text-left"
     >
       {icon}
       <span>{children}</span>

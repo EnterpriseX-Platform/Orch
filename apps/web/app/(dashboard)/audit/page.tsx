@@ -1,5 +1,7 @@
 'use client'
 
+import { StatStrip } from '@/components/common/StatStrip'
+
 import { useEffect, useMemo, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { auditApi } from '@/lib/api'
@@ -622,7 +624,7 @@ export default function AuditPage() {
           <h1 style={{ fontSize: 22, fontWeight: 700, color: THEME.text.primary }}>Audit Trail</h1>
           <p style={{ fontSize: 13, color: THEME.text.muted, marginTop: 2 }}>Track all system activities and data changes</p>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', justifyContent: 'flex-end', flex: 1, minWidth: 0 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', justifyContent: 'flex-end', flex: '1 1 560px', minWidth: 0 }}>
           {/* Toolbar moved up next to Refresh: search + Filters dropdown + group-by */}
           <div style={{ position: 'relative', flex: '1 1 180px', minWidth: 160, maxWidth: 300 }}>
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: THEME.text.muted }} />
@@ -708,37 +710,15 @@ export default function AuditPage() {
       </div>
 
       {/* Stats Cards - Compact */}
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 mb-4">
-        {statCards.map((stat) => (
-          <div 
-            key={stat.label}
-            style={{
-              background: THEME.panel,
-              border: `1px solid ${THEME.border}`,
-              borderRadius: 10,
-              padding: '10px',
-            }}
-          >
-            <div className="flex items-center justify-between mb-2">
-              <div style={{
-                width: 26,
-                height: 22,
-                background: `${stat.color}12`,
-                border: `1px solid ${stat.color}35`,
-                borderRadius: 6,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}>
-                <stat.icon className="w-3.5 h-3.5" style={{ color: stat.color }} />
-              </div>
-              <span style={{ fontSize: 11, color: THEME.text.muted }}>{dateFrom || dateTo ? 'range' : 'all time'}</span>
-            </div>
-            <p style={{ fontSize: 20, fontWeight: 700, color: THEME.text.primary }}>{stat.value.toLocaleString()}</p>
-            <p style={{ fontSize: 11, color: THEME.text.muted }}>{stat.label}</p>
-          </div>
-        ))}
-      </div>
+      <StatStrip
+        className="mb-4"
+        items={statCards.map((st) => ({
+          label: st.label,
+          value: st.value.toLocaleString(),
+          sub: dateFrom || dateTo ? 'selected range' : 'all time',
+          icon: st.icon,
+        }))}
+      />
 
       {/* Active filter chips (self-hide when none). Search + Filters dropdown
           + Group-by toggle now live in the page header next to Refresh. */}
@@ -768,9 +748,9 @@ export default function AuditPage() {
       <div style={{
         background: THEME.panel,
         border: `1px solid ${THEME.border}`,
-        borderRadius: 10,
-        overflow: 'hidden',
+        overflowX: 'auto',
       }}>
+        <div style={{ minWidth: 960 }}>
         {/* Table Header */}
         <div style={{
           display: 'grid',
@@ -1107,6 +1087,7 @@ export default function AuditPage() {
             })}
           </div>
         )}
+        </div>
       </div>
 
       {/* Pagination */}

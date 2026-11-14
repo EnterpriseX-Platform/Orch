@@ -4,11 +4,17 @@
  */
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { getTenantContext, featureGuard, isForeign } from '@/lib/tenant'
 import { listExternalTables, type ConnectionType, type ConnectionConfig } from '@/lib/repo-connections'
 
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const ctx = await getTenantContext(_req)
+  const blocked = featureGuard(ctx, 'dataRepository')
+  if (blocked) return blocked
   try {
     const { id } = await params
+    const owner = await prisma.repoConnection.findUnique({ where: { id }, select: { tenantId: true } })
+    if (isForeign(ctx, owner)) return NextResponse.json({ error: 'Not found' }, { status: 404 })
     const conn = await prisma.repoConnection.findUnique({ where: { id } })
     if (!conn) return NextResponse.json({ error: 'Not found' }, { status: 404 })
     const tables = await listExternalTables(conn.type as ConnectionType, conn.config as ConnectionConfig)

@@ -1,10 +1,16 @@
 import { NextRequest } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { getTenantContext, featureGuard, isForeign } from '@/lib/tenant'
 import { ok, fail } from '../../_helpers'
 
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const ctx = await getTenantContext(req)
+  const blocked = featureGuard(ctx, 'dataRepository')
+  if (blocked) return blocked
   try {
     const { id } = await params
+    const owner = await prisma.repoFolder.findUnique({ where: { id }, select: { tenantId: true } })
+    if (isForeign(ctx, owner)) return fail('Not found', 404)
     const body = await req.json()
     const data: any = {}
     if (body.name !== undefined) data.name = body.name
@@ -18,8 +24,13 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 }
 
 export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const ctx = await getTenantContext(_req)
+  const blocked = featureGuard(ctx, 'dataRepository')
+  if (blocked) return blocked
   try {
     const { id } = await params
+    const owner = await prisma.repoFolder.findUnique({ where: { id }, select: { tenantId: true } })
+    if (isForeign(ctx, owner)) return fail('Not found', 404)
     // Detach tables before deleting the folder.
     await prisma.repoTable.updateMany({ where: { folderId: id }, data: { folderId: null } })
     await prisma.repoFolder.delete({ where: { id } })

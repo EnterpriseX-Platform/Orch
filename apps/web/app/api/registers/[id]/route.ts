@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { getTenantContext, featureGuard, isForeign } from '@/lib/tenant'
 import { z } from 'zod'
 
 const updateApiSchema = z.object({
@@ -91,8 +92,15 @@ export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const ctx = await getTenantContext(request)
+  const blocked = featureGuard(ctx, 'projects')
+  if (blocked) return blocked
   try {
     const { id } = await params
+    if (ctx.tenantId) {
+      const own = await prisma.apiRegistration.findUnique({ where: { id: id }, select: { project: { select: { tenantId: true } } } })
+      if (isForeign(ctx, own?.project)) return NextResponse.json({ error: 'API not found' }, { status: 404 })
+    }
 
     const api = await prisma.apiRegistration.findUnique({
       where: { id },
@@ -137,8 +145,15 @@ export async function PUT(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const ctx = await getTenantContext(request)
+  const blocked = featureGuard(ctx, 'projects')
+  if (blocked) return blocked
   try {
     const { id } = await params
+    if (ctx.tenantId) {
+      const own = await prisma.apiRegistration.findUnique({ where: { id: id }, select: { project: { select: { tenantId: true } } } })
+      if (isForeign(ctx, own?.project)) return NextResponse.json({ error: 'API not found' }, { status: 404 })
+    }
     const body = await request.json()
 
     // Validate input
@@ -158,7 +173,7 @@ export async function PUT(
       const project = await prisma.project.findUnique({
         where: { id: validated.projectId },
       })
-      if (!project) {
+      if (!project || isForeign(ctx, project)) {
         return NextResponse.json({ error: 'Project not found' }, { status: 404 })
       }
     }
@@ -168,7 +183,7 @@ export async function PUT(
       const catalog = await prisma.dataCatalog.findUnique({
         where: { id: validated.dataCatalogId },
       })
-      if (!catalog) {
+      if (!catalog || isForeign(ctx, catalog)) {
         return NextResponse.json({ error: 'Data catalog not found' }, { status: 404 })
       }
     }
@@ -178,7 +193,7 @@ export async function PUT(
       const flow = await prisma.flowIntegration.findUnique({
         where: { id: validated.flowId },
       })
-      if (!flow) {
+      if (!flow || isForeign(ctx, flow)) {
         return NextResponse.json({ error: 'Flow not found' }, { status: 404 })
       }
     }
@@ -205,8 +220,15 @@ export async function DELETE(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const ctx = await getTenantContext(request)
+  const blocked = featureGuard(ctx, 'projects')
+  if (blocked) return blocked
   try {
     const { id } = await params
+    if (ctx.tenantId) {
+      const own = await prisma.apiRegistration.findUnique({ where: { id: id }, select: { project: { select: { tenantId: true } } } })
+      if (isForeign(ctx, own?.project)) return NextResponse.json({ error: 'API not found' }, { status: 404 })
+    }
 
     const existing = await prisma.apiRegistration.findUnique({
       where: { id },

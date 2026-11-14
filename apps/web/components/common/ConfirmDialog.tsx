@@ -97,13 +97,13 @@ export function ConfirmDialogHost() {
     <div
       role="dialog"
       aria-modal="true"
-      className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/55 backdrop-blur-[2px] animate-in fade-in duration-150"
+      className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-[rgba(22,22,22,0.5)] animate-in fade-in duration-150"
       onClick={() => { pending.resolve(false); setPending(null) }}
     >
       <div
         onClick={e => e.stopPropagation()}
         className={cn(
-          'w-full max-w-sm rounded-xl shadow-2xl overflow-hidden',
+          'w-full max-w-sm rounded-none overflow-hidden',
           'bg-[var(--t-panel)] border border-[var(--t-border)]',
           'animate-in zoom-in-95 fade-in duration-150',
         )}
@@ -113,14 +113,14 @@ export function ConfirmDialogHost() {
             className={cn(
               'shrink-0 w-9 h-9 rounded-full flex items-center justify-center',
               danger
-                ? 'bg-red-500/15 text-red-400'
-                : 'bg-amber-500/15 text-amber-400',
+                ? 'text-[#da1e28]'
+                : 'text-[#8a3800]',
             )}
           >
             <Icon className="w-4 h-4" />
           </div>
           <div className="flex-1 min-w-0">
-            <h2 className="text-sm font-semibold text-[var(--t-text)]">
+            <h2 className="text-[20px] font-normal text-[var(--t-text)]">
               {options.title ?? 'Are you sure?'}
             </h2>
             {options.body && (
@@ -135,7 +135,7 @@ export function ConfirmDialogHost() {
           <button
             type="button"
             onClick={() => { pending.resolve(false); setPending(null) }}
-            className="px-3 py-1.5 text-sm rounded-md text-[var(--t-text-secondary)] hover:bg-[var(--t-panel-hover)] transition-colors"
+            className="h-8 px-3 text-sm inline-flex items-center gap-2 bg-[#393939] text-white hover:bg-[#474747]"
           >
             {options.cancelLabel ?? 'Cancel'}
           </button>
@@ -144,10 +144,10 @@ export function ConfirmDialogHost() {
             autoFocus
             onClick={() => { pending.resolve(true); setPending(null) }}
             className={cn(
-              'px-3 py-1.5 text-sm rounded-md font-medium text-white transition-colors',
+              'px-3 py-1.5 text-sm rounded-none font-medium text-white transition-colors',
               danger
-                ? 'bg-red-600 hover:bg-red-700'
-                : 'bg-[var(--t-accent)] hover:bg-[#2563EB]',
+                ? 'bg-[#da1e28] hover:bg-[#b81921]'
+                : 'bg-[var(--t-accent)] hover:bg-[#0353e9]',
             )}
           >
             {options.confirmLabel ?? (danger ? 'Delete' : 'Confirm')}

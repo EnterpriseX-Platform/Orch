@@ -1,5 +1,7 @@
 'use client'
 
+import { StatStrip } from '@/components/common/StatStrip'
+
 import { useState, useMemo } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import {
@@ -154,37 +156,7 @@ export default function WorkerJobsPage() {
       </div>
 
       {/* Stats Cards - same pattern as Audit page */}
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 mb-4">
-        {statCards.map((stat) => (
-          <div
-            key={stat.label}
-            style={{
-              background: THEME.panel,
-              border: `1px solid ${THEME.border}`,
-              borderRadius: 10,
-              padding: '10px',
-            }}
-          >
-            <div className="flex items-center justify-between mb-2">
-              <div style={{
-                width: 26,
-                height: 22,
-                background: `${stat.color}12`,
-                border: `1px solid ${stat.color}35`,
-                borderRadius: 6,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}>
-                <stat.icon className="w-3.5 h-3.5" style={{ color: stat.color }} />
-              </div>
-              <span style={{ fontSize: 11, color: THEME.text.muted }}>live</span>
-            </div>
-            <p style={{ fontSize: 20, fontWeight: 700, color: THEME.text.primary }}>{stat.value.toLocaleString()}</p>
-            <p style={{ fontSize: 11, color: THEME.text.muted }}>{stat.label}</p>
-          </div>
-        ))}
-      </div>
+      <StatStrip className="mb-4" items={statCards.map((st) => ({ label: st.label, value: st.value.toLocaleString(), icon: st.icon }))} />
 
       {/* Filter tabs - same pattern as Audit page */}
       <div style={{

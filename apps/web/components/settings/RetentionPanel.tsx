@@ -126,7 +126,7 @@ export function RetentionPanel() {
     <div className="space-y-4">
       <div className="flex items-start justify-between">
         <div>
-          <h2 className="text-base font-semibold text-[var(--t-text)]">Log Retention</h2>
+          <h2 className="text-base font-normal text-[var(--t-text)]">Log Retention</h2>
           <p className="text-xs text-[var(--t-text-muted)] mt-0.5">
             Set retention period per log type. 0 = keep forever.
           </p>
@@ -136,7 +136,7 @@ export function RetentionPanel() {
             <button
               onClick={() => saveMutation.mutate()}
               disabled={saveMutation.isPending}
-              className="px-3 py-1.5 rounded bg-[var(--t-accent)] text-white text-xs flex items-center gap-1.5 disabled:opacity-50"
+              className="h-8 px-3 bg-[#0f62fe] text-white text-sm flex items-center gap-2 disabled:opacity-50 hover:bg-[#0353e9]"
             >
               <Save className="w-3.5 h-3.5" /> Save {Object.keys(edits).length}
             </button>
@@ -144,14 +144,14 @@ export function RetentionPanel() {
           <button
             onClick={() => pruneMutation.mutate({ dry: true })}
             disabled={pruneMutation.isPending}
-            className="px-3 py-1.5 rounded border border-[var(--t-border)] bg-[var(--t-bg)] text-[var(--t-text)] text-xs flex items-center gap-1.5"
+            className="h-8 px-3 text-sm flex items-center gap-2 border border-[#0f62fe] text-[#0f62fe] bg-transparent hover:bg-[#0f62fe] hover:text-white"
           >
             <AlertTriangle className="w-3.5 h-3.5" /> Preview
           </button>
           <button
             onClick={() => pruneMutation.mutate({ dry: false })}
             disabled={pruneMutation.isPending}
-            className="px-3 py-1.5 rounded bg-red-500/15 border border-red-500/40 text-red-400 text-xs flex items-center gap-1.5 hover:bg-red-500/25"
+            className="px-3 py-1.5 rounded-none bg-[#da1e28] text-white text-xs flex items-center gap-2 hover:bg-[#b81921]"
           >
             <Play className="w-3.5 h-3.5" /> Run cleanup now
           </button>
@@ -163,9 +163,9 @@ export function RetentionPanel() {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           {KEYS.map(({ key, label, icon: Icon, unit, hint }) => (
-            <div key={key} className="p-3 rounded-lg border border-[var(--t-border)] bg-[var(--t-bg)]">
+            <div key={key} className="p-3 border border-[#e0e0e0] bg-white">
               <div className="flex items-center gap-2 mb-2">
-                <Icon className="w-4 h-4 text-[var(--t-accent)]" />
+                <Icon className="w-4 h-4 text-[#525252]" />
                 <span className="text-sm font-semibold text-[var(--t-text)]">{label}</span>
               </div>
               <div className="flex items-center gap-2">
@@ -174,13 +174,13 @@ export function RetentionPanel() {
                   min={key.endsWith('retentionDays') ? 0 : undefined}
                   value={currentValue(key)}
                   onChange={(e) => setEdits((p) => ({ ...p, [key]: e.target.value }))}
-                  className="flex-1 px-3 py-1.5 rounded bg-[var(--t-panel)] border border-[var(--t-border)] text-[var(--t-text)] text-sm"
+                  className="flex-1 px-3 py-1.5 text-[var(--t-text)] text-sm"
                 />
                 {unit && <span className="text-xs text-[var(--t-text-muted)]">{unit}</span>}
               </div>
-              <p className="text-[11px] text-[var(--t-text-muted)] mt-2">{hint}</p>
+              <p className="text-[12px] text-[#6f6f6f] mt-2">{hint}</p>
               {dryRun && key !== 'retention.cronSchedule' && (
-                <p className="text-[11px] mt-1 text-amber-400">
+                <p className="text-[12px] mt-1 text-[#8a3800]">
                   {(() => {
                     const tableName = key.replace('.retentionDays', '_logs').replace('logs_logs', 'api_logs').replace('events_logs', 'event_logs').replace('audit_logs_logs', 'audit_logs')
                     const n = dryRun[tableName]?.wouldDelete

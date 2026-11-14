@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { getTenantContext, featureGuard } from '@/lib/tenant'
 
 /**
  * GET /api/reports/access-logs
@@ -82,6 +83,9 @@ function parseAccessLine(line: string): AccessLogEntry | null {
 }
 
 export async function GET(request: NextRequest) {
+  const ctx = await getTenantContext(request)
+  const blocked = featureGuard(ctx, 'analytics')
+  if (blocked) return blocked
   const { searchParams } = request.nextUrl
   const hours = Math.min(parseInt(searchParams.get('hours') || '24'), 168)
   const limit = Math.min(parseInt(searchParams.get('limit') || '200'), 1000)

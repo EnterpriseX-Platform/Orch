@@ -34,26 +34,20 @@ export function ActiveFiltersBar({
   return (
     <div className="flex items-center gap-2 flex-wrap text-xs py-2">
       <Filter className="w-3.5 h-3.5 text-[var(--t-text-muted)]" />
-      <span className="text-[11px] text-[var(--t-text-muted)] font-semibold uppercase tracking-wider">
+      <span className="text-[12px] text-[#525252]">
         Active filters
       </span>
       {active.map((f, i) => {
-        const color = f.color || 'var(--t-accent)'
         return (
           <span
             key={i}
-            className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md text-[11px] font-semibold border"
-            style={{
-              color,
-              background: `color-mix(in srgb, ${color} 12%, transparent)`,
-              borderColor: `color-mix(in srgb, ${color} 35%, transparent)`,
-            }}
+            className="cds-tag inline-flex items-center gap-1.5 px-2 py-0.5 text-[12px] bg-[#e0e0e0] text-[#161616]"
           >
-            <span className="text-[var(--t-text-muted)] font-normal">{f.label}:</span>
+            <span className="text-[#525252]">{f.label}:</span>
             <span>{f.value}</span>
             <button
               onClick={f.clear}
-              className="hover:bg-black/20 rounded"
+              className="hover:bg-[#c6c6c6] rounded-full"
               title={`Clear ${f.label}`}
             >
               <X className="w-3 h-3" />
@@ -64,7 +58,7 @@ export function ActiveFiltersBar({
       {onClearAll && active.length > 1 && (
         <button
           onClick={onClearAll}
-          className="text-[11px] text-[var(--t-text-muted)] hover:text-[var(--t-text)] underline underline-offset-2 ml-1"
+          className="h-6 px-2 text-[12px] text-[#0f62fe] hover:bg-[#e8e8e8] ml-1"
         >
           Clear all
         </button>

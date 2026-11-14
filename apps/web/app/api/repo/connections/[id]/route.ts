@@ -8,6 +8,7 @@
  */
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { getTenantContext, featureGuard, isForeign } from '@/lib/tenant'
 import { z } from 'zod'
 
 const patchSchema = z.object({
@@ -23,15 +24,25 @@ function redactPassword(record: any) {
 }
 
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const ctx = await getTenantContext(_req)
+  const blocked = featureGuard(ctx, 'dataRepository')
+  if (blocked) return blocked
   const { id } = await params
+  const owner = await prisma.repoConnection.findUnique({ where: { id }, select: { tenantId: true } })
+  if (isForeign(ctx, owner)) return NextResponse.json({ error: 'Not found' }, { status: 404 })
   const c = await prisma.repoConnection.findUnique({ where: { id } })
   if (!c) return NextResponse.json({ error: 'Not found' }, { status: 404 })
   return NextResponse.json({ data: redactPassword(c) })
 }
 
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const ctx = await getTenantContext(req)
+  const blocked = featureGuard(ctx, 'dataRepository')
+  if (blocked) return blocked
   try {
     const { id } = await params
+    const owner = await prisma.repoConnection.findUnique({ where: { id }, select: { tenantId: true } })
+    if (isForeign(ctx, owner)) return NextResponse.json({ error: 'Not found' }, { status: 404 })
     const body = patchSchema.parse(await req.json())
     const existing = await prisma.repoConnection.findUnique({ where: { id } })
     if (!existing) return NextResponse.json({ error: 'Not found' }, { status: 404 })
@@ -61,7 +72,12 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 }
 
 export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const ctx = await getTenantContext(_req)
+  const blocked = featureGuard(ctx, 'dataRepository')
+  if (blocked) return blocked
   const { id } = await params
+  const owner = await prisma.repoConnection.findUnique({ where: { id }, select: { tenantId: true } })
+  if (isForeign(ctx, owner)) return NextResponse.json({ error: 'Not found' }, { status: 404 })
   await prisma.repoConnection.delete({ where: { id } })
   return NextResponse.json({ ok: true })
 }
