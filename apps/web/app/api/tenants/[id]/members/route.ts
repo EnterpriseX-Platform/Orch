@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { prisma } from '@/lib/prisma'
-import { canManageTenant, getTenantContext } from '@/lib/tenant'
+import { canManageTenant, getTenantContext, invalidateTenantCache } from '@/lib/tenant'
 
 type Params = { params: Promise<{ id: string }> }
 
@@ -48,6 +48,7 @@ export async function POST(request: NextRequest, { params }: Params) {
     create: { tenantId: id, userId: user.id, role: parsed.data.role },
     update: { role: parsed.data.role },
   })
+  invalidateTenantCache()
   return NextResponse.json({ data: member }, { status: 201 })
 }
 
@@ -68,5 +69,6 @@ export async function DELETE(request: NextRequest, { params }: Params) {
     return NextResponse.json({ error: 'A tenant needs at least one owner' }, { status: 400 })
   }
   await prisma.tenantMember.delete({ where: { id: target.id } })
+  invalidateTenantCache()
   return NextResponse.json({ ok: true })
 }

@@ -1,14 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import bcrypt from 'bcryptjs'
+import { getCaller, isAdmin, requireAdmin } from '@/lib/auth'
 
 // GET /api/users/[id] - Get user by ID
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const caller = getCaller(request)
+  if (!caller) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   try {
     const { id } = await params
+    if (!isAdmin(caller) && caller.userId !== id) {
+      return NextResponse.json({ error: 'Admin role required' }, { status: 403 })
+    }
 
     const user = await prisma.user.findUnique({
       where: { id },
@@ -44,7 +50,18 @@ export async function PUT(
 ) {
   try {
     const { id } = await params
+    const caller = getCaller(request)
+    if (!caller) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    const callerIsAdmin = isAdmin(caller)
+    if (!callerIsAdmin && caller.userId !== id) {
+      return NextResponse.json({ error: 'Admin role required' }, { status: 403 })
+    }
     const body = await request.json()
+    // Only admins may change roles or account status (no self-promotion).
+    if (!callerIsAdmin) {
+      delete body.roles
+      delete body.isActive
+    }
     const { username, email, password, firstName, lastName, department, roles, isActive } = body
 
     // Check if user exists
@@ -132,6 +149,8 @@ export async function DELETE(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const denied = requireAdmin(request)
+  if (denied) return denied
   try {
     const { id } = await params
 

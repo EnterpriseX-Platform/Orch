@@ -5,8 +5,8 @@
 import { NextRequest } from 'next/server'
 import jwt from 'jsonwebtoken'
 import { prisma } from './prisma'
+import { getJwtSecret } from '@/lib/jwt-secret'
 
-const JWT_SECRET = process.env.JWT_SECRET || 'orch-secret-key'
 
 // System user ID fallback (used when no auth token or in dev)
 const SYSTEM_USER_ID = 'system'
@@ -31,7 +31,7 @@ export function getUserId(request: NextRequest): string {
     const token = authHeader?.replace('Bearer ', '')
     if (!token) return SYSTEM_USER_ID
 
-    const decoded = jwt.verify(token, JWT_SECRET) as JwtPayload
+    const decoded = jwt.verify(token, getJwtSecret()) as JwtPayload
     return decoded.userId || SYSTEM_USER_ID
   } catch {
     return SYSTEM_USER_ID
@@ -85,8 +85,31 @@ export function getAuthPayload(request: NextRequest): JwtPayload | null {
     const token = authHeader?.replace('Bearer ', '')
     if (!token) return null
 
-    return jwt.verify(token, JWT_SECRET) as JwtPayload
+    return jwt.verify(token, getJwtSecret()) as JwtPayload
   } catch {
     return null
   }
+}
+
+/** Caller from the Authorization header or the auth-token cookie (verified). */
+export function getCaller(request: NextRequest): JwtPayload | null {
+  const token =
+    request.headers.get('authorization')?.replace(/^Bearer\s+/i, '') ||
+    request.cookies.get('auth-token')?.value
+  if (!token) return null
+  try {
+    return jwt.verify(token, getJwtSecret()) as JwtPayload
+  } catch {
+    return null
+  }
+}
+
+export const isAdmin = (p: JwtPayload | null) => !!p && (p.roles || []).includes('admin')
+
+/** 401/403 response unless the caller is a system admin; null when allowed. */
+export function requireAdmin(request: NextRequest): Response | null {
+  const caller = getCaller(request)
+  if (!caller) return Response.json({ error: 'Unauthorized' }, { status: 401 })
+  if (!isAdmin(caller)) return Response.json({ error: 'Admin role required' }, { status: 403 })
+  return null
 }

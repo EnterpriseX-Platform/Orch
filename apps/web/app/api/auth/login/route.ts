@@ -2,8 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import bcrypt from 'bcryptjs'
 import jwt from 'jsonwebtoken'
+import { getJwtSecret } from '@/lib/jwt-secret'
 
-const JWT_SECRET = process.env.JWT_SECRET || 'orch-secret-key'
 
 export async function POST(request: NextRequest) {
   try {
@@ -48,13 +48,13 @@ export async function POST(request: NextRequest) {
     // Generate tokens
     const accessToken = jwt.sign(
       { userId: user.id, username: user.username, roles: user.roles },
-      JWT_SECRET,
+      getJwtSecret(),
       { expiresIn: '24h' }
     )
 
     const refreshToken = jwt.sign(
       { userId: user.id, type: 'refresh' },
-      JWT_SECRET,
+      getJwtSecret(),
       { expiresIn: '7d' }
     )
 

@@ -12,8 +12,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import jwt from 'jsonwebtoken'
 import { prisma } from './prisma'
 import type { JwtPayload } from './auth'
+import { getJwtSecret } from '@/lib/jwt-secret'
 
-const JWT_SECRET = process.env.JWT_SECRET || 'orch-secret-key'
 export const TENANT_COOKIE = 'orch-tenant'
 
 /** Features a tenant can switch on/off. Keys are stored in tenant_features. */
@@ -44,13 +44,36 @@ function readUser(request: NextRequest): JwtPayload | null {
     request.cookies.get('auth-token')?.value
   if (!token) return null
   try {
-    return jwt.verify(token, JWT_SECRET) as JwtPayload
+    return jwt.verify(token, getJwtSecret()) as JwtPayload
   } catch {
     return null
   }
 }
 
+// ---------- short-lived cache ----------
+// getTenantContext runs on every API request. Membership and feature switches
+// change rarely, so cache them for a few seconds per process; writes to
+// members/features call invalidateTenantCache() so changes apply at once on
+// the pod that made them (other pods converge within the TTL).
+const TTL_MS = 5_000
+const cache = new Map<string, { at: number; value: unknown }>()
+async function cached<T>(key: string, load: () => Promise<T>): Promise<T> {
+  const hit = cache.get(key)
+  if (hit && Date.now() - hit.at < TTL_MS) return hit.value as T
+  const value = await load()
+  cache.set(key, { at: Date.now(), value })
+  if (cache.size > 5_000) cache.clear()
+  return value
+}
+export function invalidateTenantCache() {
+  cache.clear()
+}
+
 export async function loadFeatures(tenantId: string): Promise<Record<string, boolean>> {
+  return cached(`f:${tenantId}`, () => loadFeaturesUncached(tenantId))
+}
+
+async function loadFeaturesUncached(tenantId: string): Promise<Record<string, boolean>> {
   const rows = await prisma.tenantFeature.findMany({ where: { tenantId } })
   const out: Record<string, boolean> = {}
   for (const f of TENANT_FEATURES) out[f.key] = true
@@ -71,22 +94,26 @@ export async function getTenantContext(request: NextRequest): Promise<TenantCont
   let role: string | null = null
 
   if (wanted) {
-    const m = await prisma.tenantMember.findUnique({
-      where: { tenantId_userId: { tenantId: wanted, userId: user.userId } },
-    })
+    const m = await cached(`m:${wanted}:${user.userId}`, () =>
+      prisma.tenantMember.findUnique({
+        where: { tenantId_userId: { tenantId: wanted, userId: user.userId } },
+      }),
+    )
     if (m) {
       tenantId = m.tenantId
       role = m.role
-    } else if (isSystemAdmin && (await prisma.tenant.findUnique({ where: { id: wanted }, select: { id: true } }))) {
+    } else if (isSystemAdmin && (await cached(`t:${wanted}`, () => prisma.tenant.findUnique({ where: { id: wanted }, select: { id: true } })))) {
       tenantId = wanted
       role = 'owner'
     }
   }
   if (!tenantId) {
-    const first = await prisma.tenantMember.findFirst({
-      where: { userId: user.userId, tenant: { isActive: true } },
-      orderBy: { createdAt: 'asc' },
-    })
+    const first = await cached(`first:${user.userId}`, () =>
+      prisma.tenantMember.findFirst({
+        where: { userId: user.userId, tenant: { isActive: true } },
+        orderBy: { createdAt: 'asc' },
+      }),
+    )
     if (first) {
       tenantId = first.tenantId
       role = first.role

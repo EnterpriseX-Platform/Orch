@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { canManageTenant, getTenantContext, loadFeatures, TENANT_FEATURES } from '@/lib/tenant'
+import { canManageTenant, getTenantContext, invalidateTenantCache, loadFeatures, TENANT_FEATURES } from '@/lib/tenant'
 
 type Params = { params: Promise<{ id: string }> }
 
@@ -46,6 +46,7 @@ export async function PUT(request: NextRequest, { params }: Params) {
         }),
       ),
   )
+  invalidateTenantCache()
   const features = await loadFeatures(id)
   return NextResponse.json({
     data: TENANT_FEATURES.map(({ key, label }) => ({ key, label, enabled: features[key] })),

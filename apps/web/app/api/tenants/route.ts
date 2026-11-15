@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { prisma } from '@/lib/prisma'
-import { getTenantContext } from '@/lib/tenant'
+import { getTenantContext, invalidateTenantCache } from '@/lib/tenant'
 
 // GET /api/tenants — tenants the caller can switch to (system admins see all)
 export async function GET(request: NextRequest) {
@@ -66,5 +66,6 @@ export async function POST(request: NextRequest) {
       members: { create: { userId: ctx.userId, role: 'owner' } },
     },
   })
+  invalidateTenantCache()
   return NextResponse.json({ data: tenant }, { status: 201 })
 }
