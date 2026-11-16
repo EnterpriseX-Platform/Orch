@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useCallback, useEffect } from 'react'
+import { useState, useCallback, useEffect, useRef } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useRouter } from 'next/navigation'
 import { flowApi } from '@/lib/api'
@@ -8,7 +8,6 @@ import cuid from 'cuid'
 import {
   ReactFlow,
   Background,
-  Controls,
   useNodesState,
   useEdgesState,
   addEdge,
@@ -19,6 +18,9 @@ import {
   Handle,
   Position,
   MarkerType,
+  MiniMap,
+  Panel,
+  useReactFlow,
 } from '@xyflow/react'
 import '@xyflow/react/dist/style.css'
 import { Select, SelectOption } from '@/components/ui/select'
@@ -45,15 +47,30 @@ import {
   XCircle,
   Flag,
   LucideIcon,
-  PanelLeftClose,
-  PanelLeftOpen,
-  Settings as SettingsIcon,
+  Plus,
+  X,
+  Copy,
+  Trash2,
+  Minus,
+  Maximize2,
+  LayoutGrid,
+  Check,
+  Rocket,
+  Save,
+  FlaskConical,
+  Workflow as WorkflowIcon,
+  Undo2,
+  Redo2,
+  ArrowRight,
+  ArrowLeft,
 } from 'lucide-react'
+import { confirmDialog } from '@/components/common/ConfirmDialog'
+import { Button, ContentSwitcher, Switch, Tag, TextInput, TextArea, Search as CarbonSearch, Select as CarbonSelect, SelectItem } from '@carbon/react'
 
 // Import Orch SDK
 import { NodeRegistry, registerBuiltins } from '@orch/sdk'
 
-const FONT = "'Prompt', sans-serif";
+const FONT = '"IBM Plex Sans Thai", "IBM Plex Sans", "Sarabun", system-ui, sans-serif';
 
 // ==================== THEME COLORS ====================
 // Dark Theme
@@ -66,12 +83,12 @@ const THEME = {
   accent: 'var(--t-accent)',
   accentHover: 'var(--t-accent)',
   colors: {
-    triggers: '#3B82F6',     // Blue-500
-    extract: '#8B5CF6',      // Violet-500
-    integration: '#10B981',  // Emerald-500
-    actions: '#F59E0B',      // Amber-500
-    output: '#EF4444',       // Red-500
-    logic: '#06B6D4',        // Cyan-500
+    triggers: '#0f62fe',     // Blue-500
+    extract: '#8a3ffc',      // Violet-500
+    integration: '#24a148',  // Emerald-500
+    actions: '#ba4e00',      // Amber-500
+    output: '#da1e28',       // Red-500
+    logic: '#1192e8',        // Cyan-500
   }
 };
 
@@ -84,9 +101,9 @@ const NODE_TYPES = {
     { id: "schedule", label: "Schedule", sub: "Cron Job", icon: "C", color: THEME.colors.triggers },
   ],
   extract: [
-    { id: "extract", label: "Extract Fields", sub: "Parse Data", icon: "E", color: "#7C3AED" },
-    { id: "jsonPath", label: "JSON Path", sub: "Query JSON", icon: "J", color: "#7C3AED" },
-    { id: "xpath", label: "XPath", sub: "Query XML", icon: "X", color: "#7C3AED" },
+    { id: "extract", label: "Extract Fields", sub: "Parse Data", icon: "E", color: "#6929c4" },
+    { id: "jsonPath", label: "JSON Path", sub: "Query JSON", icon: "J", color: "#6929c4" },
+    { id: "xpath", label: "XPath", sub: "Query XML", icon: "X", color: "#6929c4" },
   ],
   integration: [
     { id: "eventLog", label: "Event Log", sub: "System Event", icon: "L", color: THEME.colors.integration },
@@ -124,21 +141,21 @@ const EXECUTION_STRATEGIES = [
     label: 'Fast', 
     sub: 'In-memory only',
     desc: 'Execute all nodes in memory without queueing. Fastest but no durability.',
-    color: '#34D399',
+    color: '#24a148',
   },
   { 
     id: 'reliable', 
     label: 'Reliable', 
     sub: 'All via Kafka',
     desc: 'Queue all nodes through Kafka for guaranteed delivery and durability.',
-    color: '#60A5FA',
+    color: '#0f62fe',
   },
   { 
     id: 'custom', 
     label: 'Custom', 
     sub: 'Configurable',
     desc: 'Choose queue type per node. Advanced configuration required.',
-    color: '#A78BFA',
+    color: '#8a3ffc',
   },
 ]
 
@@ -201,35 +218,27 @@ function NodeConfigPanel({ node, onChange }: { node: Node; onChange: (data: any)
     const currentMode = config.executionMode || (isDefaultAsync ? 'async' : 'sync')
 
     return (
-      <div style={{
-        marginTop: 10, paddingTop: 10,
-        borderTop: `1px solid ${THEME.borderLight}`,
-      }}>
-        <label style={{ fontSize: 11, color: THEME.text.muted, display: 'block', marginBottom: 4 }}>
-          Execution Mode
+      <div style={{ marginTop: 16 }}>
+        <label style={{ fontSize: 12, color: '#525252', display: 'block', marginBottom: 4 }}>
+          Execution mode
         </label>
-        <div style={{ display: 'flex', gap: 0, borderRadius: 3, overflow: 'hidden', border: `1px solid ${THEME.border}` }}>
+        <div style={{ display: 'flex', gap: 0, border: '1px solid #8d8d8d' }}>
           {(['sync', 'async'] as const).map(mode => (
             <button
               key={mode}
               onClick={() => updateConfig('executionMode', mode)}
               style={{
-                flex: 1, padding: '5px 0', fontSize: 11, fontWeight: 600,
-                letterSpacing: 0.5, cursor: 'pointer', border: 'none',
-                fontFamily: FONT, transition: 'all 0.15s',
-                background: currentMode === mode
-                  ? (mode === 'async' ? '#F59E0B20' : `${THEME.accent}15`)
-                  : THEME.bg,
-                color: currentMode === mode
-                  ? (mode === 'async' ? '#F59E0B' : THEME.accent)
-                  : THEME.text.muted,
+                flex: 1, height: 32, fontSize: 13, cursor: 'pointer', border: 'none',
+                fontFamily: FONT,
+                background: currentMode === mode ? '#161616' : '#ffffff',
+                color: currentMode === mode ? '#ffffff' : '#161616',
               }}
             >
-              {mode.toUpperCase()}
+              {mode === 'sync' ? 'Sync' : 'Async'}
             </button>
           ))}
         </div>
-        <div style={{ fontSize: 10, color: THEME.text.muted, marginTop: 4 }}>
+        <div style={{ fontSize: 12, color: '#6f6f6f', marginTop: 4 }}>
           {currentMode === 'async'
             ? 'Fire & forget — push to queue and continue'
             : 'Wait for completion before next node'}
@@ -242,39 +251,25 @@ function NodeConfigPanel({ node, onChange }: { node: Node; onChange: (data: any)
     switch (nodeType) {
       case 'kafka':
         return (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
             <div>
-              <label style={{ fontSize: 11, color: THEME.text.muted }}>Topic *</label>
+              <label style={{ fontSize: 12, color: '#525252', display: 'block', marginBottom: 4 }}>Topic *</label>
               <input
                 type="text"
                 value={config.topic || ''}
                 onChange={(e) => updateConfig('topic', e.target.value)}
                 placeholder="e.g., payment-events"
-                style={{
-                  width: '100%',
-                  padding: '4px 6px',
-                  fontSize: 12,
-                  border: `1px solid ${THEME.border}`,
-                  borderRadius: 3,
-                  marginTop: 2,
-                }}
+                style={{ width: '100%', padding: '6px 12px' }}
               />
             </div>
             <div>
-              <label style={{ fontSize: 11, color: THEME.text.muted }}>Consumer Group</label>
+              <label style={{ fontSize: 12, color: '#525252', display: 'block', marginBottom: 4 }}>Consumer Group</label>
               <input
                 type="text"
                 value={config.consumerGroup || ''}
                 onChange={(e) => updateConfig('consumerGroup', e.target.value)}
                 placeholder="e.g., flow-consumer"
-                style={{
-                  width: '100%',
-                  padding: '4px 6px',
-                  fontSize: 12,
-                  border: `1px solid ${THEME.border}`,
-                  borderRadius: 3,
-                  marginTop: 2,
-                }}
+                style={{ width: '100%', padding: '6px 12px' }}
               />
             </div>
           </div>
@@ -282,26 +277,19 @@ function NodeConfigPanel({ node, onChange }: { node: Node; onChange: (data: any)
       
       case 'httpCall':
         return (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
             <div>
-              <label style={{ fontSize: 11, color: THEME.text.muted }}>URL *</label>
+              <label style={{ fontSize: 12, color: '#525252', display: 'block', marginBottom: 4 }}>URL *</label>
               <input
                 type="text"
                 value={config.url || ''}
                 onChange={(e) => updateConfig('url', e.target.value)}
                 placeholder="https://api.example.com/users"
-                style={{
-                  width: '100%',
-                  padding: '4px 6px',
-                  fontSize: 12,
-                  border: `1px solid ${THEME.border}`,
-                  borderRadius: 3,
-                  marginTop: 2,
-                }}
+                style={{ width: '100%', padding: '6px 12px' }}
               />
             </div>
             <div>
-              <label style={{ fontSize: 11, color: THEME.text.muted }}>Method</label>
+              <label style={{ fontSize: 12, color: '#525252', display: 'block', marginBottom: 4 }}>Method</label>
               <div style={{ marginTop: 2 }}>
                 <Select
                   value={config.method || 'GET'}
@@ -318,7 +306,7 @@ function NodeConfigPanel({ node, onChange }: { node: Node; onChange: (data: any)
               </div>
             </div>
             <div>
-              <label style={{ fontSize: 11, color: THEME.text.muted }}>Response Type</label>
+              <label style={{ fontSize: 12, color: '#525252', display: 'block', marginBottom: 4 }}>Response Type</label>
               <div style={{ marginTop: 2 }}>
                 <Select
                   value={config.responseType || 'auto'}
@@ -333,19 +321,12 @@ function NodeConfigPanel({ node, onChange }: { node: Node; onChange: (data: any)
               </div>
             </div>
             <div>
-              <label style={{ fontSize: 11, color: THEME.text.muted }}>Timeout (ms)</label>
+              <label style={{ fontSize: 12, color: '#525252', display: 'block', marginBottom: 4 }}>Timeout (ms)</label>
               <input
                 type="number"
                 value={config.timeout || 10000}
                 onChange={(e) => updateConfig('timeout', parseInt(e.target.value))}
-                style={{
-                  width: '100%',
-                  padding: '4px 6px',
-                  fontSize: 12,
-                  border: `1px solid ${THEME.border}`,
-                  borderRadius: 3,
-                  marginTop: 2,
-                }}
+                style={{ width: '100%', padding: '6px 12px' }}
               />
             </div>
             {renderExecModeToggle()}
@@ -355,26 +336,19 @@ function NodeConfigPanel({ node, onChange }: { node: Node; onChange: (data: any)
       case 'proxy':
       case 'callService':
         return (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
             <div>
-              <label style={{ fontSize: 11, color: THEME.text.muted }}>Target URL</label>
+              <label style={{ fontSize: 12, color: '#525252', display: 'block', marginBottom: 4 }}>Target URL</label>
               <input
                 type="text"
                 value={config.targetUrl || ''}
                 onChange={(e) => updateConfig('targetUrl', e.target.value)}
                 placeholder="${backendUrl} or https://api.example.com"
-                style={{
-                  width: '100%',
-                  padding: '4px 6px',
-                  fontSize: 12,
-                  border: `1px solid ${THEME.border}`,
-                  borderRadius: 3,
-                  marginTop: 2,
-                }}
+                style={{ width: '100%', padding: '6px 12px' }}
               />
             </div>
             <div>
-              <label style={{ fontSize: 11, color: THEME.text.muted }}>Method</label>
+              <label style={{ fontSize: 12, color: '#525252', display: 'block', marginBottom: 4 }}>Method</label>
               <div style={{ marginTop: 2 }}>
                 <Select
                   value={config.method || 'POST'}
@@ -391,25 +365,18 @@ function NodeConfigPanel({ node, onChange }: { node: Node; onChange: (data: any)
               </div>
             </div>
             <div>
-              <label style={{ fontSize: 11, color: THEME.text.muted }}>Timeout (ms)</label>
+              <label style={{ fontSize: 12, color: '#525252', display: 'block', marginBottom: 4 }}>Timeout (ms)</label>
               <input
                 type="number"
                 value={config.timeout || 30000}
                 onChange={(e) => updateConfig('timeout', parseInt(e.target.value))}
-                style={{
-                  width: '100%',
-                  padding: '4px 6px',
-                  fontSize: 12,
-                  border: `1px solid ${THEME.border}`,
-                  borderRadius: 3,
-                  marginTop: 2,
-                }}
+                style={{ width: '100%', padding: '6px 12px' }}
               />
             </div>
 
             {/* Forward Headers */}
             <div style={{ marginTop: 4 }}>
-              <label style={{ fontSize: 11, color: THEME.text.muted, display: 'block', marginBottom: 4 }}>
+              <label style={{ fontSize: 12, color: '#525252', display: 'block', marginBottom: 4 }}>
                 Forward Headers
               </label>
               {(['authorization', 'content-type', 'x-request-id', 'accept', 'x-forwarded-for', 'cookie'] as const).map(h => {
@@ -424,8 +391,8 @@ function NodeConfigPanel({ node, onChange }: { node: Node; onChange: (data: any)
                 return (
                   <label key={h} style={{
                     display: 'flex', alignItems: 'center', gap: 6,
-                    fontSize: 11, color: THEME.text.secondary, cursor: 'pointer',
-                    padding: '2px 0',
+                    fontSize: 13, color: '#161616', cursor: 'pointer',
+                    padding: '4px 0',
                   }}>
                     <input
                       type="checkbox"
@@ -434,7 +401,7 @@ function NodeConfigPanel({ node, onChange }: { node: Node; onChange: (data: any)
                         const next = checked ? fwd.filter(x => x !== h) : [...fwd, h]
                         updateConfig('forwardHeaders', next)
                       }}
-                      style={{ width: 12, height: 12, accentColor: THEME.accent }}
+                      style={{ width: 16, height: 16 }}
                     />
                     {h}
                   </label>
@@ -445,20 +412,17 @@ function NodeConfigPanel({ node, onChange }: { node: Node; onChange: (data: any)
             {/* Custom Headers */}
             <div style={{ marginTop: 4 }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
-                <label style={{ fontSize: 11, color: THEME.text.muted }}>Custom Headers</label>
+                <label style={{ fontSize: 12, color: '#525252', display: 'block', marginBottom: 4 }}>Custom Headers</label>
                 <button
                   onClick={() => {
                     const headers = config.headers || {}
                     updateConfig('headers', { ...headers, '': '' })
                   }}
-                  style={{
-                    fontSize: 10, color: THEME.accent, background: 'none',
-                    border: 'none', cursor: 'pointer', fontFamily: FONT,
-                  }}
-                >+ Add</button>
+                  className="h-8 px-2 text-[13px] text-[#0f62fe] hover:bg-[#e8e8e8] inline-flex items-center gap-1"
+                ><Plus className="w-4 h-4" /> Add</button>
               </div>
               {Object.entries(config.headers || {}).map(([key, val], i) => (
-                <div key={i} style={{ display: 'flex', gap: 4, marginBottom: 4 }}>
+                <div key={i} style={{ display: 'flex', gap: 4, marginBottom: 4, alignItems: 'center' }}>
                   <input
                     placeholder="Key"
                     value={key}
@@ -467,10 +431,7 @@ function NodeConfigPanel({ node, onChange }: { node: Node; onChange: (data: any)
                       entries[i] = [e.target.value, entries[i][1]]
                       updateConfig('headers', Object.fromEntries(entries))
                     }}
-                    style={{
-                      flex: 1, padding: '3px 5px', fontSize: 11,
-                      border: `1px solid ${THEME.border}`, borderRadius: 2,
-                    }}
+                    style={{ flex: 1, minWidth: 0, padding: '6px 10px' }}
                   />
                   <input
                     placeholder="Value"
@@ -480,10 +441,7 @@ function NodeConfigPanel({ node, onChange }: { node: Node; onChange: (data: any)
                       entries[i] = [entries[i][0], e.target.value]
                       updateConfig('headers', Object.fromEntries(entries))
                     }}
-                    style={{
-                      flex: 1, padding: '3px 5px', fontSize: 11,
-                      border: `1px solid ${THEME.border}`, borderRadius: 2,
-                    }}
+                    style={{ flex: 1, minWidth: 0, padding: '6px 10px' }}
                   />
                   <button
                     onClick={() => {
@@ -491,11 +449,9 @@ function NodeConfigPanel({ node, onChange }: { node: Node; onChange: (data: any)
                       entries.splice(i, 1)
                       updateConfig('headers', Object.fromEntries(entries))
                     }}
-                    style={{
-                      fontSize: 11, color: '#EF4444', background: 'none',
-                      border: 'none', cursor: 'pointer', padding: '0 4px',
-                    }}
-                  >×</button>
+                    aria-label="Remove header"
+                    className="h-9 w-9 flex-shrink-0 inline-flex items-center justify-center text-[#da1e28] hover:bg-[#fff1f1]"
+                  ><X className="w-4 h-4" /></button>
                 </div>
               ))}
             </div>
@@ -506,45 +462,30 @@ function NodeConfigPanel({ node, onChange }: { node: Node; onChange: (data: any)
       
       case 'eventLog':
         return (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
             <div>
-              <label style={{ fontSize: 11, color: THEME.text.muted }}>Event Name</label>
+              <label style={{ fontSize: 12, color: '#525252', display: 'block', marginBottom: 4 }}>Event Name</label>
               <input
                 type="text"
                 value={config.event || ''}
                 onChange={(e) => updateConfig('event', e.target.value)}
                 placeholder="e.g., PAYMENT_PROCESSED"
-                style={{
-                  width: '100%',
-                  padding: '4px 6px',
-                  fontSize: 12,
-                  border: `1px solid ${THEME.border}`,
-                  borderRadius: 3,
-                  marginTop: 2,
-                }}
+                style={{ width: '100%', padding: '6px 12px' }}
               />
             </div>
             {/* Message */}
             <div>
-              <label style={{ fontSize: 11, color: THEME.text.muted }}>Message</label>
+              <label style={{ fontSize: 12, color: '#525252', display: 'block', marginBottom: 4 }}>Message</label>
               <textarea
                 value={config.message || ''}
                 onChange={(e) => updateConfig('message', e.target.value)}
                 placeholder="Log message (supports ${variables})"
                 rows={3}
-                style={{
-                  width: '100%',
-                  padding: '4px 6px',
-                  fontSize: 12,
-                  border: `1px solid ${THEME.border}`,
-                  borderRadius: 3,
-                  marginTop: 2,
-                  resize: 'vertical',
-                }}
+                style={{ width: '100%', padding: '6px 12px' }}
               />
             </div>
             <div>
-              <label style={{ fontSize: 11, color: THEME.text.muted }}>Level</label>
+              <label style={{ fontSize: 12, color: '#525252', display: 'block', marginBottom: 4 }}>Level</label>
               <div style={{ marginTop: 2 }}>
                 <Select
                   value={config.level || 'info'}
@@ -565,111 +506,69 @@ function NodeConfigPanel({ node, onChange }: { node: Node; onChange: (data: any)
 
       case 'audit':
         return (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
             <div>
-              <label style={{ fontSize: 11, color: THEME.text.muted }}>Action *</label>
+              <label style={{ fontSize: 12, color: '#525252', display: 'block', marginBottom: 4 }}>Action *</label>
               <input
                 type="text"
                 value={config.action || ''}
                 onChange={(e) => updateConfig('action', e.target.value)}
                 placeholder="e.g., CREATE_PAYMENT"
-                style={{
-                  width: '100%',
-                  padding: '4px 6px',
-                  fontSize: 12,
-                  border: `1px solid ${THEME.border}`,
-                  borderRadius: 3,
-                  marginTop: 2,
-                }}
+                style={{ width: '100%', padding: '6px 12px' }}
               />
             </div>
             <div>
-              <label style={{ fontSize: 11, color: THEME.text.muted }}>Entity Type</label>
+              <label style={{ fontSize: 12, color: '#525252', display: 'block', marginBottom: 4 }}>Entity Type</label>
               <input
                 type="text"
                 value={config.entityType || ''}
                 onChange={(e) => updateConfig('entityType', e.target.value)}
                 placeholder="e.g., Payment"
-                style={{
-                  width: '100%',
-                  padding: '4px 6px',
-                  fontSize: 12,
-                  border: `1px solid ${THEME.border}`,
-                  borderRadius: 3,
-                  marginTop: 2,
-                }}
+                style={{ width: '100%', padding: '6px 12px' }}
               />
             </div>
             <div>
-              <label style={{ fontSize: 11, color: THEME.text.muted }}>Entity ID (template)</label>
+              <label style={{ fontSize: 12, color: '#525252', display: 'block', marginBottom: 4 }}>Entity ID (template)</label>
               <input
                 type="text"
                 value={config.entityId || ''}
                 onChange={(e) => updateConfig('entityId', e.target.value)}
                 placeholder="${request.body.id}"
-                style={{
-                  width: '100%',
-                  padding: '4px 6px',
-                  fontSize: 12,
-                  border: `1px solid ${THEME.border}`,
-                  borderRadius: 3,
-                  marginTop: 2,
-                }}
+                style={{ width: '100%', padding: '6px 12px' }}
               />
             </div>
             <div>
-              <label style={{ fontSize: 11, color: THEME.text.muted }}>PK XPath (JSONPath)</label>
+              <label style={{ fontSize: 12, color: '#525252', display: 'block', marginBottom: 4 }}>PK XPath (JSONPath)</label>
               <input
                 type="text"
                 value={config.auditPkXPath || ''}
                 onChange={(e) => updateConfig('auditPkXPath', e.target.value)}
                 placeholder="$.id"
-                style={{
-                  width: '100%',
-                  padding: '4px 6px',
-                  fontSize: 12,
-                  border: `1px solid ${THEME.border}`,
-                  borderRadius: 3,
-                  marginTop: 2,
-                }}
+                style={{ width: '100%', padding: '6px 12px' }}
               />
             </div>
-            <div style={{ marginTop: 8, padding: '6px', background: THEME.borderLight, borderRadius: 3 }}>
-              <div style={{ fontSize: 11, color: THEME.text.secondary, fontWeight: 600, marginBottom: 4 }}>
-                ARRAY COMPARISON (PUT/PATCH)
+            <div style={{ marginTop: 8, padding: 12, background: '#f4f4f4' }}>
+              <div style={{ fontSize: 12, color: '#161616', fontWeight: 600, marginBottom: 8 }}>
+                Array comparison (PUT/PATCH)
               </div>
               <div>
-                <label style={{ fontSize: 11, color: THEME.text.muted }}>Array Path</label>
+                <label style={{ fontSize: 12, color: '#525252', display: 'block', marginBottom: 4 }}>Array Path</label>
                 <input
                   type="text"
                   value={config.arrayPath || ''}
                   onChange={(e) => updateConfig('arrayPath', e.target.value)}
                   placeholder="$.orders"
-                  style={{
-                    width: '100%',
-                    padding: '4px 6px',
-                    fontSize: 12,
-                    border: `1px solid ${THEME.border}`,
-                    borderRadius: 3,
-                    marginTop: 2,
-                  }}
+                  style={{ width: '100%', padding: '6px 12px' }}
                 />
               </div>
               <div style={{ marginTop: 4 }}>
-                <label style={{ fontSize: 11, color: THEME.text.muted }}>Array Key Field</label>
+                <label style={{ fontSize: 12, color: '#525252', display: 'block', marginBottom: 4 }}>Array Key Field</label>
                 <input
                   type="text"
                   value={config.arrayKeyField || ''}
                   onChange={(e) => updateConfig('arrayKeyField', e.target.value)}
                   placeholder="id (optional)"
-                  style={{
-                    width: '100%',
-                    padding: '4px 6px',
-                    fontSize: 12,
-                    border: `1px solid ${THEME.border}`,
-                    borderRadius: 3,
-                    marginTop: 2,
-                  }}
+                  style={{ width: '100%', padding: '6px 12px' }}
                 />
               </div>
             </div>
@@ -679,25 +578,18 @@ function NodeConfigPanel({ node, onChange }: { node: Node; onChange: (data: any)
 
       case 'response':
         return (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
             <div>
-              <label style={{ fontSize: 11, color: THEME.text.muted }}>Status Code</label>
+              <label style={{ fontSize: 12, color: '#525252', display: 'block', marginBottom: 4 }}>Status Code</label>
               <input
                 type="number"
                 value={config.statusCode || 200}
                 onChange={(e) => updateConfig('statusCode', parseInt(e.target.value))}
-                style={{
-                  width: '100%',
-                  padding: '4px 6px',
-                  fontSize: 12,
-                  border: `1px solid ${THEME.border}`,
-                  borderRadius: 3,
-                  marginTop: 2,
-                }}
+                style={{ width: '100%', padding: '6px 12px' }}
               />
             </div>
             <div>
-              <label style={{ fontSize: 11, color: THEME.text.muted }}>Body Source</label>
+              <label style={{ fontSize: 12, color: '#525252', display: 'block', marginBottom: 4 }}>Body Source</label>
               <div style={{ marginTop: 2 }}>
                 <Select
                   value={config.bodySource || 'proxy.response'}
@@ -725,19 +617,9 @@ function NodeConfigPanel({ node, onChange }: { node: Node; onChange: (data: any)
   }
 
   return (
-    <div style={{ 
-      marginTop: 16, 
-      paddingTop: 16, 
-      borderTop: `1px solid ${THEME.borderLight}` 
-    }}>
-      <div style={{ 
-        fontSize: 12, 
-        fontWeight: 600, 
-        color: THEME.text.secondary, 
-        marginBottom: 10,
-        letterSpacing: 0.5 
-      }}>
-        CONFIGURATION
+    <div>
+      <div style={{ fontSize: 14, fontWeight: 600, color: '#161616', marginBottom: 12 }}>
+        Configuration
       </div>
       {renderConfigFields()}
     </div>
@@ -792,86 +674,96 @@ function createFlowEdge(sourceId: string, targetId: string): Edge {
 }
 
 // ==================== NODE CONSTANTS ====================
-const NODE_WIDTH = 160
-const NODE_MIN_HEIGHT = 48
+const NODE_WIDTH = 184
+const NODE_MIN_HEIGHT = 56
 
-const handleStyle = (color: string, isSource: boolean) => ({
-  width: 8,
-  height: 8,
-  background: isSource ? color : THEME.panel,
-  border: `1.5px solid ${isSource ? color : color + '60'}`,
-})
+// Icon per node type (falls back to the letter badge from NODE_TYPES).
+const NODE_ICONS: Record<string, LucideIcon> = {
+  httpRequest: Globe, webhook: Webhook, kafka: Radio, schedule: Calendar,
+  extract: Search, jsonPath: FileJson, xpath: FileText,
+  eventLog: FileText, audit: Shield, database: Database, cache: HardDrive,
+  httpCall: Globe2, proxy: ArrowLeftRight, callService: Layers, transform: RefreshCw,
+  pubsub: Radio, script: Code,
+  response: CheckCircle2, error: XCircle, end: Flag,
+}
+
+// Section (category) a node type belongs to, for the small uppercase label.
+const NODE_SECTION: Record<string, string> = Object.fromEntries(
+  Object.entries(NODE_TYPES).flatMap(([section, defs]) => (defs as any[]).map((d) => [d.id, section])),
+)
+const SECTION_LABEL: Record<string, string> = Object.fromEntries(SECTIONS.map((x) => [x.key, x.label]))
+
+function NodeIcon({ type, letter, color, size = 28 }: { type: string; letter?: string; color: string; size?: number }) {
+  const Icon = NODE_ICONS[type]
+  return (
+    <div style={{
+      width: size, height: size, flexShrink: 0,
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+      background: `${color}14`, color,
+    }}>
+      {Icon ? <Icon style={{ width: size * 0.55, height: size * 0.55 }} /> : <span style={{ fontSize: 11, fontWeight: 700 }}>{letter}</span>}
+    </div>
+  )
+}
+
+const handleStyle = {
+  width: 9,
+  height: 9,
+  background: '#ffffff',
+  border: '1.5px solid #8d8d8d',
+  borderRadius: '50%',
+}
 
 // ==================== NODE COMPONENT ====================
+// Compact step card (robotfactory style): icon, small uppercase category,
+// name, one-line summary. Selection = dark 2px outline, no colour flood.
 const FlowNode = ({ data, selected }: any) => {
   const color = data.color || THEME.colors.triggers
   const execMode = data.config?.executionMode
+  const section = SECTION_LABEL[NODE_SECTION[data.type]] || 'STEP'
 
   return (
     <div
       style={{
         width: NODE_WIDTH,
         minHeight: NODE_MIN_HEIGHT,
-        background: THEME.panel,
-        border: `1px solid ${selected ? color : THEME.border}`,
-        borderRadius: 4,
+        background: '#ffffff',
+        border: `1px solid ${selected ? '#161616' : '#c6c6c6'}`,
+        outline: selected ? '1px solid #161616' : 'none',
         cursor: 'grab',
-        boxShadow: selected
-          ? `0 0 0 2px ${color}20, 0 4px 12px ${color}15`
-          : '0 1px 3px rgba(0,0,0,0.08)',
         fontFamily: FONT,
-        transition: 'box-shadow 0.15s ease',
         position: 'relative',
+        display: 'flex',
+        alignItems: 'center',
+        gap: 10,
+        padding: '8px 10px',
       }}
     >
-      {/* Color stripe */}
-      <div style={{ height: 3, background: color, borderRadius: '3px 3px 0 0' }} />
-
-      <div style={{ padding: '8px 10px', display: 'flex', alignItems: 'center', gap: 8 }}>
-        {/* Icon box */}
+      <NodeIcon type={data.type} letter={data.icon} color={color} />
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ fontSize: 10, letterSpacing: 0.4, color: '#6f6f6f', lineHeight: '12px' }}>{section}</div>
         <div style={{
-          width: 28,
-          height: 22,
-          background: `${color}12`,
-          border: `1px solid ${color}35`,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          flexShrink: 0,
-          borderRadius: 3,
-        }}>
-          <span style={{ color: color, fontSize: 11, fontWeight: 700 }}>{data.icon}</span>
-        </div>
-
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{
-            fontSize: 13, color: THEME.text.primary, fontWeight: 600, letterSpacing: 0.2,
-            overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-          }}>{data.label}</div>
-          <div style={{ fontSize: 11, color: THEME.text.muted, marginTop: 1 }}>{data.sub}</div>
+          fontSize: 13, color: '#161616', fontWeight: 600, lineHeight: '18px',
+          overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+        }}>{data.displayName || data.label}</div>
+        <div style={{ fontSize: 11, color: '#6f6f6f', lineHeight: '14px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+          {data.sub}
         </div>
       </div>
 
-      {/* Async badge */}
       {execMode === 'async' && (
-        <div style={{
-          position: 'absolute', top: 5, right: 5,
-          fontSize: 8, fontWeight: 700, letterSpacing: 0.5,
-          color: '#F59E0B', background: '#F59E0B18',
-          border: '1px solid #F59E0B40',
-          padding: '1px 4px', borderRadius: 2,
-        }}>ASYNC</div>
+        <span className="cds-tag" style={{
+          position: 'absolute', top: -9, right: 8,
+          fontSize: 10, lineHeight: '14px', padding: '1px 6px',
+          color: '#8a3800', background: '#ffd8bd',
+        }}>async</span>
       )}
 
       {/* Handles - 4 directions */}
-      <Handle type="target" id="left" position={Position.Left}
-        style={{ ...handleStyle(color, false), left: -5 }} />
-      <Handle type="source" id="right" position={Position.Right}
-        style={{ ...handleStyle(color, true), right: -5 }} />
-      <Handle type="target" id="top" position={Position.Top}
-        style={{ ...handleStyle(color, false), top: -5 }} />
-      <Handle type="source" id="bottom" position={Position.Bottom}
-        style={{ ...handleStyle(color, true), bottom: -5 }} />
+      <Handle type="target" id="left" position={Position.Left} style={{ ...handleStyle, left: -5 }} />
+      <Handle type="source" id="right" position={Position.Right} style={{ ...handleStyle, right: -5 }} />
+      <Handle type="target" id="top" position={Position.Top} style={{ ...handleStyle, top: -5 }} />
+      <Handle type="source" id="bottom" position={Position.Bottom} style={{ ...handleStyle, bottom: -5 }} />
     </div>
   )
 }
@@ -879,6 +771,60 @@ const FlowNode = ({ data, selected }: any) => {
 const nodeTypes = {
   flowNode: FlowNode,
 }
+
+// Zoom bar (bottom-left, inside <ReactFlow> so it can use the flow instance).
+function ZoomBar() {
+  const { zoomIn, zoomOut, fitView, getZoom } = useReactFlow()
+  const [zoom, setZoom] = useState(100)
+  useEffect(() => {
+    const t = setInterval(() => setZoom(Math.round(getZoom() * 100)), 300)
+    return () => clearInterval(t)
+  }, [getZoom])
+  const btn = 'h-8 w-8 flex items-center justify-center hover:bg-[#e8e8e8] text-[#161616]'
+  return (
+    <Panel position="bottom-left">
+      <div className="flex items-center bg-white border border-[#c6c6c6]">
+        <button className={btn} onClick={() => zoomOut()} aria-label="Zoom out"><Minus className="w-4 h-4" /></button>
+        <span className="w-12 text-center text-[12px] tabular-nums text-[#161616]">{zoom}%</span>
+        <button className={btn} onClick={() => zoomIn()} aria-label="Zoom in"><Plus className="w-4 h-4" /></button>
+        <span className="w-px h-5 bg-[#e0e0e0]" />
+        <button className={btn} onClick={() => fitView({ padding: 0.3, maxZoom: 1 })} aria-label="Fit to screen"><Maximize2 className="w-4 h-4" /></button>
+      </div>
+    </Panel>
+  )
+}
+
+/** Left-to-right layered layout: depth from the roots, rows in order of discovery. */
+function tidyLayout(nodes: Node[], edges: Edge[]): Node[] {
+  const incoming = new Map<string, number>()
+  nodes.forEach((n) => incoming.set(n.id, 0))
+  edges.forEach((e) => incoming.set(e.target, (incoming.get(e.target) || 0) + 1))
+  const depth = new Map<string, number>()
+  const queue = nodes.filter((n) => !incoming.get(n.id)).map((n) => n.id)
+  if (queue.length === 0 && nodes[0]) queue.push(nodes[0].id)
+  queue.forEach((id) => depth.set(id, 0))
+  while (queue.length) {
+    const id = queue.shift()!
+    for (const e of edges.filter((x) => x.source === id)) {
+      if (!depth.has(e.target)) {
+        depth.set(e.target, (depth.get(id) || 0) + 1)
+        queue.push(e.target)
+      }
+    }
+  }
+  let maxDepth = Math.max(0, ...Array.from(depth.values()))
+  nodes.forEach((n) => { if (!depth.has(n.id)) depth.set(n.id, ++maxDepth) })
+  const rows = new Map<number, number>()
+  return nodes.map((n) => {
+    const d = depth.get(n.id) || 0
+    const r = rows.get(d) || 0
+    rows.set(d, r + 1)
+    return { ...n, position: { x: 80 + d * (NODE_WIDTH + 72), y: 80 + r * 112 } }
+  })
+}
+
+const EDGE_STYLE = { stroke: '#8d8d8d', strokeWidth: 1.5 }
+const EDGE_MARKER = { type: MarkerType.ArrowClosed, color: '#8d8d8d', width: 14, height: 14 }
 
 interface FlowBuilderProps {
   flowId: string | null
@@ -895,8 +841,10 @@ export default function FlowBuilder({ flowId }: FlowBuilderProps) {
   const [isEditingName, setIsEditingName] = useState(false)
   const [activeTab, setActiveTab] = useState('designer')
   const [isDeployed, setIsDeployed] = useState(false)
-  const [collapsed, setCollapsed] = useState<Record<string, boolean>>({})
-  const [showPalette, setShowPalette] = useState(true)
+  // Right panel: step inspector, "Add step" palette, or closed.
+  const [panelMode, setPanelMode] = useState<'inspector' | 'palette' | null>(null)
+  const [paletteQuery, setPaletteQuery] = useState('')
+  const [savedSnapshot, setSavedSnapshot] = useState<string | null>(null)
   
   // Flow Detail Fields
   const [flowDescription, setFlowDescription] = useState('')
@@ -980,8 +928,8 @@ export default function FlowBuilder({ flowId }: FlowBuilderProps) {
         type: e.type === 'smoothstep' ? 'step' : (e.type || 'step'),
         sourceHandle: e.sourceHandle || 'bottom',
         targetHandle: e.targetHandle || 'top',
-        style: { stroke: '#94A3B8', strokeWidth: 2 },
-        markerEnd: { type: MarkerType.ArrowClosed, color: '#94A3B8', width: 16, height: 16 },
+        style: EDGE_STYLE,
+        markerEnd: EDGE_MARKER,
       }))
       setEdges(loadedEdges)
     } else if (!flowId) {
@@ -1004,10 +952,10 @@ export default function FlowBuilder({ flowId }: FlowBuilderProps) {
     onSuccess: (data: any) => {
       setIsDeployed(true)
       queryClient.invalidateQueries({ queryKey: ['flow', flowId] })
-      alert('Flow deployed successfully to orch-broker!')
+      toast.success('Deployed to Orch Broker')
     },
     onError: (error: any) => {
-      alert(`Deploy failed: ${error.message}`)
+      toast.error(`Deploy failed: ${error.message}`)
     },
   })
 
@@ -1038,8 +986,8 @@ export default function FlowBuilder({ flowId }: FlowBuilderProps) {
         sourceHandle: params.sourceHandle || undefined,
         targetHandle: params.targetHandle || undefined,
         type: 'step',
-        style: { stroke: '#94A3B8', strokeWidth: 2 },
-        markerEnd: { type: MarkerType.ArrowClosed, color: '#94A3B8', width: 16, height: 16 },
+        style: EDGE_STYLE,
+        markerEnd: EDGE_MARKER,
       }, eds))
     },
     [setEdges]
@@ -1054,6 +1002,7 @@ export default function FlowBuilder({ flowId }: FlowBuilderProps) {
 
   const onNodeClick = useCallback((_: React.MouseEvent, node: Node) => {
     setSelectedNode(node)
+    setPanelMode('inspector')
   }, [])
 
   const onDragStart = (e: React.DragEvent, nodeData: any) => {
@@ -1100,6 +1049,7 @@ export default function FlowBuilder({ flowId }: FlowBuilderProps) {
     setNodes((nds) => nds.filter((n) => n.id !== selectedNode.id))
     setEdges((eds) => eds.filter((e) => e.source !== selectedNode.id && e.target !== selectedNode.id))
     setSelectedNode(null)
+    setPanelMode(null)
   }
 
   useEffect(() => {
@@ -1141,6 +1091,186 @@ export default function FlowBuilder({ flowId }: FlowBuilderProps) {
     })
   }
 
+  // ---------- editor helpers (presentation only) ----------
+  const snapshotOf = (ns: Node[], es: Edge[]) =>
+    JSON.stringify({
+      n: ns.map((n) => ({ id: n.id, p: n.position, d: (n.data as any)?.config, t: (n.data as any)?.displayName })),
+      e: es.map((e) => [e.source, e.target, e.sourceHandle, e.targetHandle]),
+      name: flowName,
+      meta: [flowDescription, triggerType, executionMode, flowCategory, executionStrategy, customQueueType],
+    })
+  const currentSnapshot = snapshotOf(nodes, edges)
+  // First render after load becomes the "saved" baseline.
+  useEffect(() => {
+    if (savedSnapshot !== null) return
+    const loaded = !flowId || (flowData && nodes.length === (flowData.nodes?.length || 0))
+    if (loaded) setSavedSnapshot(currentSnapshot)
+  }, [savedSnapshot, flowData, flowId, nodes.length, currentSnapshot])
+
+  // Pick edge handles by geometry for display (saved edges keep their data):
+  // side-by-side steps join right→left, stacked steps bottom→top.
+  const displayEdges = edges.map((e) => {
+    const s = nodes.find((n) => n.id === e.source)
+    const t = nodes.find((n) => n.id === e.target)
+    if (!s || !t) return e
+    const dx = t.position.x - s.position.x
+    const dy = t.position.y - s.position.y
+    const horizontal = Math.abs(dx) >= Math.abs(dy)
+    return {
+      ...e,
+      type: 'smoothstep',
+      animated: false,
+      sourceHandle: horizontal ? 'right' : 'bottom',
+      targetHandle: horizontal ? 'left' : 'top',
+    }
+  })
+  const isDirty = savedSnapshot !== null && savedSnapshot !== currentSnapshot
+
+  // ---------- Undo / redo (snapshots of nodes+edges, debounced so a drag is one step) ----------
+  const past = useRef<{ nodes: Node[]; edges: Edge[] }[]>([])
+  const future = useRef<{ nodes: Node[]; edges: Edge[] }[]>([])
+  const lastState = useRef<{ nodes: Node[]; edges: Edge[]; snap: string } | null>(null)
+  const applyingHistory = useRef(false)
+  const [, setHistoryTick] = useState(0)
+  useEffect(() => {
+    if (savedSnapshot === null) return
+    const t = setTimeout(() => {
+      if (applyingHistory.current) {
+        applyingHistory.current = false
+      } else if (lastState.current && lastState.current.snap !== currentSnapshot) {
+        past.current.push({ nodes: lastState.current.nodes, edges: lastState.current.edges })
+        if (past.current.length > 100) past.current.shift()
+        future.current = []
+      }
+      lastState.current = { nodes, edges, snap: currentSnapshot }
+      setHistoryTick((x) => x + 1)
+    }, 350)
+    return () => clearTimeout(t)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentSnapshot, savedSnapshot])
+
+  const restore = (state: { nodes: Node[]; edges: Edge[] }) => {
+    applyingHistory.current = true
+    setNodes(state.nodes)
+    setEdges(state.edges)
+    setSelectedNode(null)
+    setPanelMode((m) => (m === 'inspector' ? null : m))
+  }
+  const undo = () => {
+    const prev = past.current.pop()
+    if (!prev) return
+    future.current.push({ nodes, edges })
+    restore(prev)
+  }
+  const redo = () => {
+    const next = future.current.pop()
+    if (!next) return
+    past.current.push({ nodes, edges })
+    restore(next)
+  }
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      const t = e.target as HTMLElement
+      if (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable) return
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'z') {
+        e.preventDefault()
+        if (e.shiftKey) redo(); else undo()
+      }
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  })
+
+  // Warn before leaving with unsaved changes (not when the user chose Discard).
+  const allowLeave = useRef(false)
+  useEffect(() => {
+    if (!isDirty) return
+    const onBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (allowLeave.current) return
+      e.preventDefault(); e.returnValue = ''
+    }
+    window.addEventListener('beforeunload', onBeforeUnload)
+    return () => window.removeEventListener('beforeunload', onBeforeUnload)
+  }, [isDirty])
+
+  const discardChanges = async () => {
+    const ok = await confirmDialog({
+      title: 'Discard changes?',
+      body: 'All unsaved changes will be lost and the flow returns to its last saved state.',
+      confirmLabel: 'Discard',
+      cancelLabel: 'Keep editing',
+      variant: 'danger',
+    })
+    if (ok) { allowLeave.current = true; window.location.reload() }
+  }
+
+  const saveWithFeedback = () =>
+    handleSave()
+      .then(() => {
+        setSavedSnapshot(currentSnapshot)
+        toast.success('Flow saved')
+      })
+      .catch((e: any) => toast.error(`Save failed: ${e?.message ?? e}`))
+
+  const allNodeDefs = Object.entries(NODE_TYPES).flatMap(([section, defs]) =>
+    (defs as any[]).map((d) => ({ ...d, section })),
+  )
+  const paletteMatches = allNodeDefs.filter((d) => {
+    const q = paletteQuery.trim().toLowerCase()
+    return !q || d.label.toLowerCase().includes(q) || d.sub.toLowerCase().includes(q) || d.id.toLowerCase().includes(q)
+  })
+
+  /** Add a step after the selected one (and connect it), else at the end of the canvas. */
+  const addStep = (def: any) => {
+    const anchor = selectedNode ? nodes.find((n) => n.id === selectedNode.id) : null
+    const maxX = nodes.reduce((m, n) => Math.max(m, n.position.x), 0)
+    const position = anchor
+      ? { x: anchor.position.x + NODE_WIDTH + 72, y: anchor.position.y }
+      : { x: nodes.length ? maxX + NODE_WIDTH + 72 : 120, y: 120 }
+    // Drop to the next free row if another step already sits there.
+    const taken = (p: { x: number; y: number }) =>
+      nodes.some((n) => Math.abs(n.position.x - p.x) < NODE_WIDTH && Math.abs(n.position.y - p.y) < 90)
+    while (taken(position)) position.y += 112
+    const newNode = createFlowNode(
+      { id: def.id, label: def.label, sub: def.sub, icon: def.icon, color: def.color },
+      position,
+    )
+    setNodes((nds) => [...nds.map((n) => ({ ...n, selected: false })), { ...newNode, selected: true }])
+    if (anchor) {
+      setEdges((eds) => addEdge({
+        ...createFlowEdge(anchor.id, newNode.id),
+        sourceHandle: 'right', targetHandle: 'left',
+        style: EDGE_STYLE, markerEnd: EDGE_MARKER,
+      }, eds))
+    }
+    setSelectedNode(newNode)
+    setPanelMode('inspector')
+    setPaletteQuery('')
+  }
+
+  const duplicateNode = () => {
+    if (!selectedNode) return
+    const copy = createFlowNode(
+      {
+        id: String(selectedNode.data.type), label: String(selectedNode.data.label), sub: String(selectedNode.data.sub),
+        icon: String(selectedNode.data.icon), color: String(selectedNode.data.color),
+      },
+      { x: selectedNode.position.x + 40, y: selectedNode.position.y + 80 },
+      JSON.parse(JSON.stringify((selectedNode.data as any).config || {})),
+    )
+    setNodes((nds) => [...nds.map((n) => ({ ...n, selected: false })), { ...copy, selected: true }])
+    setSelectedNode(copy)
+  }
+
+  const tidyUp = () => setNodes((nds) => tidyLayout(nds, edges))
+
+  const VIEWS = [
+    { id: 'designer', label: 'Designer' },
+    { id: 'test', label: 'Test' },
+    { id: 'deploy', label: 'Deploy' },
+    { id: 'settings', label: 'Settings' },
+  ]
+
   if (isLoading) return (
     <div style={{
       height: '100%',
@@ -1162,22 +1292,11 @@ export default function FlowBuilder({ flowId }: FlowBuilderProps) {
       display: 'flex',
       flexDirection: 'column',
       color: THEME.text.primary,
-      userSelect: 'none',
       overflow: 'hidden',
     }}>
-      {/* TOP BAR */}
-      <div style={{
-        background: THEME.panel,
-        borderBottom: `1px solid ${THEME.border}`,
-        height: 42,
-        display: 'flex',
-        alignItems: 'center',
-        padding: '0 16px',
-        gap: 12,
-        flexShrink: 0,
-      }}>
-        <div style={{ width: 8, height: 8, background: THEME.accent, borderRadius: 1 }} />
-
+      {/* TOOLBAR (one row: name · state · views · actions) */}
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-2 px-4 py-2 min-h-14 flex-shrink-0 bg-white border-b border-[#e0e0e0]">
+        <WorkflowIcon className="w-5 h-5 flex-shrink-0 text-[#525252]" />
         {isEditingName ? (
           <input
             autoFocus
@@ -1185,635 +1304,200 @@ export default function FlowBuilder({ flowId }: FlowBuilderProps) {
             onChange={(e) => setFlowName(e.target.value)}
             onBlur={() => setIsEditingName(false)}
             onKeyDown={(e) => { if (e.key === 'Enter') setIsEditingName(false) }}
-            style={{
-              background: 'transparent',
-              border: 'none',
-              borderBottom: `1px solid ${THEME.accent}`,
-              color: THEME.accent,
-              fontFamily: FONT,
-              fontSize: 14,
-              outline: 'none',
-              width: 140,
-              fontWeight: 600,
-            }}
+            className="h-8 px-2 text-[16px] bg-[#f4f4f4] border-0 border-b-2 border-b-[#0f62fe] outline-none w-64"
           />
         ) : (
-          <span
+          <button
             onClick={() => setIsEditingName(true)}
-            style={{ color: THEME.accent, fontSize: 14, cursor: 'text', fontWeight: 600 }}
+            title="Click to rename"
+            className="text-[16px] font-semibold text-[#161616] truncate min-w-[120px] max-w-[280px] hover:bg-[#e8e8e8] px-2 h-8"
           >
             {flowName}
-          </span>
-        )}
-
-        <span style={{ color: THEME.border, fontSize: 13 }}>|</span>
-        <span style={{ color: THEME.text.muted, fontSize: 13 }}>
-          {nodes.length} nodes / {edges.length} edges
-        </span>
-
-        <button
-          onClick={() => setShowPalette(!showPalette)}
-          style={{
-            padding: '3px 6px',
-            background: showPalette ? `${THEME.accent}15` : 'transparent',
-            border: `1px solid ${showPalette ? `${THEME.accent}50` : THEME.border}`,
-            borderRadius: 4,
-            color: showPalette ? THEME.accent : THEME.text.muted,
-            display: 'flex',
-            alignItems: 'center',
-            gap: 4,
-            fontSize: 11,
-            cursor: 'pointer',
-          }}
-          title={showPalette ? 'Hide node palette' : 'Show node palette'}
-        >
-          {showPalette ? <PanelLeftClose className="w-3.5 h-3.5" /> : <PanelLeftOpen className="w-3.5 h-3.5" />}
-        </button>
-
-        <div style={{ flex: 1 }} />
-
-        {['DESIGNER', 'TEST', 'DEPLOY', 'SETTINGS'].map((tab) => (
-          <button
-            key={tab}
-            onClick={() => setActiveTab(tab.toLowerCase())}
-            style={{
-              background: activeTab === tab.toLowerCase() ? `${THEME.accent}10` : 'transparent',
-              border: activeTab === tab.toLowerCase() ? `1px solid ${THEME.accent}50` : `1px solid ${THEME.border}`,
-              color: activeTab === tab.toLowerCase() ? THEME.accent : THEME.text.muted,
-              padding: '4px 12px',
-              fontSize: 12,
-              cursor: 'pointer',
-              letterSpacing: 1,
-              fontFamily: FONT,
-              fontWeight: activeTab === tab.toLowerCase() ? 600 : 400,
-              borderRadius: 3,
-              transition: 'all 0.15s ease',
-            }}
-          >
-            {tab}
           </button>
-        ))}
+        )}
+        <span className="text-[12px] whitespace-nowrap flex items-center gap-1.5" style={{ color: isDirty ? '#8a3800' : '#6f6f6f' }}>
+          {isDirty ? <span className="w-1.5 h-1.5 rounded-full bg-[#f1c21b]" /> : <Check className="w-3.5 h-3.5" />}
+          {isDirty ? 'Unsaved changes' : 'Saved'}
+        </span>
+        <div className="flex items-center">
+          <Button kind="ghost" size="sm" hasIconOnly renderIcon={Undo2} iconDescription="Undo (Ctrl/⌘+Z)"
+            tooltipPosition="bottom" onClick={undo} disabled={!past.current.length} />
+          <Button kind="ghost" size="sm" hasIconOnly renderIcon={Redo2} iconDescription="Redo (Shift+Ctrl/⌘+Z)"
+            tooltipPosition="bottom" onClick={redo} disabled={!future.current.length} />
+          {isDirty && flowId && (
+            <Button kind="danger--ghost" size="sm" onClick={discardChanges}>Discard</Button>
+          )}
+        </div>
+        <span className="text-[12px] text-[#6f6f6f] whitespace-nowrap hidden xl:inline">· {nodes.length} steps · {edges.length} links</span>
+        <Tag size="sm" type={isDeployed ? 'green' : 'gray'} className="!m-0">
+          {isDeployed ? 'Deployed' : 'Draft'}
+        </Tag>
 
-        <div style={{ width: 1, height: 18, background: THEME.border, margin: '0 4px' }} />
+        <div className="flex-1" />
 
-        <button 
-          onClick={handleSave}
-          style={{
-            background: 'transparent',
-            border: `1px solid ${THEME.border}`,
-            color: THEME.text.secondary,
-            padding: '4px 12px',
-            fontSize: 12,
-            cursor: 'pointer',
-            letterSpacing: 1,
-            fontFamily: FONT,
-            borderRadius: 3,
-            transition: 'all 0.15s ease',
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.borderColor = THEME.accent;
-            e.currentTarget.style.color = THEME.accent;
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.borderColor = THEME.border;
-            e.currentTarget.style.color = THEME.text.secondary;
-          }}
+        {/* View switcher + actions wrap together onto a second row when narrow */}
+        <div className="flex items-center gap-3 flex-wrap">
+        <ContentSwitcher
+          size="sm"
+          selectedIndex={Math.max(0, VIEWS.findIndex((v) => v.id === activeTab))}
+          onChange={({ name }: { name?: string | number }) => setActiveTab(String(name))}
+          className="!w-[420px] flex-shrink-0"
         >
-          SAVE
-        </button>
+          {VIEWS.map((v) => (
+            <Switch key={v.id} name={v.id} text={v.label} />
+          ))}
+        </ContentSwitcher>
 
-        <button
-          onClick={() => setActiveTab('test')}
-          style={{
-            background: THEME.accent,
-            border: 'none',
-            color: '#f8fafc',
-            padding: '4px 14px',
-            fontSize: 12,
-            cursor: 'pointer',
-            letterSpacing: 1,
-            fontFamily: FONT,
-            fontWeight: 600,
-            borderRadius: 3,
-            transition: 'all 0.15s ease',
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.background = '#3B82F6';
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.background = THEME.accent;
-          }}
-        >
-          TEST
-        </button>
+        <Button kind="tertiary" size="sm" renderIcon={Save} onClick={saveWithFeedback} disabled={saveMutation.isPending}>
+          {saveMutation.isPending ? 'Saving…' : 'Save'}
+        </Button>
+        <Button kind="primary" size="sm" renderIcon={Rocket} onClick={() => setActiveTab('deploy')}>
+          Deploy
+        </Button>
+        </div>
       </div>
 
       <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
-        
-        {/* SIDEBAR - Only show in designer */}
-        {activeTab === 'designer' && showPalette && (
-        <div style={{
-          width: 180,
-          background: THEME.panel,
-          borderRight: `1px solid ${THEME.border}`,
-          overflowY: 'auto',
-          flexShrink: 0,
-          transition: 'width 0.2s ease',
-        }}>
-          {SECTIONS.map(({ key, label }) => (
-            <div key={key}>
-              <div
-                onClick={() => setCollapsed((p) => ({ ...p, [key]: !p[key] }))}
-                style={{
-                  padding: '8px 12px',
-                  fontSize: 12,
-                  letterSpacing: 2,
-                  color: THEME.text.muted,
-                  cursor: 'pointer',
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                  borderBottom: `1px solid ${THEME.borderLight}`,
-                  background: THEME.bg,
-                  fontWeight: 600,
-                }}
-              >
-                <span>{label}</span>
-                <span style={{ fontSize: 13 }}>{collapsed[key] ? '+' : '−'}</span>
-              </div>
-              {!collapsed[key] && (NODE_TYPES as any)[key]?.map((node: any) => (
-                <div
-                  key={node.id}
-                  draggable
-                  onDragStart={(e) => onDragStart(e, node)}
-                  style={{
-                    padding: '8px 12px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 10,
-                    cursor: 'grab',
-                    borderBottom: `1px solid ${THEME.borderLight}`,
-                    borderLeft: '3px solid transparent',
-                    transition: 'all 0.1s ease',
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.background = THEME.bg;
-                    e.currentTarget.style.borderLeftColor = node.color;
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.background = 'transparent';
-                    e.currentTarget.style.borderLeftColor = 'transparent';
-                  }}
-                >
-                  <div style={{
-                    width: 26,
-                    height: 20,
-                    background: node.color + '12',
-                    border: '1px solid ' + node.color + '40',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    flexShrink: 0,
-                    borderRadius: 3,
-                  }}>
-                    <span style={{ color: node.color, fontSize: 11, fontWeight: 700 }}>{node.icon}</span>
-                  </div>
-                  <div>
-                    <div style={{ fontSize: 13, color: THEME.text.primary, fontWeight: 500 }}>{node.label}</div>
-                    <div style={{ fontSize: 11, color: THEME.text.muted }}>{node.sub}</div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          ))}
-          
-        </div>
-        )}
 
         {/* CANVAS */}
         {activeTab === 'designer' && (
-          <div 
-            style={{
-              flex: 1,
-              position: 'relative',
-              overflow: 'hidden',
-            }}
+          <div
+            style={{ flex: 1, position: 'relative', overflow: 'hidden' }}
             onDrop={onDrop}
             onDragOver={onDragOver}
           >
             <ReactFlow
               nodes={nodes}
-              edges={edges}
+              edges={displayEdges}
               onNodesChange={onNodesChange}
               onEdgesChange={onEdgesChange}
               onConnect={onConnect}
               onReconnect={onReconnect}
               edgesReconnectable
               onNodeClick={onNodeClick}
+              onPaneClick={() => { if (panelMode === 'inspector') { setSelectedNode(null); setPanelMode(null) } }}
               nodeTypes={nodeTypes}
               fitView
-              fitViewOptions={{ maxZoom: 0.85, padding: 0.4 }}
+              fitViewOptions={{ maxZoom: 1, padding: 0.3 }}
               minZoom={0.2}
               maxZoom={2}
-              style={{ background: THEME.bg }}
+              proOptions={{ hideAttribution: true }}
+              style={{ background: '#f4f4f4' }}
               defaultEdgeOptions={{
-                type: 'step',
-                style: { stroke: '#94A3B8', strokeWidth: 2 },
-                markerEnd: { type: MarkerType.ArrowClosed, color: '#94A3B8', width: 16, height: 16 },
+                type: 'smoothstep',
+                style: EDGE_STYLE,
+                markerEnd: EDGE_MARKER,
               }}
             >
-              <Background
-                color={THEME.text.muted}
-                gap={20}
-                size={1}
+              <Background color="#c6c6c6" gap={16} size={1.2} />
+              <ZoomBar />
+              <MiniMap
+                position="bottom-right"
+                pannable
+                zoomable
+                nodeColor="#c6c6c6"
+                maskColor="rgba(244,244,244,0.7)"
+                style={{ background: '#ffffff', border: '1px solid #c6c6c6', width: 168, height: 104 }}
               />
-              <Controls 
-                style={{
-                  background: THEME.panel,
-                  border: `1px solid ${THEME.border}`,
-                  borderRadius: 4,
-                  boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
-                }}
-              />
+              <Panel position="top-right">
+                <div className="flex gap-2">
+                  <Button kind="tertiary" size="sm" renderIcon={LayoutGrid} onClick={tidyUp} disabled={nodes.length < 2} className="!bg-white">
+                    Tidy up
+                  </Button>
+                  <Button kind="secondary" size="sm" renderIcon={Plus} onClick={() => setPanelMode(panelMode === 'palette' ? null : 'palette')}>
+                    Add step
+                  </Button>
+                </div>
+              </Panel>
             </ReactFlow>
 
             {nodes.length === 0 && (
-              <div style={{
-                position: 'absolute',
-                top: '50%',
-                left: '50%',
-                transform: 'translate(-50%,-50%)',
-                textAlign: 'center',
-                pointerEvents: 'none',
-              }}>
-                <div style={{ fontSize: 32, color: THEME.border, marginBottom: 8, fontWeight: 200 }}>+</div>
-                <div style={{ fontSize: 12, letterSpacing: 2, color: THEME.text.muted }}>DRAG NODE TO CANVAS</div>
+              <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                <div className="pointer-events-auto bg-white border border-[#e0e0e0] px-8 py-6 text-center max-w-sm">
+                  <WorkflowIcon className="w-6 h-6 mx-auto mb-2 text-[#8d8d8d]" />
+                  <p className="text-[14px] text-[#161616] font-semibold">Start building your flow</p>
+                  <p className="text-[13px] text-[#525252] mt-1 mb-4">Add a trigger first, e.g. HTTP Request, then add the next steps from there</p>
+                  <Button kind="primary" size="sm" renderIcon={Plus} onClick={() => { setPaletteQuery(''); setPanelMode('palette') }}>
+                    Add step
+                  </Button>
+                </div>
               </div>
             )}
-
-            {/* Status bar */}
-            <div style={{
-              position: 'absolute',
-              bottom: 0,
-              left: 0,
-              right: 0,
-              height: 24,
-              background: THEME.panel,
-              borderTop: `1px solid ${THEME.border}`,
-              display: 'flex',
-              alignItems: 'center',
-              padding: '0 12px',
-              gap: 16,
-              fontFamily: FONT,
-              fontSize: 12,
-              color: THEME.text.muted,
-              letterSpacing: 0.5,
-            }}>
-              <span>NODES: {nodes.length}</span>
-              <span>EDGES: {edges.length}</span>
-              {selectedNode && (
-                <span style={{ color: THEME.colors.integration }}>
-                  SELECTED: {selectedNode.id.toString().slice(0, 8).toUpperCase()}
-                </span>
-              )}
-              <div style={{ flex: 1 }} />
-              <span style={{ color: THEME.text.muted }}>DEL to delete</span>
-            </div>
           </div>
         )}
 
         {activeTab === 'test' && (
-          <div style={{
-            flex: 1,
-            display: 'flex',
-            flexWrap: 'wrap' as const,
-            padding: 'clamp(16px, 4vw, 40px)',
-            gap: 24,
-            background: THEME.bg,
-            fontFamily: FONT,
-            overflow: 'auto',
-          }}>
-            {/* Request Panel */}
-            <div style={{
-              flex: '1 1 320px',
-              maxWidth: 480,
-              background: THEME.panel,
-              border: `1px solid ${THEME.border}`,
-              borderRadius: 4,
-              padding: 20,
-              height: 'fit-content',
-            }}>
-              <div style={{ fontSize: 13, letterSpacing: 2, color: THEME.text.muted, marginBottom: 16, fontWeight: 600 }}>TEST REQUEST</div>
-              
-              <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
-                {['GET', 'POST', 'PUT', 'DELETE'].map((m) => (
-                  <button 
-                    key={m} 
-                    onClick={() => setTestMethod(m)}
-                    style={{
-                      flex: 1,
-                      padding: '6px 0',
-                      background: testMethod === m ? THEME.accent : THEME.bg,
-                      border: `1px solid ${testMethod === m ? THEME.accent : THEME.border}`,
-                      color: testMethod === m ? '#f8fafc' : THEME.text.muted,
-                      fontSize: 12,
-                      letterSpacing: 1,
-                      cursor: 'pointer',
-                      fontFamily: FONT,
-                      borderRadius: 3,
-                      fontWeight: 500,
-                    }}
-                  >
-                    {m}
-                  </button>
-                ))}
-              </div>
-              
-              <input 
-                placeholder="/api/v1/..."
-                value={testPath}
-                onChange={(e) => setTestPath(e.target.value)}
-                style={{
-                  width: '100%',
-                  padding: '8px 12px',
-                  background: THEME.bg,
-                  border: `1px solid ${THEME.border}`,
-                  color: THEME.text.primary,
-                  fontSize: 13,
-                  fontFamily: FONT,
-                  marginBottom: 12,
-                  outline: 'none',
-                  borderRadius: 3,
-                }}
-              />
-              
-              <textarea 
-                rows={8}
-                value={testBody}
-                onChange={(e) => setTestBody(e.target.value)}
-                placeholder="{}"
-                style={{
-                  width: '100%',
-                  padding: '8px 12px',
-                  background: THEME.bg,
-                  border: `1px solid ${THEME.border}`,
-                  color: THEME.text.primary,
-                  fontSize: 13,
-                  fontFamily: FONT,
-                  resize: 'none',
-                  marginBottom: 16,
-                  outline: 'none',
-                  borderRadius: 3,
-                }}
-              />
-              
-              <button 
-                onClick={() => testMutation.mutate()}
-                disabled={testMutation.isPending || !testPath}
-                style={{
-                  width: '100%',
-                  padding: '8px 0',
-                  background: THEME.accent,
-                  border: 'none',
-                  color: '#f8fafc',
-                  fontSize: 12,
-                  letterSpacing: 1,
-                  fontWeight: 600,
-                  cursor: (testMutation.isPending || !testPath) ? 'not-allowed' : 'pointer',
-                  fontFamily: FONT,
-                  borderRadius: 3,
-                  opacity: (testMutation.isPending || !testPath) ? 0.5 : 1,
-                }}
-              >
-                {testMutation.isPending ? 'EXECUTING...' : 'EXECUTE'}
-              </button>
-            </div>
-
-            {/* Response Panel */}
-            <div style={{
-              flex: '1 1 320px',
-              background: THEME.panel,
-              border: `1px solid ${THEME.border}`,
-              borderRadius: 4,
-              padding: 20,
-              height: 'fit-content',
-            }}>
-              <div style={{ fontSize: 13, letterSpacing: 2, color: THEME.text.muted, marginBottom: 16, fontWeight: 600 }}>RESPONSE</div>
-              
-              {testResponse ? (
-                <div>
-                  <div style={{ 
-                    display: 'flex', 
-                    alignItems: 'center', 
-                    gap: 8, 
-                    marginBottom: 12,
-                    padding: '8px 12px',
-                    background: testResponse.error ? '#450a0a' : testResponse.status >= 200 && testResponse.status < 300 ? '#052e16' : '#422006',
-                    borderRadius: 3,
-                  }}>
-                    <span style={{ 
-                      fontSize: 14, 
-                      fontWeight: 600,
-                      color: testResponse.error ? '#ef4444' : testResponse.status >= 200 && testResponse.status < 300 ? '#22c55e' : '#eab308',
-                    }}>
-                      {testResponse.error ? 'ERROR' : `HTTP ${testResponse.status}`}
-                    </span>
+          <div className="flex-1 overflow-auto bg-[#f4f4f4] p-6">
+            <div className="grid gap-4 lg:grid-cols-2 max-w-6xl">
+              {/* Request */}
+              <section className="bg-white border border-[#e0e0e0]">
+                <div className="px-4 h-12 flex items-center border-b border-[#e0e0e0]">
+                  <h2 className="text-[16px] text-[#161616]">Test request</h2>
+                  <span className="ml-auto text-[12px] text-[#6f6f6f]">Sent through gateway /api/v1</span>
+                </div>
+                <div className="p-4 flex flex-col gap-4">
+                  <div>
+                    <div className="text-[12px] text-[#525252] mb-1">Method</div>
+                    <ContentSwitcher size="sm" className="!w-auto"
+                      selectedIndex={Math.max(0, ['GET', 'POST', 'PUT', 'DELETE'].indexOf(testMethod))}
+                      onChange={({ name }: { name?: string | number }) => setTestMethod(String(name))}>
+                      {['GET', 'POST', 'PUT', 'DELETE'].map((m) => <Switch key={m} name={m} text={m} />)}
+                    </ContentSwitcher>
                   </div>
-                  <pre style={{
-                    fontSize: 13,
-                    fontFamily: FONT,
-                    background: THEME.bg,
-                    padding: 12,
-                    borderRadius: 3,
-                    overflow: 'auto',
-                    maxHeight: 400,
-                    border: `1px solid ${THEME.border}`,
-                    color: THEME.text.secondary,
-                  }}>
-                    {JSON.stringify(testResponse.error ? { error: testResponse.error } : testResponse.data, null, 2)}
-                  </pre>
+                  <div>
+                    <TextInput id="test-path" labelText="Path" placeholder="/api/v1/..." value={testPath}
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => setTestPath(e.target.value)} />
+                  </div>
+                  <div>
+                    <TextArea id="test-body" labelText="Body (JSON)" rows={10} value={testBody} placeholder="{}"
+                      onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setTestBody(e.target.value)}
+                      style={{ fontFamily: 'var(--font-mono)' }} />
+                  </div>
+                  <div className="flex justify-end">
+                    <Button kind="primary" size="md" renderIcon={FlaskConical} onClick={() => testMutation.mutate()} disabled={testMutation.isPending || !testPath}>
+                      {testMutation.isPending ? 'Sending…' : 'Execute'}
+                    </Button>
+                  </div>
                 </div>
-              ) : (
-                <div style={{ 
-                  textAlign: 'center', 
-                  padding: '40px 0',
-                  color: THEME.text.muted,
-                  fontSize: 13,
-                }}>
-                  Execute a request to see the response
+              </section>
+
+              {/* Response */}
+              <section className="bg-white border border-[#e0e0e0] min-w-0">
+                <div className="px-4 h-12 flex items-center gap-3 border-b border-[#e0e0e0]">
+                  <h2 className="text-[16px] text-[#161616]">Response</h2>
+                  {testResponse && (() => {
+                    const ok = !testResponse.error && testResponse.status >= 200 && testResponse.status < 300
+                    return (
+                      <span className="cds-tag text-[12px] px-2 leading-5" style={{
+                        background: testResponse.error || testResponse.status >= 500 ? '#ffd7d9' : ok ? '#a7f0ba' : '#ffd8bd',
+                        color: testResponse.error || testResponse.status >= 500 ? '#a2191f' : ok ? '#0e6027' : '#8a3800',
+                      }}>
+                        {testResponse.error ? 'Error' : `HTTP ${testResponse.status}`}
+                      </span>
+                    )
+                  })()}
                 </div>
-              )}
+                <div className="p-4">
+                  {testResponse ? (
+                    <pre className="text-[13px] bg-[#f4f4f4] p-3 overflow-auto max-h-[480px] text-[#161616]" style={{ fontFamily: 'var(--font-mono)' }}>
+                      {JSON.stringify(testResponse.error ? { error: testResponse.error } : testResponse.data, null, 2)}
+                    </pre>
+                  ) : (
+                    <p className="py-10 text-center text-[13px] text-[#6f6f6f]">Send a request on the left to see the response here</p>
+                  )}
+                </div>
+              </section>
             </div>
           </div>
         )}
 
         {activeTab === 'deploy' && (() => {
           const strategyInfo = EXECUTION_STRATEGIES.find(s => s.id === executionStrategy)!
-          const asyncNodeCount = nodes.filter((n: any) => {
-            const cfg = n.data?.config || {}
-            const asyncDefaults = ['eventLog', 'audit', 'pubsub', 'kafka']
-            const mode = cfg.executionMode || (asyncDefaults.includes(n.data?.type) ? 'async' : 'sync')
-            return mode === 'async'
-          }).length
+          const asyncDefaults = ['eventLog', 'audit', 'pubsub', 'kafka']
+          const modeOf = (n: any) => (n.data?.config?.executionMode || (asyncDefaults.includes(n.data?.type) ? 'async' : 'sync'))
+          const asyncNodeCount = nodes.filter((n: any) => modeOf(n) === 'async').length
           const syncNodeCount = nodes.length - asyncNodeCount
-
-          const InfoRow = ({ label, value, color: c }: { label: string; value: string; color?: string }) => (
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 0', borderBottom: `1px solid ${THEME.borderLight}` }}>
-              <span style={{ fontSize: 12, color: THEME.text.muted, letterSpacing: 0.5 }}>{label}</span>
-              <span style={{ fontSize: 12, color: c || THEME.text.primary, fontWeight: 600 }}>{value}</span>
-            </div>
-          )
-
-          return (
-            <div style={{
-              flex: 1,
-              minHeight: 0,
-              padding: 'clamp(12px, 2vw, 24px)',
-              background: THEME.bg,
-              fontFamily: FONT,
-              overflowY: 'auto',
-            }}>
-              {/* Two-column responsive grid */}
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))', gap: 16, maxWidth: 1100 }}>
-
-                {/* Left Column: Header + Flow Info */}
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-                  {/* Header */}
-                  <div style={{
-                    background: THEME.panel, border: `1px solid ${THEME.border}`, borderRadius: 4,
-                    padding: 20,
-                  }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
-                      <div style={{
-                        width: 10, height: 10, borderRadius: 2,
-                        background: isDeployed ? '#10B981' : THEME.border,
-                      }} />
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ fontSize: 16, fontWeight: 700, color: THEME.text.primary }}>{flowName}</div>
-                        <div style={{ fontSize: 12, color: THEME.text.muted, marginTop: 2 }}>
-                          {flowDescription || 'No description'}
-                        </div>
-                      </div>
-                      <div style={{
-                        fontSize: 11, fontWeight: 600, letterSpacing: 1,
-                        padding: '4px 10px', borderRadius: 3,
-                        background: isDeployed ? '#10B98118' : `${THEME.border}40`,
-                        color: isDeployed ? '#10B981' : THEME.text.muted,
-                        border: `1px solid ${isDeployed ? '#10B98140' : THEME.border}`,
-                        flexShrink: 0,
-                      }}>
-                        {isDeployed ? 'ACTIVE' : 'DRAFT'}
-                      </div>
-                    </div>
-
-                    <InfoRow label="Flow ID" value={flowId?.slice(0, 12).toUpperCase() + '...' || 'Not saved'} color={THEME.text.muted} />
-                    <InfoRow label="Trigger Type" value={triggerType} />
-                    <InfoRow label="Execution Mode" value={executionMode} />
-                    <InfoRow label="Category" value={flowCategory} />
-                  </div>
-
-                  {/* Execution Strategy */}
-                  <div style={{
-                    background: THEME.panel, border: `1px solid ${THEME.border}`, borderRadius: 4,
-                    padding: 20,
-                  }}>
-                    <div style={{ fontSize: 12, letterSpacing: 2, color: THEME.text.muted, marginBottom: 12, fontWeight: 600 }}>EXECUTION STRATEGY</div>
-
-                    <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
-                      {EXECUTION_STRATEGIES.map(s => (
-                        <button
-                          key={s.id}
-                          onClick={() => setExecutionStrategy(s.id as any)}
-                          style={{
-                            flex: 1, padding: '10px 8px', borderRadius: 4, cursor: 'pointer',
-                            border: `1px solid ${executionStrategy === s.id ? s.color + '60' : THEME.border}`,
-                            background: executionStrategy === s.id ? s.color + '10' : THEME.bg,
-                            fontFamily: FONT, transition: 'all 0.15s',
-                            textAlign: 'center',
-                          }}
-                        >
-                          <div style={{ fontSize: 12, fontWeight: 700, color: executionStrategy === s.id ? s.color : THEME.text.secondary }}>
-                            {s.label}
-                          </div>
-                          <div style={{ fontSize: 10, color: THEME.text.muted, marginTop: 2 }}>{s.sub}</div>
-                        </button>
-                      ))}
-                    </div>
-
-                    <div style={{
-                      fontSize: 11, color: THEME.text.muted, padding: 8,
-                      background: THEME.bg, borderRadius: 3,
-                    }}>
-                      {strategyInfo.desc}
-                    </div>
-
-                    {executionStrategy === 'custom' && (
-                      <div style={{ marginTop: 10 }}>
-                        <InfoRow label="Queue Type" value={customQueueType.toUpperCase()} color={strategyInfo.color} />
-                        <InfoRow label="Sync Nodes" value={String(syncNodeCount)} />
-                        <InfoRow label="Async Nodes" value={String(asyncNodeCount)} color="#F59E0B" />
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                {/* Right Column: Flow Composition + Deploy */}
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-                  {/* Flow Composition */}
-                  <div style={{
-                    background: THEME.panel, border: `1px solid ${THEME.border}`, borderRadius: 4,
-                    padding: 20,
-                  }}>
-                    <div style={{ fontSize: 12, letterSpacing: 2, color: THEME.text.muted, marginBottom: 12, fontWeight: 600 }}>FLOW COMPOSITION</div>
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12 }}>
-                      {[
-                        { label: 'NODES', value: nodes.length, color: THEME.accent },
-                        { label: 'EDGES', value: edges.length, color: THEME.colors.integration },
-                        { label: 'ASYNC', value: asyncNodeCount, color: '#F59E0B' },
-                      ].map(item => (
-                        <div key={item.label} style={{
-                          textAlign: 'center', padding: '12px 8px',
-                          background: THEME.bg, borderRadius: 4,
-                          border: `1px solid ${THEME.borderLight}`,
-                        }}>
-                          <div style={{ fontSize: 22, fontWeight: 700, color: item.color }}>{item.value}</div>
-                          <div style={{ fontSize: 10, letterSpacing: 1.5, color: THEME.text.muted, marginTop: 4 }}>{item.label}</div>
-                        </div>
-                      ))}
-                    </div>
-
-                    {/* Node list */}
-                    <div style={{ marginTop: 12 }}>
-                      {nodes.map((n: any, i: number) => {
-                        const cfg = n.data?.config || {}
-                        const asyncDefaults = ['eventLog', 'audit', 'pubsub', 'kafka']
-                        const mode = cfg.executionMode || (asyncDefaults.includes(n.data?.type) ? 'async' : 'sync')
-                        return (
-                          <div key={n.id} style={{
-                            display: 'flex', alignItems: 'center', gap: 8,
-                            padding: '6px 8px', borderRadius: 3,
-                            background: i % 2 === 0 ? 'transparent' : `${THEME.bg}60`,
-                          }}>
-                            <div style={{
-                              width: 6, height: 6, borderRadius: 1,
-                              background: n.data?.color || THEME.text.muted,
-                            }} />
-                            <span style={{ fontSize: 12, color: THEME.text.primary, flex: 1 }}>{n.data?.label}</span>
-                            <span style={{
-                              fontSize: 10, fontWeight: 600, letterSpacing: 0.5,
-                              color: mode === 'async' ? '#F59E0B' : THEME.text.muted,
-                            }}>
-                              {mode.toUpperCase()}
-                            </span>
-                          </div>
-                        )
-                      })}
-                    </div>
-                  </div>
-
-                  {/* Deploy Button */}
-                  <button
-                    onClick={async () => {
+          const deployNow = async () => {
                       try {
                         await handleSave()
 
@@ -1848,32 +1532,88 @@ export default function FlowBuilder({ flowId }: FlowBuilderProps) {
                       } catch (err) {
                         console.error('[FlowBuilder] Save failed, skipping deploy:', err)
                       }
-                    }}
-                    disabled={!flowId || deployMutation.isPending || nodes.length === 0}
-                    style={{
-                      width: '100%',
-                      padding: '14px 0',
-                      background: isDeployed ? 'transparent' : THEME.accent,
-                      border: `1.5px solid ${THEME.accent}`,
-                      color: isDeployed ? THEME.accent : '#f8fafc',
-                      fontSize: 13,
-                      letterSpacing: 1.5,
-                      fontWeight: 700,
-                      cursor: (!flowId || deployMutation.isPending || nodes.length === 0) ? 'not-allowed' : 'pointer',
-                      fontFamily: FONT,
-                      borderRadius: 4,
-                      transition: 'all 0.15s ease',
-                      opacity: (!flowId || deployMutation.isPending || nodes.length === 0) ? 0.5 : 1,
-                    }}
-                  >
-                    {deployMutation.isPending ? 'DEPLOYING...' : isDeployed ? 'REDEPLOY TO BROKER' : 'DEPLOY TO BROKER'}
-                  </button>
+          }
+          const blocked = !flowId || deployMutation.isPending || nodes.length === 0
 
-                  {!flowId && (
-                    <div style={{ fontSize: 11, color: '#EF4444', textAlign: 'center' }}>
-                      Save the flow first before deploying
+          const Row = ({ label, value }: { label: string; value: React.ReactNode }) => (
+            <div className="flex items-center justify-between h-10 border-b border-[#e0e0e0] last:border-b-0 text-[14px]">
+              <span className="text-[#525252]">{label}</span>
+              <span className="text-[#161616]">{value}</span>
+            </div>
+          )
+          const Card = ({ title, children, right }: { title: string; children: React.ReactNode; right?: React.ReactNode }) => (
+            <section className="bg-white border border-[#e0e0e0]">
+              <div className="px-4 h-12 flex items-center border-b border-[#e0e0e0]">
+                <h2 className="text-[16px] text-[#161616]">{title}</h2>
+                <span className="ml-auto">{right}</span>
+              </div>
+              <div className="px-4 py-2">{children}</div>
+            </section>
+          )
+
+          return (
+            <div className="flex-1 overflow-auto bg-[#f4f4f4] p-6">
+              <div className="grid gap-4 lg:grid-cols-2 max-w-6xl items-start">
+                <div className="flex flex-col gap-4">
+                  <Card title={flowName} right={
+                    <span className="cds-tag text-[12px] px-2 leading-5" style={{
+                      background: isDeployed ? '#a7f0ba' : '#e0e0e0', color: isDeployed ? '#0e6027' : '#161616',
+                    }}>{isDeployed ? 'Active' : 'Draft'}</span>
+                  }>
+                    {flowDescription && <p className="text-[13px] text-[#525252] py-2">{flowDescription}</p>}
+                    <Row label="Flow ID" value={<code className="text-[12px]">{flowId ?? 'Not saved yet'}</code>} />
+                    <Row label="Trigger" value={triggerType} />
+                    <Row label="Execution mode" value={executionMode} />
+                    <Row label="Category" value={flowCategory} />
+                  </Card>
+
+                  <Card title="Execution strategy">
+                    <div className="flex border border-[#8d8d8d] my-2" role="radiogroup">
+                      {EXECUTION_STRATEGIES.map(st => (
+                        <button key={st.id} role="radio" aria-checked={executionStrategy === st.id}
+                          onClick={() => setExecutionStrategy(st.id as any)}
+                          className="flex-1 py-2 px-2 text-left"
+                          style={executionStrategy === st.id ? { background: '#161616', color: '#fff' } : { background: '#fff', color: '#161616' }}>
+                          <div className="text-[13px] font-semibold">{st.label}</div>
+                          <div className="text-[12px] opacity-75 truncate">{st.sub}</div>
+                        </button>
+                      ))}
                     </div>
-                  )}
+                    <p className="text-[13px] text-[#525252] py-2">{strategyInfo.desc}</p>
+                    {executionStrategy === 'custom' && (
+                      <div className="pb-2">
+                        <Row label="Queue type" value={customQueueType.toUpperCase()} />
+                        <Row label="Sync steps" value={syncNodeCount} />
+                        <Row label="Async steps" value={asyncNodeCount} />
+                      </div>
+                    )}
+                  </Card>
+                </div>
+
+                <div className="flex flex-col gap-4">
+                  <Card title="Flow composition" right={<span className="text-[12px] text-[#6f6f6f]">{nodes.length} steps · {edges.length} links · {asyncNodeCount} async</span>}>
+                    {nodes.length === 0 && <p className="py-4 text-[13px] text-[#6f6f6f]">No steps yet</p>}
+                    {nodes.map((n: any) => (
+                      <div key={n.id} className="flex items-center gap-3 h-10 border-b border-[#e0e0e0] last:border-b-0">
+                        <NodeIcon type={String(n.data?.type)} letter={String(n.data?.icon)} color={String(n.data?.color)} size={24} />
+                        <span className="text-[14px] text-[#161616] flex-1 truncate">{n.data?.displayName || n.data?.label}</span>
+                        <span className="cds-tag text-[11px] px-2 leading-5" style={modeOf(n) === 'async'
+                          ? { background: '#ffd8bd', color: '#8a3800' } : { background: '#e0e0e0', color: '#161616' }}>
+                          {modeOf(n)}
+                        </span>
+                      </div>
+                    ))}
+                  </Card>
+
+                  <section className="bg-white border border-[#e0e0e0] p-4">
+                    <p className="text-[13px] text-[#525252] mb-3">
+                      Save the flow → validate each step's required fields → send to Orch Broker
+                    </p>
+                    <Button kind="primary" size="lg" renderIcon={Rocket} onClick={deployNow} disabled={blocked} className="!w-full !max-w-none">
+                      {deployMutation.isPending ? 'Deploying…' : isDeployed ? 'Redeploy to broker' : 'Deploy to broker'}
+                    </Button>
+                    {!flowId && <p className="mt-2 text-[12px] text-[#da1e28]">Save the flow before deploying</p>}
+                  </section>
                 </div>
               </div>
             </div>
@@ -1882,61 +1622,30 @@ export default function FlowBuilder({ flowId }: FlowBuilderProps) {
 
         {/* SETTINGS TAB CONTENT */}
         {activeTab === 'settings' && (
-          <div style={{
-            flex: 1,
-            overflowY: 'auto',
-            padding: '24px 32px',
-            fontFamily: FONT,
-            background: THEME.bg,
-          }}>
-            <div style={{ maxWidth: 720, margin: '0 auto' }}>
+          <div className="flex-1 overflow-auto bg-[#f4f4f4] p-6">
+            <div style={{ maxWidth: 720 }}>
               {/* Page Header */}
-              <div style={{ marginBottom: 24 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>
-                  <SettingsIcon className="w-5 h-5" style={{ color: THEME.accent }} />
-                  <h2 style={{ fontSize: 18, fontWeight: 700, color: THEME.text.primary, margin: 0, letterSpacing: 0.5 }}>
-                    Flow Settings
-                  </h2>
-                </div>
-                <p style={{ fontSize: 13, color: THEME.text.muted, margin: 0, lineHeight: 1.5 }}>
+              <div style={{ marginBottom: 16 }}>
+                <h2 className="text-[20px] text-[#161616]" style={{ margin: 0 }}>Flow settings</h2>
+                <p className="text-[13px] text-[#525252] mt-1" style={{ margin: 0 }}>
                   General flow settings and execution strategy
                 </p>
               </div>
 
               {/* Section: General */}
-              <div style={{
-                background: THEME.panel,
-                border: `1px solid ${THEME.border}`,
-                borderRadius: 6,
-                padding: '18px 20px',
-                marginBottom: 16,
-              }}>
-                <div style={{ fontSize: 11, fontWeight: 700, color: THEME.text.muted, letterSpacing: 2, marginBottom: 14 }}>
-                  GENERAL
-                </div>
+              <div className="bg-white border border-[#e0e0e0] p-4 mb-4">
+                <div className="text-[14px] font-semibold text-[#161616] mb-4">General</div>
 
                 <div style={{ marginBottom: 14 }}>
-                  <label style={{ fontSize: 12, color: THEME.text.secondary, display: 'block', marginBottom: 5, fontWeight: 500 }}>
-                    Description
-                  </label>
-                  <textarea
-                    value={flowDescription}
-                    onChange={(e) => setFlowDescription(e.target.value)}
+                  <TextArea id="flow-description" labelText="Description" value={flowDescription} rows={3}
                     placeholder="Flow description..."
-                    rows={3}
-                    style={{
-                      width: '100%', padding: '8px 10px', fontSize: 13,
-                      border: `1px solid ${THEME.border}`, borderRadius: 4,
-                      background: THEME.bg, color: THEME.text.primary,
-                      resize: 'vertical', fontFamily: FONT,
-                    }}
-                  />
+                    onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setFlowDescription(e.target.value)} />
                 </div>
 
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, marginBottom: 14 }}>
                   <div>
-                    <label style={{ fontSize: 12, color: THEME.text.secondary, display: 'block', marginBottom: 5, fontWeight: 500 }}>
-                      Trigger Type
+                    <label style={{ fontSize: 12, color: '#525252', display: 'block', marginBottom: 4 }}>
+                      Trigger type
                     </label>
                     <Select
                       value={triggerType}
@@ -1952,8 +1661,8 @@ export default function FlowBuilder({ flowId }: FlowBuilderProps) {
                     />
                   </div>
                   <div>
-                    <label style={{ fontSize: 12, color: THEME.text.secondary, display: 'block', marginBottom: 5, fontWeight: 500 }}>
-                      Execution Mode
+                    <label style={{ fontSize: 12, color: '#525252', display: 'block', marginBottom: 4 }}>
+                      Execution mode
                     </label>
                     <Select
                       value={executionMode}
@@ -1968,7 +1677,7 @@ export default function FlowBuilder({ flowId }: FlowBuilderProps) {
                 </div>
 
                 <div>
-                  <label style={{ fontSize: 12, color: THEME.text.secondary, display: 'block', marginBottom: 5, fontWeight: 500 }}>
+                  <label style={{ fontSize: 12, color: '#525252', display: 'block', marginBottom: 4 }}>
                     Category
                   </label>
                   <Select
@@ -1985,16 +1694,8 @@ export default function FlowBuilder({ flowId }: FlowBuilderProps) {
               </div>
 
               {/* Section: Execution Strategy */}
-              <div style={{
-                background: THEME.panel,
-                border: `1px solid ${THEME.border}`,
-                borderRadius: 6,
-                padding: '18px 20px',
-                marginBottom: 16,
-              }}>
-                <div style={{ fontSize: 11, fontWeight: 700, color: THEME.text.muted, letterSpacing: 2, marginBottom: 14 }}>
-                  EXECUTION STRATEGY
-                </div>
+              <div className="bg-white border border-[#e0e0e0] p-4 mb-4">
+                <div className="text-[14px] font-semibold text-[#161616] mb-4">Execution strategy</div>
 
                 <div style={{ marginBottom: 12 }}>
                   <Select
@@ -2008,22 +1709,14 @@ export default function FlowBuilder({ flowId }: FlowBuilderProps) {
                   />
                 </div>
 
-                <div style={{
-                  fontSize: 12,
-                  color: THEME.text.secondary,
-                  padding: '10px 12px',
-                  background: `${THEME.bg}80`,
-                  border: `1px solid ${THEME.borderLight}`,
-                  borderRadius: 4,
-                  lineHeight: 1.5,
-                }}>
+                <div className="text-[13px] text-[#525252] bg-[#f4f4f4] px-3 py-2">
                   {EXECUTION_STRATEGIES.find(s => s.id === executionStrategy)?.desc}
                 </div>
 
                 {executionStrategy === 'custom' && (
                   <div style={{ marginTop: 12 }}>
-                    <label style={{ fontSize: 12, color: THEME.text.secondary, display: 'block', marginBottom: 5, fontWeight: 500 }}>
-                      Queue Type
+                    <label style={{ fontSize: 12, color: '#525252', display: 'block', marginBottom: 4 }}>
+                      Queue type
                     </label>
                     <Select
                       value={customQueueType}
@@ -2035,148 +1728,154 @@ export default function FlowBuilder({ flowId }: FlowBuilderProps) {
                 )}
               </div>
 
-              {/* Save Button */}
-              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10 }}>
-                <button
-                  onClick={() => setActiveTab('designer')}
-                  style={{
-                    background: 'transparent',
-                    border: `1px solid ${THEME.border}`,
-                    color: THEME.text.secondary,
-                    padding: '8px 18px',
-                    fontSize: 12,
-                    cursor: 'pointer',
-                    fontFamily: FONT,
-                    borderRadius: 4,
-                    letterSpacing: 1,
-                    fontWeight: 500,
-                  }}
-                >
-                  BACK TO DESIGNER
-                </button>
-                <button
-                  onClick={handleSave}
-                  style={{
-                    background: THEME.accent,
-                    border: 'none',
-                    color: '#fff',
-                    padding: '8px 24px',
-                    fontSize: 12,
-                    fontWeight: 600,
-                    cursor: 'pointer',
-                    fontFamily: FONT,
-                    borderRadius: 4,
-                    letterSpacing: 1,
-                  }}
-                >
-                  SAVE SETTINGS
-                </button>
+              <div className="flex justify-end gap-2">
+                <Button kind="ghost" onClick={() => setActiveTab('designer')}>Back to designer</Button>
+                <Button kind="primary" renderIcon={Save} onClick={saveWithFeedback}>Save settings</Button>
               </div>
             </div>
           </div>
         )}
 
-        {/* PROPERTIES PANEL - Only in designer when node selected */}
-        {activeTab === 'designer' && selectedNode && (
-        <div style={{
-          width: 220,
-          background: THEME.panel,
-          borderLeft: `1px solid ${THEME.border}`,
-          flexShrink: 0,
-          fontFamily: FONT,
-          overflowY: 'auto',
-        }}>
-          <div style={{
-            padding: '8px 12px',
-            borderBottom: `1px solid ${THEME.borderLight}`,
-            fontSize: 12,
-            letterSpacing: 2,
-            color: THEME.text.muted,
-            background: THEME.bg,
-            fontWeight: 600,
-          }}>
-            PROPERTIES
-          </div>
-
-          {selectedNode ? (
-            <div style={{ padding: 12 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
-                <div style={{
-                  width: 32,
-                  height: 24,
-                  border: `1px solid ${String(selectedNode.data.color)}50`,
-                  background: String(selectedNode.data.color) + '10',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  borderRadius: 3,
-                }}>
-                  <span style={{ color: String(selectedNode.data.color), fontSize: 11, fontWeight: 700 }}>
-                    {String(selectedNode.data.icon)}
-                  </span>
+        {/* RIGHT PANEL — step inspector or "Add step" palette */}
+        {activeTab === 'designer' && panelMode && (
+          <aside className="w-[360px] flex-shrink-0 bg-white border-l border-[#e0e0e0] flex flex-col min-h-0">
+            {panelMode === 'palette' ? (
+              <>
+                <div className="flex items-start gap-3 px-4 py-3 border-b border-[#e0e0e0]">
+                  <div className="w-9 h-9 flex items-center justify-center bg-[#f4f4f4]"><Plus className="w-5 h-5" /></div>
+                  <div className="flex-1 min-w-0">
+                    <div className="text-[11px] tracking-[0.32px] text-[#6f6f6f]">PALETTE</div>
+                    <div className="text-[16px] font-semibold text-[#161616]">Add a step</div>
+                  </div>
+                  <Button kind="ghost" size="sm" hasIconOnly renderIcon={X} iconDescription="Close" tooltipPosition="left"
+                    onClick={() => setPanelMode(selectedNode ? 'inspector' : null)} />
                 </div>
-                <div>
-                  <div style={{ fontSize: 13, color: THEME.text.primary, fontWeight: 600 }}>{String(selectedNode.data.label)}</div>
-                  <div style={{ fontSize: 11, color: THEME.text.muted }}>{String(selectedNode.data.sub)}</div>
+                <div className="px-4 pt-3">
+                  <CarbonSearch
+                    id="palette-search"
+                    size="md"
+                    labelText="Search steps"
+                    placeholder="Search steps…"
+                    autoFocus
+                    value={paletteQuery}
+                    onChange={(e: any) => setPaletteQuery(e.target?.value ?? '')}
+                    onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => { if (e.key === 'Enter' && paletteMatches[0]) addStep(paletteMatches[0]) }}
+                  />
+                  <p className="text-[12px] text-[#525252] mt-2">
+                    {selectedNode
+                      ? <>After <strong className="text-[#161616]">{String(selectedNode.data.label)}</strong></>
+                      : 'Placed at the end of the canvas'}
+                  </p>
                 </div>
-              </div>
-
-              {[
-                ['ID', selectedNode.id.toString().slice(0, 8).toUpperCase()],
-                ['Type', String(selectedNode.data.label)],
-                ['X', Math.round(selectedNode.position.x) + 'px'],
-                ['Y', Math.round(selectedNode.position.y) + 'px'],
-              ].map(([k, v]) => (
-                <div key={k} style={{ marginBottom: 10, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <span style={{ fontSize: 11, color: THEME.text.muted, letterSpacing: 0.5 }}>{k}</span>
-                  <span style={{ fontSize: 12, color: String(selectedNode.data.color), fontWeight: 500 }}>{v}</span>
+                <div className="flex-1 overflow-y-auto py-2">
+                  {SECTIONS.map(({ key, label }) => {
+                    const items = paletteMatches.filter((d) => d.section === key)
+                    if (!items.length) return null
+                    return (
+                      <div key={key} className="pb-1">
+                        <div className="px-4 pt-3 pb-1 text-[11px] font-semibold tracking-[0.32px] text-[#6f6f6f]">{label}</div>
+                        {items.map((d) => (
+                          <button
+                            key={d.id}
+                            draggable
+                            onDragStart={(e) => onDragStart(e, d)}
+                            onClick={() => addStep(d)}
+                            className="w-full flex items-center gap-3 px-4 py-2 text-left hover:bg-[#e8e8e8]"
+                          >
+                            <NodeIcon type={d.id} letter={d.icon} color={d.color} size={32} />
+                            <span className="min-w-0">
+                              <span className="block text-[14px] text-[#161616]">{d.label}</span>
+                              <span className="block text-[12px] text-[#6f6f6f] truncate">{d.sub}</span>
+                            </span>
+                          </button>
+                        ))}
+                      </div>
+                    )
+                  })}
+                  {paletteMatches.length === 0 && (
+                    <p className="px-4 py-6 text-[13px] text-[#6f6f6f]">No steps match “{paletteQuery}”</p>
+                  )}
                 </div>
-              ))}
-
-              {/* Node Config Panel */}
-              <NodeConfigPanel 
-                node={selectedNode} 
-                onChange={(newData) => {
-                  setNodes((nds) => nds.map((n) => 
-                    n.id === selectedNode.id ? { ...n, data: newData } : n
-                  ))
-                  setSelectedNode({ ...selectedNode, data: newData })
-                }}
-              />
-
-              <button
-                onClick={deleteNode}
-                style={{
-                  width: '100%',
-                  marginTop: 16,
-                  background: 'transparent',
-                  border: `1px solid ${THEME.colors.output}40`,
-                  color: THEME.colors.output,
-                  padding: '6px 0',
-                  fontSize: 12,
-                  letterSpacing: 1,
-                  cursor: 'pointer',
-                  fontFamily: FONT,
-                  borderRadius: 3,
-                  fontWeight: 500,
-                  transition: 'all 0.15s ease',
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.background = `${THEME.colors.output}10`;
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.background = 'transparent';
-                }}
-              >
-                DELETE
-              </button>
-            </div>
-          ) : (
-            <div style={{ padding: 12 }}>
-              <div style={{ fontSize: 13, color: THEME.text.muted }}>No node selected</div>
-            </div>
-          )}
-        </div>
+                <p className="px-4 py-3 border-t border-[#e0e0e0] text-[12px] text-[#6f6f6f]">
+                  Enter adds the first match · drag onto the canvas · drag a port to connect steps
+                </p>
+              </>
+            ) : selectedNode ? (
+              <>
+                <div className="flex items-start gap-3 px-4 py-3 border-b border-[#e0e0e0]">
+                  <NodeIcon type={String(selectedNode.data.type)} letter={String(selectedNode.data.icon)} color={String(selectedNode.data.color)} size={36} />
+                  <div className="flex-1 min-w-0">
+                    <div className="text-[11px] tracking-[0.32px] text-[#6f6f6f]">
+                      {SECTION_LABEL[NODE_SECTION[String(selectedNode.data.type)]] || 'STEP'}
+                    </div>
+                    <div className="text-[16px] font-semibold text-[#161616] truncate">{String(selectedNode.data.label)}</div>
+                    <div className="text-[12px] text-[#6f6f6f]">{String(selectedNode.data.sub)}</div>
+                  </div>
+                  <Button kind="ghost" size="sm" hasIconOnly renderIcon={X} iconDescription="Close" tooltipPosition="left"
+                    onClick={() => { setSelectedNode(null); setPanelMode(null) }} />
+                </div>
+                <div className="flex-1 overflow-y-auto px-4 py-4">
+                  <div className="mb-5">
+                    <TextInput
+                      id="step-display-name"
+                      labelText="Step name (shown on canvas)"
+                      value={String((selectedNode.data as any).displayName ?? '')}
+                      placeholder={String(selectedNode.data.label)}
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                        const newData = { ...selectedNode.data, displayName: e.target.value || undefined }
+                        setNodes((nds) => nds.map((n) => (n.id === selectedNode.id ? { ...n, data: newData } : n)))
+                        setSelectedNode({ ...selectedNode, data: newData })
+                      }}
+                    />
+                  </div>
+                  <NodeConfigPanel
+                    node={selectedNode}
+                    onChange={(newData) => {
+                      setNodes((nds) => nds.map((n) =>
+                        n.id === selectedNode.id ? { ...n, data: newData } : n
+                      ))
+                      setSelectedNode({ ...selectedNode, data: newData })
+                    }}
+                  />
+                  {(() => {
+                    const byId = (id: string) => nodes.find((n) => n.id === id)
+                    const outs = edges.filter((e) => e.source === selectedNode.id).map((e) => byId(e.target)).filter(Boolean) as Node[]
+                    const ins = edges.filter((e) => e.target === selectedNode.id).map((e) => byId(e.source)).filter(Boolean) as Node[]
+                    const row = (n: Node, dir: 'in' | 'out') => (
+                      <button key={dir + n.id} onClick={() => { setSelectedNode(n); setNodes((nds) => nds.map((x) => ({ ...x, selected: x.id === n.id }))) }}
+                        className="w-full h-9 px-2 flex items-center gap-2 text-left text-[13px] text-[#161616] hover:bg-[#e8e8e8] border-b border-[#e0e0e0] last:border-b-0">
+                        {dir === 'in' ? <ArrowLeft className="w-4 h-4 text-[#6f6f6f]" /> : <ArrowRight className="w-4 h-4 text-[#6f6f6f]" />}
+                        <span className="truncate">{String((n.data as any).displayName || n.data.label)}</span>
+                        <span className="ml-auto text-[11px] text-[#6f6f6f]">{SECTION_LABEL[NODE_SECTION[String(n.data.type)]]}</span>
+                      </button>
+                    )
+                    return (
+                      <div className="mt-6">
+                        <div className="text-[14px] font-semibold text-[#161616] mb-2">Connections</div>
+                        <div className="text-[12px] text-[#525252] mb-1">Receives from</div>
+                        <div className="border border-[#e0e0e0] mb-3">
+                          {ins.length ? ins.map((n) => row(n, 'in')) : <p className="px-2 py-2 text-[12px] text-[#6f6f6f]">— Start of flow —</p>}
+                        </div>
+                        <div className="text-[12px] text-[#525252] mb-1">Sends to</div>
+                        <div className="border border-[#e0e0e0]">
+                          {outs.length ? outs.map((n) => row(n, 'out')) : <p className="px-2 py-2 text-[12px] text-[#6f6f6f]">— No next step yet; use “Add next step” —</p>}
+                        </div>
+                      </div>
+                    )
+                  })()}
+                  <div className="mt-6 pt-3 border-t border-[#e0e0e0] text-[11px] text-[#6f6f6f] font-mono break-all">
+                    id: {selectedNode.id}
+                  </div>
+                </div>
+                <div className="flex items-center gap-2 px-4 py-3 border-t border-[#e0e0e0]">
+                  <Button kind="secondary" size="sm" renderIcon={Plus} onClick={() => setPanelMode('palette')}>Add next step</Button>
+                  <div className="flex-1" />
+                  <Button kind="ghost" size="sm" hasIconOnly renderIcon={Copy} iconDescription="Duplicate" tooltipPosition="top" onClick={duplicateNode} />
+                  <Button kind="danger--ghost" size="sm" hasIconOnly renderIcon={Trash2} iconDescription="Delete" tooltipPosition="top" onClick={deleteNode} />
+                </div>
+              </>
+            ) : null}
+          </aside>
         )}
       </div>
     </div>

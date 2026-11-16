@@ -7,7 +7,6 @@ import { toast } from 'sonner'
 import { 
   Workflow, 
   Plus, 
-  Search, 
   Zap, 
   Layers, 
   Calendar, 
@@ -24,6 +23,13 @@ import {
   TrendingDown,
 } from 'lucide-react'
 import Link from 'next/link'
+import {
+  Button,
+  ContentSwitcher,
+  Switch,
+  Search as CarbonSearch,
+  Tag,
+} from '@carbon/react'
 import { cn } from '@/lib/utils'
 
 interface FlowData {
@@ -39,7 +45,7 @@ interface FlowData {
   _count?: { apis: number }
 }
 
-const FONT = "'Prompt', sans-serif"
+const FONT = '"IBM Plex Sans Thai", "IBM Plex Sans", "Sarabun", system-ui, sans-serif'
 
 const THEME = {
   bg: 'var(--t-bg)',
@@ -50,26 +56,28 @@ const THEME = {
   accent: 'var(--t-accent)',
   accentHover: 'var(--t-accent-hover)',
   colors: {
-    blue: '#3B82F6',
-    emerald: '#10B981',
-    purple: '#8B5CF6',
-    amber: '#F59E0B',
-    red: '#EF4444',
+    blue: '#0f62fe',
+    emerald: '#24a148',
+    purple: '#8a3ffc',
+    amber: '#ba4e00',
+    red: '#da1e28',
     indigo: '#6366F1',
   }
 }
 
-const triggerLabels: Record<string, { label: string; color: string; bg: string; icon: any }> = {
-  http: { label: 'HTTP', color: '#10B981', bg: '#10B98115', icon: Zap },
-  kafka_consumer: { label: 'Kafka', color: '#8B5CF6', bg: '#8B5CF615', icon: Layers },
-  scheduler: { label: 'Scheduler', color: '#F59E0B', bg: '#F59E0B15', icon: Calendar },
-  webhook: { label: 'Webhook', color: '#3B82F6', bg: '#3B82F615', icon: Webhook },
-  message_queue: { label: 'Queue', color: '#14B8A6', bg: '#14B8A615', icon: MessageSquare },
+type TagType = 'green' | 'purple' | 'warm-gray' | 'blue' | 'teal'
+
+const triggerLabels: Record<string, { label: string; color: string; bg: string; icon: any; tag: TagType }> = {
+  http: { label: 'HTTP', color: '#24a148', bg: '#24a14815', icon: Zap, tag: 'green' },
+  kafka_consumer: { label: 'Kafka', color: '#8a3ffc', bg: '#8a3ffc15', icon: Layers, tag: 'purple' },
+  scheduler: { label: 'Scheduler', color: '#ba4e00', bg: '#ba4e0015', icon: Calendar, tag: 'warm-gray' },
+  webhook: { label: 'Webhook', color: '#0f62fe', bg: '#0f62fe15', icon: Webhook, tag: 'blue' },
+  message_queue: { label: 'Queue', color: '#14B8A6', bg: '#14B8A615', icon: MessageSquare, tag: 'teal' },
 }
 
-const modeLabels: Record<string, { label: string; color: string; bg: string }> = {
-  sync: { label: 'SYNC', color: '#3B82F6', bg: '#3B82F615' },
-  async: { label: 'ASYNC', color: '#F59E0B', bg: '#F59E0B15' },
+const modeLabels: Record<string, { label: string; color: string; bg: string; tag: TagType }> = {
+  sync: { label: 'SYNC', color: '#0f62fe', bg: '#0f62fe15', tag: 'blue' },
+  async: { label: 'ASYNC', color: '#ba4e00', bg: '#ba4e0015', tag: 'warm-gray' },
 }
 
 const filterTabs = [
@@ -131,117 +139,57 @@ export default function FlowsPage() {
           <h1 style={{ fontSize: 22, fontWeight: 700, color: THEME.text.primary, marginBottom: 2 }}>Gateway Flows</h1>
           <p style={{ fontSize: 13, color: THEME.text.muted }}>Manage Gateway Flows for Sync or Async processing</p>
         </div>
-        <Link
-          href="/flows/builder"
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 6,
-            padding: '6px 14px',
-            background: THEME.accent,
-            color: '#FFFFFF',
-            fontSize: 13,
-            fontWeight: 600,
-            borderRadius: 8,
-            transition: 'all 0.15s ease',
-            whiteSpace: 'nowrap',
-          }}
-          className="hover:bg-[#2563EB]"
-        >
-          <Plus className="w-4 h-4" />
+        <Button as={Link} href="/flows/builder" kind="primary" size="sm" renderIcon={Plus}>
           Create Flow
-        </Link>
+        </Button>
       </div>
 
       {/* Filter Tabs */}
-      <div className="flex items-center gap-2 mb-4">
-        {filterTabs.map(tab => (
-          <button
-            key={tab.id}
-            onClick={() => setActiveFilter(tab.id)}
-            style={{
-              padding: '4px 10px',
-              fontSize: 12,
-              fontWeight: 500,
-              borderRadius: 6,
-              border: activeFilter === tab.id ? 'none' : `1px solid ${THEME.border}`,
-              background: activeFilter === tab.id ? THEME.accent : THEME.panel,
-              color: activeFilter === tab.id ? '#FFFFFF' : THEME.text.muted,
-              transition: 'all 0.15s ease',
-            }}
-          >
-            {tab.label}
-          </button>
-        ))}
+      <div className="mb-4" style={{ maxWidth: 480 }}>
+        <ContentSwitcher
+          size="sm"
+          selectedIndex={Math.max(0, filterTabs.findIndex(t => t.id === activeFilter))}
+          onChange={({ index }: { index?: number }) => setActiveFilter(filterTabs[index ?? 0].id)}
+        >
+          {filterTabs.map(tab => (
+            <Switch key={tab.id} name={tab.id} text={tab.label} />
+          ))}
+        </ContentSwitcher>
       </div>
 
       {/* Search and View Toggle */}
       <div className="flex items-center gap-3 mb-4">
-        <div className="flex-1 max-w-md relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: THEME.text.muted }} />
-          <input
-            type="text"
+        <div className="flex-1 max-w-md">
+          <CarbonSearch
+            size="sm"
+            labelText="Search flows"
             placeholder="Search flows by name or description..."
             value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            style={{
-              width: '100%',
-              padding: '6px 12px 6px 36px',
-              background: 'var(--t-input)',
-              border: `1px solid ${THEME.border}`,
-              borderRadius: 6,
-              fontSize: 13,
-              color: THEME.text.primary,
-              outline: 'none',
-            }}
+            onChange={(e: any) => setSearchQuery(e.target.value)}
           />
         </div>
-        
+
         <div className="flex items-center gap-2">
-          <button style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 6,
-            padding: '6px 10px',
-            background: THEME.panel,
-            border: `1px solid ${THEME.border}`,
-            borderRadius: 6,
-            fontSize: 13,
-            color: THEME.text.muted,
-          }}>
-            <Filter className="w-4 h-4" />
-            <span>Filter</span>
-          </button>
-          <div style={{
-            display: 'flex',
-            alignItems: 'center',
-            padding: 2,
-            background: THEME.panel,
-            border: `1px solid ${THEME.border}`,
-            borderRadius: 6,
-          }}>
-            <button
+          <Button kind="tertiary" size="sm" renderIcon={Filter}>
+            Filter
+          </Button>
+          <div className="flex items-center">
+            <Button
+              kind={viewMode === 'list' ? 'primary' : 'ghost'}
+              size="sm"
+              hasIconOnly
+              renderIcon={List}
+              iconDescription="List view"
               onClick={() => setViewMode('list')}
-              style={{
-                padding: '4px',
-                borderRadius: 6,
-                background: viewMode === 'list' ? THEME.accent : 'transparent',
-                color: viewMode === 'list' ? '#FFFFFF' : THEME.text.muted,
-              }}
-            >
-              <List className="w-4 h-4" />
-            </button>
-            <button
+            />
+            <Button
+              kind={viewMode === 'grid' ? 'primary' : 'ghost'}
+              size="sm"
+              hasIconOnly
+              renderIcon={LayoutGrid}
+              iconDescription="Grid view"
               onClick={() => setViewMode('grid')}
-              style={{
-                padding: '4px',
-                borderRadius: 6,
-                background: viewMode === 'grid' ? THEME.accent : 'transparent',
-                color: viewMode === 'grid' ? '#FFFFFF' : THEME.text.muted,
-              }}
-            >
-              <LayoutGrid className="w-4 h-4" />
-            </button>
+            />
           </div>
         </div>
       </div>
@@ -267,7 +215,7 @@ export default function FlowsPage() {
                 cursor: 'pointer',
                 transition: 'all 0.15s ease',
               }}
-              className="hover:border-[#3B82F6] group"
+              className="hover:border-[#0f62fe] group"
             >
               {/* Icon */}
               <div style={{
@@ -286,39 +234,20 @@ export default function FlowsPage() {
 
               {/* Main Info */}
               <div style={{ flex: 1, minWidth: 0 }}>
-                <div className="flex items-center gap-2 mb-0.5">
+                <div className="flex items-center gap-2 mb-0.5 min-w-0">
                   <h3 style={{
+                    minWidth: 0,
                     fontSize: 13,
                     fontWeight: 600,
                     color: THEME.text.primary,
                     overflow: 'hidden',
                     textOverflow: 'ellipsis',
                     whiteSpace: 'nowrap',
-                  }} className="group-hover:text-[#3B82F6] transition-colors">
+                  }} className="group-hover:text-[#0f62fe] transition-colors">
                     {flow.name}
                   </h3>
-                  <span style={{
-                    padding: '1px 5px',
-                    fontSize: 10,
-                    fontWeight: 600,
-                    borderRadius: 6,
-                    background: triggerConfig.bg,
-                    color: triggerConfig.color,
-                    border: `1px solid ${triggerConfig.color}30`,
-                  }}>
-                    {triggerConfig.label}
-                  </span>
-                  <span style={{
-                    padding: '1px 5px',
-                    fontSize: 10,
-                    fontWeight: 600,
-                    borderRadius: 6,
-                    background: modeConfig.bg,
-                    color: modeConfig.color,
-                    border: `1px solid ${modeConfig.color}30`,
-                  }}>
-                    {modeConfig.label}
-                  </span>
+                  <Tag size="sm" type={triggerConfig.tag}>{triggerConfig.label}</Tag>
+                  <Tag size="sm" type={modeConfig.tag}>{modeConfig.label}</Tag>
                 </div>
                 <p style={{ fontSize: 11, color: THEME.text.muted, fontFamily: FONT }}>
                   {flow.description || 'No description'}
@@ -326,7 +255,7 @@ export default function FlowsPage() {
               </div>
 
               {/* Stats */}
-              <div className="hidden md:flex items-center gap-5">
+              <div className="hidden xl:flex items-center gap-5">
                 <div style={{ textAlign: 'center' }}>
                   <p style={{ fontSize: 13, fontWeight: 600, color: THEME.text.primary }}>{(flow.nodes || []).length}</p>
                   <p style={{ fontSize: 11, color: THEME.text.muted }}>Nodes</p>
@@ -342,61 +271,34 @@ export default function FlowsPage() {
               </div>
 
               {/* Status Badge (clickable toggle) */}
-              <button
-                onClick={(e) => {
+              <Tag
+                as="button"
+                size="sm"
+                type={flow.isActive ? 'green' : 'gray'}
+                onClick={(e: React.MouseEvent) => {
                   e.preventDefault()
                   e.stopPropagation()
                   toggleActiveMutation.mutate({ id: flow.id, isActive: !flow.isActive })
                 }}
                 disabled={toggleActiveMutation.isPending}
                 title={flow.isActive ? 'Click to deactivate' : 'Click to activate'}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 4,
-                  padding: '2px 8px',
-                  fontSize: 11,
-                  fontWeight: 500,
-                  borderRadius: 6,
-                  background: flow.isActive ? '#10B98115' : 'var(--t-panel-hover)',
-                  border: `1px solid ${flow.isActive ? '#10B98130' : 'color-mix(in srgb, var(--t-text-muted) 19%, transparent)'}`,
-                  color: flow.isActive ? '#10B981' : 'var(--t-text-muted)',
-                  cursor: 'pointer',
-                  transition: 'all 0.15s ease',
-                  opacity: toggleActiveMutation.isPending ? 0.5 : 1,
-                }}
-                className="hover:opacity-80"
+                style={{ cursor: 'pointer', opacity: toggleActiveMutation.isPending ? 0.5 : 1 }}
               >
-                <span style={{
-                  width: 5,
-                  height: 5,
-                  borderRadius: '50%',
-                  background: flow.isActive ? '#10B981' : 'var(--t-text-muted)'
-                }} />
                 {flow.isActive ? 'Active' : 'Inactive'}
-              </button>
+              </Tag>
 
               {/* Actions */}
               <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                <Link
+                <Button
+                  as={Link}
                   href={`/flows/builder/${flow.id}`}
-                  style={{
-                    padding: 4,
-                    color: THEME.text.muted,
-                    borderRadius: 6,
-                  }}
-                  className="hover:text-[#3B82F6] hover:bg-[var(--t-panel-hover)]"
-                  title="Edit Flow"
-                >
-                  <Edit className="w-4 h-4" />
-                </Link>
-                <button style={{
-                  padding: 4,
-                  color: THEME.text.muted,
-                  borderRadius: 6,
-                }} className="hover:text-[var(--t-text)] hover:bg-[var(--t-panel-hover)]">
-                  <MoreHorizontal className="w-4 h-4" />
-                </button>
+                  kind="ghost"
+                  size="sm"
+                  hasIconOnly
+                  renderIcon={Edit}
+                  iconDescription="Edit Flow"
+                />
+                <Button kind="ghost" size="sm" hasIconOnly renderIcon={MoreHorizontal} iconDescription="More actions" />
               </div>
             </div>
           )
@@ -421,25 +323,9 @@ export default function FlowsPage() {
           </div>
           <h3 style={{ fontSize: 14, fontWeight: 600, color: THEME.text.primary, marginBottom: 2 }}>No flows found</h3>
           <p style={{ fontSize: 12, color: THEME.text.muted, marginBottom: 12 }}>Try adjusting your search or filters</p>
-          <button
-            onClick={() => {setSearchQuery(''); setActiveFilter('all')}}
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: 6,
-              padding: '6px 12px',
-              background: `${THEME.accent}10`,
-              color: THEME.accent,
-              fontSize: 12,
-              fontWeight: 500,
-              borderRadius: 6,
-              border: 'none',
-              cursor: 'pointer',
-            }}
-            className="hover:bg-[var(--t-panel-hover)]"
-          >
+          <Button kind="tertiary" size="sm" onClick={() => {setSearchQuery(''); setActiveFilter('all')}}>
             Clear Filters
-          </button>
+          </Button>
         </div>
       )}
 

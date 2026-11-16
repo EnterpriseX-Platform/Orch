@@ -45,11 +45,57 @@ const BROKER_INTERNAL_PATHS = [
   '/api/projects/resolve-by-path',
 ]
 
+
+// ---------- JWT verification (HS256, Web Crypto — runs on the edge) ----------
+// The previous check only tested that *some* token was present, so any
+// string ("Bearer x") passed and the API then treated the caller as an
+// unauthenticated internal request with no tenant filter.
+function b64urlToBytes(s: string): Uint8Array {
+  const pad = s.length % 4 === 2 ? '==' : s.length % 4 === 3 ? '=' : ''
+  const bin = atob(s.replace(/-/g, '+').replace(/_/g, '/') + pad)
+  const out = new Uint8Array(bin.length)
+  for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i)
+  return out
+}
+
+function jwtSecret(): string | null {
+  const s = process.env.JWT_SECRET
+  if (s && s.length >= 16) return s
+  if (process.env.NODE_ENV === 'production') return null // fail closed
+  return s || 'orch-dev-only-secret'
+}
+
+async function verifyJwt(token: string): Promise<boolean> {
+  try {
+    const secret = jwtSecret()
+    if (!secret) return false
+    const [h, p, sig] = token.split('.')
+    if (!h || !p || !sig) return false
+    const header = JSON.parse(new TextDecoder().decode(b64urlToBytes(h)))
+    if (header.alg !== 'HS256') return false
+    const key = await crypto.subtle.importKey(
+      'raw', new TextEncoder().encode(secret), { name: 'HMAC', hash: 'SHA-256' }, false, ['verify'],
+    )
+    const ok = await crypto.subtle.verify('HMAC', key, b64urlToBytes(sig) as BufferSource, new TextEncoder().encode(`${h}.${p}`))
+    if (!ok) return false
+    const payload = JSON.parse(new TextDecoder().decode(b64urlToBytes(p)))
+    if (typeof payload.exp === 'number' && payload.exp * 1000 < Date.now()) return false
+    return true
+  } catch {
+    return false
+  }
+}
+
+/** Same precedence the API routes use: Authorization header first, then the auth-token cookie. */
+function requestToken(request: NextRequest): string | undefined {
+  return request.headers.get('authorization')?.replace(/^Bearer\s+/i, '') || request.cookies.get('auth-token')?.value || undefined
+}
+
 function pathMatches(pathname: string, path: string) {
   return pathname.startsWith('/orch' + path) || pathname.startsWith(path)
 }
 
-export function middleware(request: NextRequest) {
+export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
 
   // Fully public.
@@ -65,24 +111,22 @@ export function middleware(request: NextRequest) {
     if (!expected) return NextResponse.next()
 
     const internalTok = request.headers.get('x-internal-token')
-    const bearer = request.headers.get('authorization')?.replace(/^Bearer\s+/i, '')
-    const cookie = request.cookies.get('auth-token')?.value
-
     if (internalTok === expected) return NextResponse.next()
-    if (bearer || cookie) return NextResponse.next()
+    const tok = requestToken(request)
+    if (tok && (await verifyJwt(tok))) return NextResponse.next()
 
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
   // Everything else — existing behaviour: user JWT required for /api/*,
   // page routes fall through to the client-side AuthGuard.
-  const token =
-    request.cookies.get('auth-token')?.value ||
-    request.headers.get('authorization')?.replace(/^Bearer\s+/i, '')
+  const token = requestToken(request)
 
   if (pathname.startsWith('/orch/api/') || pathname.startsWith('/api/')) {
-    if (process.env.NODE_ENV === 'development') return NextResponse.next()
-    if (!token) {
+    // Dev keeps the old "no token needed" shortcut, but a token that IS
+    // sent must be genuine everywhere.
+    if (!token && process.env.NODE_ENV === 'development') return NextResponse.next()
+    if (!token || !(await verifyJwt(token))) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
     return NextResponse.next()

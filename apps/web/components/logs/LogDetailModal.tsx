@@ -14,7 +14,8 @@
  *   - cURL     : reconstruct the request as a copy-pasteable cURL
  */
 import { useState } from 'react'
-import { X, Copy, Check, Code, FileJson, Info, ExternalLink } from 'lucide-react'
+import { Copy, Check, Code, FileJson, Info, ExternalLink } from 'lucide-react'
+import { Button, ComposedModal, ModalHeader, ModalBody, Tabs, TabList, Tab } from '@carbon/react'
 import Link from 'next/link'
 import { toast } from 'sonner'
 
@@ -65,11 +66,11 @@ export function LogDetailModal({
   // Swagger-style solid colours — match the list view on /orch/logs
   const methodStyle: React.CSSProperties = (() => {
     const map: Record<string, { bg: string; color: string }> = {
-      GET:    { bg: '#61AFFE', color: '#FFFFFF' },
-      POST:   { bg: '#49CC90', color: '#FFFFFF' },
-      PUT:    { bg: '#FCA130', color: '#FFFFFF' },
-      PATCH:  { bg: '#50E3C2', color: '#0F172A' },
-      DELETE: { bg: '#F93E3E', color: '#FFFFFF' },
+      GET:    { bg: '#d0e2ff', color: '#0043ce' },
+      POST:   { bg: '#a7f0ba', color: '#0e6027' },
+      PUT:    { bg: '#fff1e6', color: '#8a3800' },
+      PATCH:  { bg: '#9ef0f0', color: '#005d5d' },
+      DELETE: { bg: '#ffd7d9', color: '#a2191f' },
     }
     const m = map[log.method] || map.GET
     return { background: m.bg, color: m.color }
@@ -78,11 +79,11 @@ export function LogDetailModal({
   const statusStyle: React.CSSProperties = (() => {
     const c = log.statusCode
     const map: Array<[number, { bg: string; color: string }]> = [
-      [500, { bg: '#EF4444', color: '#FFFFFF' }],
-      [400, { bg: '#F59E0B', color: '#FFFFFF' }],
-      [300, { bg: '#0EA5E9', color: '#FFFFFF' }],
-      [200, { bg: '#10B981', color: '#FFFFFF' }],
-      [100, { bg: '#64748B', color: '#FFFFFF' }],
+      [500, { bg: '#ffd7d9', color: '#a2191f' }],
+      [400, { bg: '#fff1e6', color: '#8a3800' }],
+      [300, { bg: '#d0e2ff', color: '#0043ce' }],
+      [200, { bg: '#a7f0ba', color: '#0e6027' }],
+      [100, { bg: '#e0e0e0', color: '#161616' }],
     ]
     const entry = map.find(([floor]) => c >= floor) ?? map[0]
     return { background: entry[1].bg, color: entry[1].color }
@@ -105,29 +106,23 @@ export function LogDetailModal({
     toast.success('cURL copied')
   }
 
-  const tabs: Array<{ id: TabId; label: string; icon: React.ComponentType<{ className?: string }> }> = [
+  const tabs: Array<{ id: TabId; label: string; icon: React.ComponentType<Record<string, unknown>> }> = [
     { id: 'info',     label: 'Info',     icon: Info },
     { id: 'request',  label: 'Request',  icon: FileJson },
     { id: 'response', label: 'Response', icon: FileJson },
     { id: 'curl',     label: 'cURL',     icon: Code },
   ]
 
+  const tabIndex = tabs.findIndex((t) => t.id === tab)
+
   return (
-    <div
-      className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4"
-      onClick={onClose}
-    >
-      <div
-        className="bg-[var(--t-panel)] border border-[var(--t-border)] rounded-xl w-full max-w-5xl max-h-[90vh] flex flex-col overflow-hidden"
-        onClick={(e) => e.stopPropagation()}
-      >
-        {/* Header */}
-        <div className="flex items-center justify-between px-5 py-3 border-b border-[var(--t-border)]">
-          <div className="flex items-center gap-3 min-w-0">
-            <span className="px-2 py-0.5 rounded text-[11px] font-semibold uppercase" style={methodStyle}>
+    <ComposedModal open onClose={onClose} size="lg">
+      <ModalHeader closeModal={onClose}>
+          <div className="flex items-center gap-3 min-w-0 pr-8">
+            <span className="cds-tag px-2 py-0.5 text-[12px]" style={methodStyle}>
               {log.method}
             </span>
-            <span className="px-2 py-0.5 rounded text-[11px] font-semibold" style={statusStyle}>
+            <span className="cds-tag px-2 py-0.5 text-[12px]" style={statusStyle}>
               {log.statusCode}
             </span>
             <code className="text-xs font-mono text-[var(--t-text)] truncate">
@@ -137,38 +132,20 @@ export function LogDetailModal({
               · {log.duration}ms
             </span>
           </div>
-          <button
-            onClick={onClose}
-            className="p-1.5 rounded-md hover:bg-[var(--t-panel-hover)] text-[var(--t-text-muted)] shrink-0"
-          >
-            <X className="w-4 h-4" />
-          </button>
-        </div>
-
-        {/* Tabs */}
-        <div className="px-5 pt-2 border-b border-[var(--t-border)] flex gap-1">
-          {tabs.map((t) => {
-            const Icon = t.icon
-            const active = tab === t.id
-            return (
-              <button
-                key={t.id}
-                onClick={() => setTab(t.id)}
-                className={`flex items-center gap-1.5 px-3 py-2 text-xs font-medium border-b-2 transition-colors ${
-                  active
-                    ? 'border-[var(--t-accent)] text-[var(--t-accent)]'
-                    : 'border-transparent text-[var(--t-text-muted)] hover:text-[var(--t-text)]'
-                }`}
-              >
-                <Icon className="w-3.5 h-3.5" />
-                {t.label}
-              </button>
-            )
-          })}
-        </div>
-
+      </ModalHeader>
+      <ModalBody>
+        <Tabs
+          selectedIndex={tabIndex}
+          onChange={({ selectedIndex }) => setTab(tabs[selectedIndex].id)}
+        >
+          <TabList aria-label="API log detail tabs">
+            {tabs.map((t) => (
+              <Tab key={t.id} renderIcon={t.icon}>{t.label}</Tab>
+            ))}
+          </TabList>
+        </Tabs>
         {/* Body */}
-        <div className="flex-1 overflow-auto p-5 text-sm">
+        <div className="pt-4 text-sm">
           {tab === 'info' && (
             <div className="grid grid-cols-2 gap-4">
               <InfoRow label="Request ID">
@@ -231,28 +208,29 @@ export function LogDetailModal({
 
           {tab === 'curl' && (
             <div className="space-y-3">
-              <pre className="px-3 py-3 rounded-lg bg-[var(--t-bg)] border border-[var(--t-border)] text-[var(--t-text-secondary)] text-xs font-mono whitespace-pre-wrap break-all">
+              <pre className="px-3 py-3 bg-[#f4f4f4] text-[#161616] text-xs font-mono whitespace-pre-wrap break-all">
                 {curl}
               </pre>
-              <button
+              <Button
+                kind="primary"
+                size="sm"
                 onClick={copyCurl}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded bg-[var(--t-accent)] text-white text-xs font-semibold"
+                renderIcon={copied ? Check : Copy}
               >
-                {copied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
                 {copied ? 'Copied' : 'Copy cURL'}
-              </button>
+              </Button>
             </div>
           )}
         </div>
-      </div>
-    </div>
+      </ModalBody>
+    </ComposedModal>
   )
 }
 
 function InfoRow({ label, children, full }: { label: string; children: React.ReactNode; full?: boolean }) {
   return (
     <div className={full ? 'col-span-2' : ''}>
-      <p className="text-[10px] font-semibold text-[var(--t-text-muted)] uppercase tracking-wider mb-0.5">{label}</p>
+      <p className="text-[12px] text-[#525252] mb-0.5">{label}</p>
       {children}
     </div>
   )
@@ -261,8 +239,8 @@ function InfoRow({ label, children, full }: { label: string; children: React.Rea
 function PayloadBlock({ label, content }: { label: string; content: string }) {
   return (
     <div>
-      <p className="text-[10px] font-semibold text-[var(--t-text-muted)] uppercase tracking-wider mb-1">{label}</p>
-      <pre className="px-3 py-2 rounded bg-[var(--t-bg)] border border-[var(--t-border)] text-[var(--t-text-secondary)] text-xs font-mono whitespace-pre-wrap break-all max-h-[50vh] overflow-auto">
+      <p className="text-[12px] text-[#525252] mb-1">{label}</p>
+      <pre className="px-3 py-2 bg-[#f4f4f4] text-[#161616] text-xs font-mono whitespace-pre-wrap break-all max-h-[50vh] overflow-auto">
         {content}
       </pre>
     </div>

@@ -18,9 +18,10 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { Filter, ChevronDown, ChevronRight, X } from 'lucide-react'
+import { Button, Checkbox, Tag, TextInput } from '@carbon/react'
 import { eventKindLabel } from '@/lib/event-logs'
 
-const FONT = "'Prompt', sans-serif"
+const FONT = '"IBM Plex Sans Thai", "IBM Plex Sans", "Sarabun", system-ui, sans-serif'
 
 // Level options — fixed set; values match levelKey() output in logs/page.tsx.
 const LEVEL_OPTIONS: { value: string; label: string }[] = [
@@ -97,8 +98,6 @@ function Section({
           fontFamily: FONT,
           fontSize: 11,
           fontWeight: 600,
-          letterSpacing: '0.5px',
-          textTransform: 'uppercase',
           color: 'var(--t-text-muted)',
         }}
       >
@@ -109,19 +108,9 @@ function Section({
         )}
         <span>{title}</span>
         {count ? (
-          <span
-            style={{
-              marginLeft: 'auto',
-              padding: '0 6px',
-              borderRadius: 10,
-              fontSize: 10,
-              fontWeight: 700,
-              background: 'var(--t-accent)',
-              color: '#FFFFFF',
-            }}
-          >
+          <Tag type="blue" size="sm" className="ml-auto">
             {count}
-          </span>
+          </Tag>
         ) : null}
       </button>
       {open && <div style={{ padding: '0 12px 10px 12px' }}>{children}</div>}
@@ -131,73 +120,24 @@ function Section({
 
 // A single checkbox row -------------------------------------------------
 function CheckRow({
+  id,
   label,
   checked,
   onToggle,
 }: {
+  id: string
   label: string
   checked: boolean
   onToggle: () => void
 }) {
   return (
-    <label
-      style={{
-        display: 'flex',
-        alignItems: 'center',
-        gap: 8,
-        padding: '5px 0',
-        cursor: 'pointer',
-        fontSize: 13,
-        color: checked ? 'var(--t-text)' : 'var(--t-text-secondary)',
-      }}
-    >
-      <span
-        style={{
-          width: 16,
-          height: 16,
-          borderRadius: 4,
-          flexShrink: 0,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          border: `1px solid ${checked ? 'var(--t-accent)' : 'var(--t-border)'}`,
-          background: checked ? 'var(--t-accent)' : 'var(--t-input)',
-        }}
-      >
-        {checked && (
-          <svg width="10" height="10" viewBox="0 0 12 12" fill="none">
-            <path
-              d="M2.5 6.2 4.8 8.5 9.5 3.5"
-              stroke="#FFFFFF"
-              strokeWidth="1.8"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-          </svg>
-        )}
-      </span>
-      <input
-        type="checkbox"
-        checked={checked}
-        onChange={onToggle}
-        style={{ position: 'absolute', opacity: 0, width: 0, height: 0 }}
-      />
-      <span>{label}</span>
-    </label>
+    <Checkbox
+      id={id}
+      labelText={label}
+      checked={checked}
+      onChange={() => onToggle()}
+    />
   )
-}
-
-const inputStyle: React.CSSProperties = {
-  width: '100%',
-  padding: '6px 10px',
-  background: 'var(--t-input)',
-  border: '1px solid var(--t-border)',
-  borderRadius: 6,
-  fontSize: 12,
-  color: 'var(--t-text)',
-  outline: 'none',
-  fontFamily: FONT,
-  colorScheme: 'dark',
 }
 
 export function EventLogFilters({
@@ -264,46 +204,21 @@ export function EventLogFilters({
 
   return (
     <div ref={ref} style={{ position: 'relative' }}>
-      <button
-        type="button"
+      <Button
+        kind="tertiary"
+        size="sm"
         onClick={() => setOpen((o) => !o)}
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: 6,
-          padding: '6px 14px',
-          background: open || activeCount > 0 ? 'var(--t-input)' : 'var(--t-panel)',
-          border: `1px solid ${open ? 'var(--t-accent)' : 'var(--t-border)'}`,
-          borderRadius: 8,
-          fontSize: 13,
-          color: activeCount > 0 ? 'var(--t-text)' : 'var(--t-text-secondary)',
-          cursor: 'pointer',
-          transition: 'all 0.15s ease',
-          fontFamily: FONT,
-        }}
-        className="hover:border-[#3B82F6] hover:text-[#3B82F6]"
+        renderIcon={ChevronDown}
+        isSelected={open}
       >
-        <Filter className="w-4 h-4" />
+        <Filter className="w-4 h-4 mr-2" />
         Filters
         {activeCount > 0 && (
-          <span
-            style={{
-              padding: '0 6px',
-              borderRadius: 10,
-              fontSize: 11,
-              fontWeight: 700,
-              background: 'var(--t-accent)',
-              color: '#FFFFFF',
-            }}
-          >
+          <Tag type="blue" size="sm" className="ml-2">
             {activeCount}
-          </span>
+          </Tag>
         )}
-        <ChevronDown
-          className="w-3.5 h-3.5"
-          style={{ transform: open ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.15s' }}
-        />
-      </button>
+      </Button>
 
       {open && (
         <div
@@ -315,20 +230,22 @@ export function EventLogFilters({
             width: 300,
             background: 'var(--t-panel)',
             border: '1px solid var(--t-border)',
-            borderRadius: 10,
-            boxShadow: '0 8px 28px rgba(0,0,0,0.35)',
+            borderRadius: 0,
+            boxShadow: 'none',
             fontFamily: FONT,
             overflow: 'hidden',
           }}
         >
           {/* Option search */}
           <div style={{ padding: 10 }}>
-            <input
-              type="text"
+            <TextInput
+              id="event-filter-optionQuery"
+              labelText="optionQuery"
+              hideLabel
+              size="sm"
               placeholder="Filter options..."
               value={optionQuery}
               onChange={(e) => setOptionQuery(e.target.value)}
-              style={inputStyle}
             />
           </div>
 
@@ -341,6 +258,7 @@ export function EventLogFilters({
                 {eventTypeOpts.map((t) => (
                   <CheckRow
                     key={t}
+                    id={`evt-type-${t}`}
                     label={eventKindLabel(t)}
                     checked={eventTypeFilters.includes(t)}
                     onToggle={() => onEventTypeFiltersChange(toggle(eventTypeFilters, t))}
@@ -358,6 +276,7 @@ export function EventLogFilters({
               levelOpts.map((o) => (
                 <CheckRow
                   key={o.value}
+                  id={`event-filter-${o.value}`}
                   label={o.label}
                   checked={levelFilters.includes(o.value)}
                   onToggle={() => onLevelFiltersChange(toggle(levelFilters, o.value))}
@@ -368,23 +287,27 @@ export function EventLogFilters({
 
           {/* Username */}
           <Section title="Username" count={userFilter ? 1 : 0}>
-            <input
-              type="text"
-              placeholder="e.g. user1@example.com"
+            <TextInput
+              id="event-filter-userFilter"
+              labelText="userFilter"
+              hideLabel
+              size="sm"
+              placeholder="e.g. user@example.com"
               value={userFilter}
               onChange={(e) => onUserFilterChange(e.target.value)}
-              style={inputStyle}
             />
           </Section>
 
           {/* Client IP */}
           <Section title="Client IP" count={ipFilter ? 1 : 0}>
-            <input
-              type="text"
-              placeholder="e.g. 10.0.0.99"
+            <TextInput
+              id="event-filter-ipFilter"
+              labelText="ipFilter"
+              hideLabel
+              size="sm"
+              placeholder="e.g. 192.0.2.10"
               value={ipFilter}
               onChange={(e) => onIpFilterChange(e.target.value)}
-              style={inputStyle}
             />
           </Section>
 
@@ -395,22 +318,28 @@ export function EventLogFilters({
                 <label style={{ fontSize: 11, color: 'var(--t-text-muted)', display: 'block', marginBottom: 3 }}>
                   From
                 </label>
-                <input
+                <TextInput
+                  id="event-filter-dateFrom"
+                  labelText="dateFrom"
+                  hideLabel
+                  size="sm"
                   type="datetime-local"
                   value={dateFrom}
                   onChange={(e) => onDateFromChange(e.target.value)}
-                  style={inputStyle}
                 />
               </div>
               <div>
                 <label style={{ fontSize: 11, color: 'var(--t-text-muted)', display: 'block', marginBottom: 3 }}>
                   To
                 </label>
-                <input
+                <TextInput
+                  id="event-filter-dateTo"
+                  labelText="dateTo"
+                  hideLabel
+                  size="sm"
                   type="datetime-local"
                   value={dateTo}
                   onChange={(e) => onDateToChange(e.target.value)}
-                  style={inputStyle}
                 />
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
@@ -419,50 +348,27 @@ export function EventLogFilters({
                   { label: 'Last 7d', ms: 7 * 86400000 },
                   { label: 'Last 30d', ms: 30 * 86400000 },
                 ].map((p) => (
-                  <button
+                  <Button
                     key={p.label}
-                    type="button"
+                    kind="ghost"
+                    size="sm"
                     onClick={() => applyPreset(p.ms)}
-                    style={{
-                      padding: '3px 8px',
-                      fontSize: 11,
-                      fontWeight: 500,
-                      borderRadius: 6,
-                      background: 'var(--t-input)',
-                      border: '1px solid var(--t-border)',
-                      color: 'var(--t-text-secondary)',
-                      cursor: 'pointer',
-                      fontFamily: FONT,
-                    }}
-                    className="hover:border-[#3B82F6] hover:text-[#3B82F6]"
                   >
                     {p.label}
-                  </button>
+                  </Button>
                 ))}
                 {(dateFrom || dateTo) && (
-                  <button
-                    type="button"
+                  <Button
+                    kind="ghost"
+                    size="sm"
+                    renderIcon={X}
                     onClick={() => {
                       onDateFromChange('')
                       onDateToChange('')
-                    }}
-                    style={{
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      gap: 3,
-                      padding: '3px 8px',
-                      fontSize: 11,
-                      fontWeight: 500,
-                      borderRadius: 6,
-                      background: 'transparent',
-                      border: '1px solid var(--t-border)',
-                      color: 'var(--t-text-muted)',
-                      cursor: 'pointer',
-                      fontFamily: FONT,
-                    }}
+                                        }}
                   >
-                    <X className="w-3 h-3" /> Clear
-                  </button>
+                    Clear
+                  </Button>
                 )}
               </div>
             </div>
@@ -477,23 +383,9 @@ export function EventLogFilters({
               justifyContent: 'flex-end',
             }}
           >
-            <button
-              type="button"
-              onClick={onClearAll}
-              style={{
-                fontSize: 12,
-                color: 'var(--t-text-muted)',
-                background: 'transparent',
-                border: 'none',
-                cursor: 'pointer',
-                textDecoration: 'underline',
-                textUnderlineOffset: 2,
-                fontFamily: FONT,
-              }}
-              className="hover:text-[var(--t-text)]"
-            >
+            <Button kind="ghost" size="sm" onClick={onClearAll}>
               Clear all
-            </button>
+            </Button>
           </div>
         </div>
       )}

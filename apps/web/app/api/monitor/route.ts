@@ -1,12 +1,22 @@
 import { NextRequest } from 'next/server';
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, Prisma } from '@prisma/client';
 import { getBrokerUrl } from '@/lib/system-config';
+import { getTenantContext, featureGuard, tenantApiIds } from '@/lib/tenant';
+import { brokerAuthHeaders } from '@/lib/broker-auth'
 
 const prisma = new PrismaClient();
 
 // Get monitor data
 export async function GET(req: NextRequest) {
   try {
+    const ctx = await getTenantContext(req)
+    const apiIds = await tenantApiIds(ctx)
+    const logScope = apiIds ? { apiId: { in: apiIds } } : {}
+    const logSql = apiIds
+      ? (apiIds.length ? Prisma.sql`AND api_id IN (${Prisma.join(apiIds)})` : Prisma.sql`AND FALSE`)
+      : Prisma.empty
+    const blocked = featureGuard(ctx, 'monitor')
+    if (blocked) return blocked
     const { searchParams } = new URL(req.url);
     const type = searchParams.get('type') || 'all';
 
@@ -31,6 +41,7 @@ export async function GET(req: NextRequest) {
     let brokerMetrics = null;
     try {
       const metricsRes = await fetch(`${BROKER_URL}/broker/metrics`, {
+        headers: brokerAuthHeaders(),
         signal: AbortSignal.timeout(5000)
       });
       if (metricsRes.ok) {
@@ -72,16 +83,17 @@ export async function GET(req: NextRequest) {
       // Get recent requests count
       const [requestCount, errorCount, avgResponseTime] = await Promise.all([
         prisma.apiLog.count({
-          where: { timestamp: { gte: oneHourAgo } },
+          where: { ...logScope, timestamp: { gte: oneHourAgo } },
         }),
         prisma.apiLog.count({
-          where: { 
+          where: {
+            ...logScope,
             timestamp: { gte: oneHourAgo },
             statusCode: { gte: 400 },
           },
         }),
         prisma.apiLog.aggregate({
-          where: { timestamp: { gte: oneHourAgo } },
+          where: { ...logScope, timestamp: { gte: oneHourAgo } },
           _avg: { duration: true },
         }),
       ]);
@@ -101,7 +113,7 @@ export async function GET(req: NextRequest) {
           AVG(duration)::float as avg_response_time,
           SUM(CASE WHEN status_code >= 400 THEN 1 ELSE 0 END)::int as errors
         FROM api_logs
-        WHERE timestamp >= ${oneHourAgo}
+        WHERE timestamp >= ${oneHourAgo} ${logSql}
         GROUP BY DATE_TRUNC('minute', timestamp)
         ORDER BY minute ASC
         LIMIT 60
@@ -152,7 +164,7 @@ export async function GET(req: NextRequest) {
     // Recent Errors
     if (type === 'all' || type === 'errors') {
       const recentErrors = await prisma.apiLog.findMany({
-        where: { statusCode: { gte: 400 } },
+        where: { ...logScope, statusCode: { gte: 400 } },
         orderBy: { timestamp: 'desc' },
         take: 10,
         select: {

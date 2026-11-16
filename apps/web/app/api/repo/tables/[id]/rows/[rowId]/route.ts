@@ -7,6 +7,7 @@
  */
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { getTenantContext, featureGuard, isForeign } from '@/lib/tenant'
 import {
   describe as routerDescribe,
   updateRow as routerUpdate,
@@ -26,8 +27,13 @@ export async function PATCH(
   req: NextRequest,
   { params }: { params: Promise<{ id: string; rowId: string }> },
 ) {
+  const ctx = await getTenantContext(req)
+  const blocked = featureGuard(ctx, 'dataRepository')
+  if (blocked) return blocked
   try {
     const { id, rowId } = await params
+    const owner = await prisma.repoTable.findUnique({ where: { id }, select: { tenantId: true } })
+    if (isForeign(ctx, owner)) return NextResponse.json({ error: 'Not found' }, { status: 404 })
     const t = await requireTable(id)
     const body = await req.json()
     const cols = await routerDescribe(t as any)
@@ -45,8 +51,13 @@ export async function DELETE(
   _req: NextRequest,
   { params }: { params: Promise<{ id: string; rowId: string }> },
 ) {
+  const ctx = await getTenantContext(_req)
+  const blocked = featureGuard(ctx, 'dataRepository')
+  if (blocked) return blocked
   try {
     const { id, rowId } = await params
+    const owner = await prisma.repoTable.findUnique({ where: { id }, select: { tenantId: true } })
+    if (isForeign(ctx, owner)) return NextResponse.json({ error: 'Not found' }, { status: 404 })
     const t = await requireTable(id)
     await routerDelete(t as any, parseInt(rowId, 10))
     return NextResponse.json({ ok: true })

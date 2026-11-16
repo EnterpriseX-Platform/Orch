@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { getTenantContext, featureGuard, isForeign } from '@/lib/tenant'
 import { z } from 'zod'
 
 const captureEnum = z.enum(['SUMMARY', 'FULL_BODY', 'NONE'])
@@ -25,8 +26,15 @@ export async function PUT(
   request: NextRequest,
   { params }: { params: Promise<{ id: string; patternId: string }> },
 ) {
+  const ctx = await getTenantContext(request)
+  const blocked = featureGuard(ctx, 'projects')
+  if (blocked) return blocked
   try {
     const { id: projectId, patternId } = await params
+    if (ctx.tenantId) {
+      const own = await prisma.project.findUnique({ where: { id: projectId }, select: { tenantId: true } })
+      if (isForeign(ctx, own)) return NextResponse.json({ error: 'Pattern not found' }, { status: 404 })
+    }
     const body = await request.json()
     const input = updateSchema.parse(body)
 
@@ -61,8 +69,15 @@ export async function DELETE(
   _request: NextRequest,
   { params }: { params: Promise<{ id: string; patternId: string }> },
 ) {
+  const ctx = await getTenantContext(_request)
+  const blocked = featureGuard(ctx, 'projects')
+  if (blocked) return blocked
   try {
     const { id: projectId, patternId } = await params
+    if (ctx.tenantId) {
+      const own = await prisma.project.findUnique({ where: { id: projectId }, select: { tenantId: true } })
+      if (isForeign(ctx, own)) return NextResponse.json({ error: 'Pattern not found' }, { status: 404 })
+    }
     const existing = await prisma.eventLogPattern.findUnique({ where: { id: patternId } })
     if (!existing || existing.projectId !== projectId) {
       return NextResponse.json({ error: 'Pattern not found' }, { status: 404 })

@@ -13,6 +13,7 @@
  */
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { getTenantContext, featureGuard, isForeign } from '@/lib/tenant'
 import { describe as routerDescribe, selectRows as routerSelect, insertRow as routerInsert } from '@/lib/repo-router'
 
 async function requireTable(id: string) {
@@ -28,8 +29,13 @@ export async function GET(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
+  const ctx = await getTenantContext(req)
+  const blocked = featureGuard(ctx, 'dataRepository')
+  if (blocked) return blocked
   try {
     const { id } = await params
+    const owner = await prisma.repoTable.findUnique({ where: { id }, select: { tenantId: true } })
+    if (isForeign(ctx, owner)) return NextResponse.json({ error: 'Not found' }, { status: 404 })
     const t = await requireTable(id)
     const url = req.nextUrl
     const limit = parseInt(url.searchParams.get('limit') ?? '50')
@@ -45,8 +51,13 @@ export async function POST(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
+  const ctx = await getTenantContext(req)
+  const blocked = featureGuard(ctx, 'dataRepository')
+  if (blocked) return blocked
   try {
     const { id } = await params
+    const owner = await prisma.repoTable.findUnique({ where: { id }, select: { tenantId: true } })
+    if (isForeign(ctx, owner)) return NextResponse.json({ error: 'Not found' }, { status: 404 })
     const t = await requireTable(id)
     const body = await req.json()
     if (!body || typeof body !== 'object') {

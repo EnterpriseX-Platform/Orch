@@ -20,6 +20,7 @@
  */
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { getTenantContext, featureGuard, isForeign } from '@/lib/tenant'
 import { resolveUserId } from '@/lib/auth'
 import type { HttpMethod } from '@/types'
 
@@ -43,6 +44,9 @@ export async function POST(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
+  const ctx = await getTenantContext(req)
+  const blocked = featureGuard(ctx, 'projects')
+  if (blocked) return blocked
   const { id: projectId } = await params
   const body = await req.json().catch(() => null)
   const spec: OpenApiSpec | undefined = body?.spec
@@ -53,7 +57,7 @@ export async function POST(
   }
 
   const project = await prisma.project.findUnique({ where: { id: projectId } })
-  if (!project) return NextResponse.json({ error: 'Project not found' }, { status: 404 })
+  if (!project || isForeign(ctx, project)) return NextResponse.json({ error: 'Project not found' }, { status: 404 })
 
   const userId = await resolveUserId(req.headers.get('x-user-id'))
   if (!userId) return NextResponse.json({ error: 'No usable user for createdBy' }, { status: 500 })

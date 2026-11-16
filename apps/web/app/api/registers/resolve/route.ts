@@ -1,9 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { getTenantContext, featureGuard, tenantWhere } from '@/lib/tenant'
 
 // GET /api/registers/resolve?path=&method= - Broker resolver endpoint
 // Returns API + messageFormats + authConfig + headerMappings + project config
 export async function GET(request: NextRequest) {
+  const ctx = await getTenantContext(request)
+  const blocked = featureGuard(ctx, 'projects')
+  if (blocked) return blocked
   try {
     const { searchParams } = request.nextUrl
     const path = searchParams.get('path')
@@ -15,7 +19,7 @@ export async function GET(request: NextRequest) {
     // If no path/method, return all active APIs (for broker cache refresh)
     if (!path && !method) {
       const apis = await prisma.apiRegistration.findMany({
-        where: { status: status as any },
+        where: { status: status as any, ...(ctx.tenantId ? { project: tenantWhere(ctx) } : {}) },
         take: limit,
         include: {
           project: true,
@@ -89,7 +93,7 @@ export async function GET(request: NextRequest) {
 
     // Specific path/method lookup
     const apis = await prisma.apiRegistration.findMany({
-      where: { status: status as any },
+      where: { status: status as any, ...(ctx.tenantId ? { project: tenantWhere(ctx) } : {}) },
       include: {
         project: true,
         messageFormats: {

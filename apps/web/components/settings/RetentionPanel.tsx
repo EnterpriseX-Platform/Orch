@@ -17,6 +17,7 @@ import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import { Save, Play, AlertTriangle, ClipboardList, FileText, Activity, Clock } from 'lucide-react'
+import { Button, TextInput } from '@carbon/react'
 import { useAuthStore } from '@/stores/authStore'
 
 type RetentionKey =
@@ -126,35 +127,41 @@ export function RetentionPanel() {
     <div className="space-y-4">
       <div className="flex items-start justify-between">
         <div>
-          <h2 className="text-base font-semibold text-[var(--t-text)]">Log Retention</h2>
+          <h2 className="text-base font-normal text-[var(--t-text)]">Log Retention</h2>
           <p className="text-xs text-[var(--t-text-muted)] mt-0.5">
             Set retention period per log type. 0 = keep forever.
           </p>
         </div>
         <div className="flex gap-2">
           {dirty && (
-            <button
+            <Button
+              kind="primary"
+              size="sm"
               onClick={() => saveMutation.mutate()}
               disabled={saveMutation.isPending}
-              className="px-3 py-1.5 rounded bg-[var(--t-accent)] text-white text-xs flex items-center gap-1.5 disabled:opacity-50"
+              renderIcon={Save}
             >
-              <Save className="w-3.5 h-3.5" /> Save {Object.keys(edits).length}
-            </button>
+              Save {Object.keys(edits).length}
+            </Button>
           )}
-          <button
+          <Button
+            kind="tertiary"
+            size="sm"
             onClick={() => pruneMutation.mutate({ dry: true })}
             disabled={pruneMutation.isPending}
-            className="px-3 py-1.5 rounded border border-[var(--t-border)] bg-[var(--t-bg)] text-[var(--t-text)] text-xs flex items-center gap-1.5"
+            renderIcon={AlertTriangle}
           >
-            <AlertTriangle className="w-3.5 h-3.5" /> Preview
-          </button>
-          <button
+            Preview
+          </Button>
+          <Button
+            kind="danger"
+            size="sm"
             onClick={() => pruneMutation.mutate({ dry: false })}
             disabled={pruneMutation.isPending}
-            className="px-3 py-1.5 rounded bg-red-500/15 border border-red-500/40 text-red-400 text-xs flex items-center gap-1.5 hover:bg-red-500/25"
+            renderIcon={Play}
           >
-            <Play className="w-3.5 h-3.5" /> Run cleanup now
-          </button>
+            Run cleanup now
+          </Button>
         </div>
       </div>
 
@@ -163,24 +170,28 @@ export function RetentionPanel() {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           {KEYS.map(({ key, label, icon: Icon, unit, hint }) => (
-            <div key={key} className="p-3 rounded-lg border border-[var(--t-border)] bg-[var(--t-bg)]">
+            <div key={key} className="p-3 border border-[#e0e0e0] bg-white">
               <div className="flex items-center gap-2 mb-2">
-                <Icon className="w-4 h-4 text-[var(--t-accent)]" />
+                <Icon className="w-4 h-4 text-[#525252]" />
                 <span className="text-sm font-semibold text-[var(--t-text)]">{label}</span>
               </div>
               <div className="flex items-center gap-2">
-                <input
+                <TextInput
+                  id={`retention-${key}`}
+                  labelText={label}
+                  hideLabel
+                  size="sm"
+                  className="flex-1"
                   type={key.endsWith('retentionDays') ? 'number' : 'text'}
                   min={key.endsWith('retentionDays') ? 0 : undefined}
                   value={currentValue(key)}
                   onChange={(e) => setEdits((p) => ({ ...p, [key]: e.target.value }))}
-                  className="flex-1 px-3 py-1.5 rounded bg-[var(--t-panel)] border border-[var(--t-border)] text-[var(--t-text)] text-sm"
                 />
                 {unit && <span className="text-xs text-[var(--t-text-muted)]">{unit}</span>}
               </div>
-              <p className="text-[11px] text-[var(--t-text-muted)] mt-2">{hint}</p>
+              <p className="text-[12px] text-[#6f6f6f] mt-2">{hint}</p>
               {dryRun && key !== 'retention.cronSchedule' && (
-                <p className="text-[11px] mt-1 text-amber-400">
+                <p className="text-[12px] mt-1 text-[#8a3800]">
                   {(() => {
                     const tableName = key.replace('.retentionDays', '_logs').replace('logs_logs', 'api_logs').replace('events_logs', 'event_logs').replace('audit_logs_logs', 'audit_logs')
                     const n = dryRun[tableName]?.wouldDelete

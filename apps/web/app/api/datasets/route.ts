@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { getTenantContext, tenantWhere, featureGuard, isForeign } from '@/lib/tenant'
 import { z } from 'zod'
 
 
@@ -43,6 +44,9 @@ function buildTree(items: any[], parentId: string | null = null): any[] {
 
 // GET /api/datasets - List all datasets (hierarchical)
 export async function GET(request: NextRequest) {
+  const ctx = await getTenantContext(request)
+  const blocked = featureGuard(ctx, 'datasets')
+  if (blocked) return blocked
   try {
     const { searchParams } = request.nextUrl
     const page = parseInt(searchParams.get('page') || '1')
@@ -55,7 +59,7 @@ export async function GET(request: NextRequest) {
     const skip = (page - 1) * limit
 
     // Build where clause
-    const where: any = {}
+    const where: any = { ...tenantWhere(ctx) }
 
     if (category) {
       where.category = category
@@ -114,6 +118,9 @@ export async function GET(request: NextRequest) {
 
 // POST /api/datasets - Create new dataset
 export async function POST(request: NextRequest) {
+  const ctx = await getTenantContext(request)
+  const blocked = featureGuard(ctx, 'datasets')
+  if (blocked) return blocked
   try {
     const body = await request.json()
 
@@ -134,7 +141,7 @@ export async function POST(request: NextRequest) {
       const parent = await prisma.dataCatalog.findUnique({
         where: { id: validated.parentId },
       })
-      if (!parent) {
+      if (!parent || isForeign(ctx, parent)) {
         return NextResponse.json({ error: 'Parent dataset not found' }, { status: 404 })
       }
     }
@@ -143,7 +150,7 @@ export async function POST(request: NextRequest) {
     let sortOrder = validated.sortOrder
     if (sortOrder === undefined || sortOrder === null) {
       const maxSibling = await prisma.dataCatalog.findFirst({
-        where: { parentId: validated.parentId ?? null },
+        where: { parentId: validated.parentId ?? null, ...tenantWhere(ctx) },
         orderBy: { sortOrder: 'desc' },
         select: { sortOrder: true },
       })
@@ -155,6 +162,7 @@ export async function POST(request: NextRequest) {
         ...validated,
         sortOrder,
         createdBy: userId,
+        tenantId: ctx.tenantId ?? undefined,
       },
       include: {
         creator: {

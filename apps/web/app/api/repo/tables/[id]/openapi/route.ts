@@ -6,6 +6,7 @@
  */
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { getTenantContext, featureGuard, isForeign } from '@/lib/tenant'
 import { describe as routerDescribe } from '@/lib/repo-router'
 
 const PG_TO_OPENAPI: Record<string, { type: string; format?: string }> = {
@@ -31,7 +32,12 @@ const PG_TO_OPENAPI: Record<string, { type: string; format?: string }> = {
 }
 
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const ctx = await getTenantContext(_req)
+  const blocked = featureGuard(ctx, 'dataRepository')
+  if (blocked) return blocked
   const { id } = await params
+  const owner = await prisma.repoTable.findUnique({ where: { id }, select: { tenantId: true } })
+  if (isForeign(ctx, owner)) return NextResponse.json({ error: 'Not found' }, { status: 404 })
   const t = await prisma.repoTable.findUnique({
     where: { id },
     include: { connection: true },

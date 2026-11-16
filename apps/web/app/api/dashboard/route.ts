@@ -1,11 +1,22 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { Prisma } from '@prisma/client'
+import { getTenantContext, tenantWhere, tenantApiIds } from '@/lib/tenant'
 
 // GET /api/dashboard - Get dashboard stats
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = request.nextUrl
     const period = searchParams.get('period') || 'day'
+    const ctx = await getTenantContext(request)
+    // api_logs has no tenant column: scope it through the tenant's API registrations.
+    const apiIds = await tenantApiIds(ctx)
+    const logScope = apiIds ? { apiId: { in: apiIds } } : {}
+    const logSql = apiIds
+      ? (apiIds.length ? Prisma.sql`AND api_id IN (${Prisma.join(apiIds)})` : Prisma.sql`AND FALSE`)
+      : Prisma.empty
+    const tw = tenantWhere(ctx)
+    const pw = ctx.tenantId ? { project: tw } : {}
 
     // Get current date
     const now = new Date()
@@ -26,14 +37,14 @@ export async function GET(request: NextRequest) {
       totalFlows,
       activeFlows,
     ] = await Promise.all([
-      prisma.project.count(),
-      prisma.project.count({ where: { status: 'ACTIVE' } }),
-      prisma.apiRegistration.count(),
-      prisma.apiRegistration.count({ where: { status: 'ACTIVE' } }),
-      prisma.dataCatalog.count(),
-      prisma.dataCatalog.count({ where: { status: 'ACTIVE' } }),
-      prisma.flowIntegration.count(),
-      prisma.flowIntegration.count({ where: { isActive: true } }),
+      prisma.project.count({ where: tw }),
+      prisma.project.count({ where: { status: 'ACTIVE', ...tw } }),
+      prisma.apiRegistration.count({ where: pw }),
+      prisma.apiRegistration.count({ where: { status: 'ACTIVE', ...pw } }),
+      prisma.dataCatalog.count({ where: tw }),
+      prisma.dataCatalog.count({ where: { status: 'ACTIVE', ...tw } }),
+      prisma.flowIntegration.count({ where: tw }),
+      prisma.flowIntegration.count({ where: { isActive: true, ...tw } }),
     ])
 
     // Get request stats
@@ -45,12 +56,12 @@ export async function GET(request: NextRequest) {
       avgResponseTime,
       errorCount,
     ] = await Promise.all([
-      prisma.apiLog.count(),
-      prisma.apiLog.count({ where: { timestamp: { gte: today } } }),
-      prisma.apiLog.count({ where: { timestamp: { gte: thisWeek } } }),
-      prisma.apiLog.count({ where: { timestamp: { gte: thisMonth } } }),
-      prisma.apiLog.aggregate({ _avg: { duration: true } }),
-      prisma.apiLog.count({ where: { statusCode: { gte: 400 } } }),
+      prisma.apiLog.count({ where: logScope }),
+      prisma.apiLog.count({ where: { ...logScope, timestamp: { gte: today } } }),
+      prisma.apiLog.count({ where: { ...logScope, timestamp: { gte: thisWeek } } }),
+      prisma.apiLog.count({ where: { ...logScope, timestamp: { gte: thisMonth } } }),
+      prisma.apiLog.aggregate({ where: logScope, _avg: { duration: true } }),
+      prisma.apiLog.count({ where: { ...logScope, statusCode: { gte: 400 } } }),
     ])
 
     // Get requests over time
@@ -63,7 +74,7 @@ export async function GET(request: NextRequest) {
         DATE_TRUNC('day', timestamp) as date,
         COUNT(*) as count
       FROM api_logs
-      WHERE timestamp >= ${startDate}
+      WHERE timestamp >= ${startDate} ${logSql}
       GROUP BY DATE_TRUNC('day', timestamp)
       ORDER BY date ASC
     `
@@ -73,7 +84,7 @@ export async function GET(request: NextRequest) {
       by: ['apiId'],
       _count: { id: true },
       _avg: { duration: true },
-      where: { timestamp: { gte: thisWeek } },
+      where: { ...logScope, timestamp: { gte: thisWeek } },
       orderBy: { _count: { id: 'desc' } },
       take: 10,
     })
@@ -117,7 +128,7 @@ export async function GET(request: NextRequest) {
         END as status,
         COUNT(*) as count
       FROM api_logs
-      WHERE timestamp >= ${thisWeek}
+      WHERE timestamp >= ${thisWeek} ${logSql}
       GROUP BY 
         CASE 
           WHEN status_code >= 200 AND status_code < 300 THEN '2xx'
@@ -132,7 +143,7 @@ export async function GET(request: NextRequest) {
     const methodDistribution = await prisma.apiLog.groupBy({
       by: ['method'],
       _count: { id: true },
-      where: { timestamp: { gte: thisWeek } },
+      where: { ...logScope, timestamp: { gte: thisWeek } },
     })
 
     return NextResponse.json({

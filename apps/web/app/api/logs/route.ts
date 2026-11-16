@@ -5,10 +5,14 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { getTenantContext, featureGuard, tenantWhere } from '@/lib/tenant'
 
 // GET /api/logs - List API logs
 export async function GET(request: NextRequest) {
   try {
+    const ctx = await getTenantContext(request)
+    const blocked = featureGuard(ctx, 'eventLogs')
+    if (blocked) return blocked
     const { searchParams } = request.nextUrl
     const page = parseInt(searchParams.get('page') || '1')
     const limit = parseInt(searchParams.get('limit') || '20')
@@ -25,6 +29,11 @@ export async function GET(request: NextRequest) {
     if (apiId) where.apiId = apiId
     if (statusCode) where.statusCode = statusCode
     if (method) where.method = method
+    if (ctx.tenantId) {
+      const apis = await prisma.apiRegistration.findMany({ where: { project: tenantWhere(ctx) }, select: { id: true } })
+      const ids = apis.map((a) => a.id)
+      where.apiId = apiId ? (ids.includes(apiId) ? apiId : { in: [] }) : { in: ids }
+    }
 
     if (search) {
       where.OR = [

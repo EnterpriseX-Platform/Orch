@@ -4,11 +4,12 @@ import { useMemo, useState, useCallback, useRef, useEffect } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { datasetApi } from '@/lib/api'
 import { 
-  Database, Plus, Search, Trash2, AlertCircle,
+  Database, Plus, AlertCircle,
   ChevronRight, ChevronDown, Folder, FileJson, Check, X, Edit3, GripVertical, MoreVertical,
   FolderOpen, CornerDownRight, Home, MoreHorizontal, Plug
 } from 'lucide-react'
 import Link from 'next/link'
+import { Button, OverflowMenu, OverflowMenuItem, Search, Select, SelectItem, TextInput } from '@carbon/react'
 import { cn } from '@/lib/utils'
 import { confirmDialog } from '@/components/common/ConfirmDialog'
 import {
@@ -18,7 +19,7 @@ import {
 import { useSortable, SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 
-const FONT = "'Prompt', sans-serif"
+const FONT = '"IBM Plex Sans Thai", "IBM Plex Sans", "Sarabun", system-ui, sans-serif'
 
 // Dark Theme
 const THEME = {
@@ -26,12 +27,12 @@ const THEME = {
   panel: 'var(--t-panel)',
   border: 'var(--t-border)',
   borderLight: 'var(--t-border-light)',
-  borderAccent: '#2563EB50',
+  borderAccent: '#0353e950',
   text: { primary: 'var(--t-text)', secondary: 'var(--t-text-secondary)', muted: 'var(--t-text-muted)' },
   accent: 'var(--t-accent)',
   accentHover: 'var(--t-accent-hover)',
   accentLight: 'var(--t-accent-light)',
-  colors: { blue: '#8B92A5', emerald: '#059669', amber: '#F59E0B', red: '#DC2626', purple: '#7C3AED' }
+  colors: { blue: '#8B92A5', emerald: '#198038', amber: '#ba4e00', red: '#da1e28', purple: '#6929c4' }
 }
 
 interface DatasetData {
@@ -62,20 +63,20 @@ const categoryLabels: Record<string, string> = {
 const categoryColors: Record<string, string> = {
   transactional: '#64748B',
   reserved: '#64748B',
-  transfer: '#7C3AED',
-  performance: '#059669',
-  expenditure: '#DC2626',
-  procurement: '#06B6D4',
-  operation: '#10B981',
+  transfer: '#6929c4',
+  performance: '#198038',
+  expenditure: '#da1e28',
+  procurement: '#1192e8',
+  operation_success: '#24a148',
   master_data: '#64748B',
   other: '#94A3B8',
 }
 
 const statusColors: Record<string, { bg: string; text: string }> = {
-  ACTIVE: { bg: '#05966915', text: '#059669' },
-  DRAFT: { bg: '#60A5FA15', text: '#60A5FA' },
-  ARCHIVED: { bg: '#94A3B815', text: '#94A3B8' },
-  DEPRECATED: { bg: '#DC262615', text: '#DC2626' },
+  ACTIVE: { bg: '#a7f0ba', text: '#0e6027' },
+  DRAFT: { bg: '#d0e2ff', text: '#0043ce' },
+  ARCHIVED: { bg: '#e0e0e0', text: '#161616' },
+  DEPRECATED: { bg: '#ffd7d9', text: '#a2191f' },
 }
 
 // Get path to root for breadcrumb
@@ -94,13 +95,16 @@ const formInputStyle = {
   padding: '4px 8px',
   background: 'var(--t-bg)',
   border: `1px solid var(--t-border)`,
-  borderRadius: 6,
+  borderRadius: 0,
   fontSize: 12,
   color: 'var(--t-text)',
   outline: 'none',
   transition: 'border-color 0.15s ease',
   height: 28,
   lineHeight: '20px',
+  width: '100%',
+  minWidth: 0,
+  textOverflow: 'ellipsis',
 }
 
 // AutoComplete Input - suggests from existing values, allows free text
@@ -151,8 +155,8 @@ function AutoCompleteInput({ value, onChange, suggestions, placeholder, classNam
           marginTop: 4,
           background: 'var(--t-panel)',
           border: '1.5px solid var(--t-border)',
-          borderRadius: 8,
-          boxShadow: '0 4px 16px rgba(0,0,0,0.18)',
+          borderRadius: 0,
+          boxShadow: 'none',
           maxHeight: 160,
           overflowY: 'auto',
           zIndex: 50,
@@ -227,22 +231,22 @@ function InlineAddForm({ parentId, parentName, parentCategory, allSources, allCa
   return (
     <form onSubmit={handleSubmit} style={{
       background: 'var(--t-panel)',
-      borderRadius: 8,
-      border: `1.5px solid ${THEME.accent}50`,
-      boxShadow: `0 0 0 1px ${THEME.accent}15, 0 2px 8px rgba(0,0,0,0.15)`,
+      borderRadius: 0,
+      border: '1px solid #e0e0e0',
+      boxShadow: 'none',
     }}>
       {parentName && (
         <div style={{
           padding: '5px 12px',
-          background: `${THEME.accent}15`,
-          borderBottom: `1px solid ${THEME.accent}30`,
+          background: '#e0e0e0',
+          borderBottom: '1px solid #e0e0e0',
           fontSize: 11,
           fontWeight: 500,
           color: THEME.accent,
           display: 'flex',
           alignItems: 'center',
           gap: 4,
-          borderRadius: '6px 6px 0 0',
+          borderRadius: 0,
         }}>
           <CornerDownRight className="w-2.5 h-2.5" />
           Under: <strong>{parentName}</strong>
@@ -252,9 +256,9 @@ function InlineAddForm({ parentId, parentName, parentCategory, allSources, allCa
         <div style={{
           width: 26,
           height: 22,
-          background: `${THEME.accent}15`,
-          border: `1.5px dashed ${THEME.accent}60`,
-          borderRadius: 6,
+          background: '#e0e0e0',
+          border: '1px dashed #8d8d8d',
+          borderRadius: 0,
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
@@ -262,80 +266,63 @@ function InlineAddForm({ parentId, parentName, parentCategory, allSources, allCa
         }}>
           <Plus className="w-3 h-3" style={{ color: THEME.accent }} />
         </div>
-        <div style={{ flex: 1, display: 'grid', gridTemplateColumns: '3fr 2fr 2fr', gap: 6 }}>
-          <input
-            type="text"
+        <div style={{ flex: 1, display: 'grid', gridTemplateColumns: 'minmax(0,3fr) minmax(0,2fr) minmax(0,2fr)', gap: 6, minWidth: 0 }}>
+          <TextInput
+            id={`ds-add-${parentId ?? 'root'}` + '-name'}
+            labelText="Name"
+            hideLabel
+            size="sm"
             value={name}
             onChange={(e) => setName(e.target.value)}
             placeholder="Name..."
-            style={formInputStyle}
-            className="focus:!border-blue-500"
             autoFocus
           />
-          <select
+          <Select
+            id={`ds-add-${parentId ?? 'root'}` + '-category'}
+            labelText="Category"
+            hideLabel
+            size="sm"
             value={category}
             onChange={(e) => setCategory(e.target.value)}
-            style={formInputStyle}
-            className="focus:!border-blue-500"
           >
-            <option value="">— Category —</option>
+            <SelectItem value="" text="— Category —" />
             {Object.entries(categoryLabels).map(([k, v]) => (
-              <option key={k} value={k.toUpperCase()}>{v} — {k.toUpperCase()}</option>
+              <SelectItem key={k} value={k.toUpperCase()} text={`${v} — ${k.toUpperCase()}`} />
             ))}
-          </select>
-          <select
+          </Select>
+          <Select
+            id={`ds-add-${parentId ?? 'root'}` + '-source'}
+            labelText="Source table"
+            hideLabel
+            size="sm"
             value={source}
             onChange={(e) => setSource(e.target.value)}
-            style={formInputStyle}
-            className="focus:!border-blue-500"
           >
-            <option value="">— Source table —</option>
+            <SelectItem value="" text="— Source table —" />
             {(repoTables ?? []).map((t) => (
-              <option key={t.id} value={t.name}>{t.displayName ? `${t.name} — ${t.displayName}` : t.name}</option>
+              <SelectItem key={t.id} value={t.name} text={t.displayName ? `${t.name} — ${t.displayName}` : t.name} />
             ))}
-          </select>
+          </Select>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 4, flexShrink: 0 }}>
-          <button
+          <Button
             type="submit"
+            kind="primary"
+            size="sm"
             disabled={isSubmitting || !name.trim()}
-            style={{
-              padding: '5px 12px',
-              background: THEME.accent,
-              color: '#FFF',
-              borderRadius: 6,
-              border: 'none',
-              fontSize: 12,
-              fontWeight: 600,
-              opacity: isSubmitting || !name.trim() ? 0.4 : 1,
-              cursor: isSubmitting || !name.trim() ? 'not-allowed' : 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: 4,
-            }}
+            renderIcon={Check}
           >
-            <Check className="w-3 h-3" />
             Save
-          </button>
-          <button
+          </Button>
+          <Button
             type="button"
+            kind="ghost"
+            size="sm"
+            hasIconOnly
+            iconDescription="Cancel"
+            renderIcon={X}
             onClick={onCancel}
-            style={{
-              padding: '5px 10px',
-              background: 'transparent',
-              border: `1px solid ${THEME.border}`,
-              borderRadius: 6,
-              fontSize: 12,
-              color: THEME.text.muted,
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: 3,
-            }}
-            className="hover:border-red-400 hover:text-red-400"
-          >
-            <X className="w-3 h-3" />
-          </button>
+          />
         </div>
       </div>
     </form>
@@ -379,15 +366,15 @@ function InlineEditForm({ dataset, allSources, allCategories, repoTables, onCanc
   return (
     <form onSubmit={handleSubmit} style={{
       background: 'var(--t-panel)',
-      borderRadius: 8,
-      border: `1.5px solid ${THEME.accent}50`,
-      boxShadow: `0 0 0 1px ${THEME.accent}15, 0 2px 8px rgba(0,0,0,0.15)`,
+      borderRadius: 0,
+      border: '1px solid #e0e0e0',
+      boxShadow: 'none',
     }}>
       <div style={{
         padding: '5px 12px',
-        background: `${THEME.accent}15`,
-        borderBottom: `1px solid ${THEME.accent}30`,
-        borderRadius: '6px 6px 0 0',
+        background: '#e0e0e0',
+        borderBottom: '1px solid #e0e0e0',
+        borderRadius: 0,
         fontSize: 11,
         fontWeight: 500,
         color: THEME.accent,
@@ -402,9 +389,9 @@ function InlineEditForm({ dataset, allSources, allCategories, repoTables, onCanc
         <div style={{
           width: 26,
           height: 22,
-          background: `${THEME.accent}15`,
-          border: `1.5px solid ${THEME.accent}40`,
-          borderRadius: 6,
+          background: '#e0e0e0',
+          border: '1px solid #e0e0e0',
+          borderRadius: 0,
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
@@ -412,80 +399,63 @@ function InlineEditForm({ dataset, allSources, allCategories, repoTables, onCanc
         }}>
           <Edit3 className="w-3 h-3" style={{ color: THEME.accent }} />
         </div>
-        <div style={{ flex: 1, display: 'grid', gridTemplateColumns: '3fr 2fr 2fr', gap: 6 }}>
-          <input
-            type="text"
+        <div style={{ flex: 1, display: 'grid', gridTemplateColumns: 'minmax(0,3fr) minmax(0,2fr) minmax(0,2fr)', gap: 6, minWidth: 0 }}>
+          <TextInput
+            id={`ds-edit-${dataset.id}` + '-name'}
+            labelText="Name"
+            hideLabel
+            size="sm"
             value={name}
             onChange={(e) => setName(e.target.value)}
             placeholder="Name..."
-            style={formInputStyle}
-            className="focus:!border-blue-500"
             autoFocus
           />
-          <select
+          <Select
+            id={`ds-edit-${dataset.id}` + '-category'}
+            labelText="Category"
+            hideLabel
+            size="sm"
             value={category}
             onChange={(e) => setCategory(e.target.value)}
-            style={formInputStyle}
-            className="focus:!border-blue-500"
           >
-            <option value="">— Category —</option>
+            <SelectItem value="" text="— Category —" />
             {Object.entries(categoryLabels).map(([k, v]) => (
-              <option key={k} value={k.toUpperCase()}>{v} — {k.toUpperCase()}</option>
+              <SelectItem key={k} value={k.toUpperCase()} text={`${v} — ${k.toUpperCase()}`} />
             ))}
-          </select>
-          <select
+          </Select>
+          <Select
+            id={`ds-edit-${dataset.id}` + '-source'}
+            labelText="Source table"
+            hideLabel
+            size="sm"
             value={source}
             onChange={(e) => setSource(e.target.value)}
-            style={formInputStyle}
-            className="focus:!border-blue-500"
           >
-            <option value="">— Source table —</option>
+            <SelectItem value="" text="— Source table —" />
             {(repoTables ?? []).map((t) => (
-              <option key={t.id} value={t.name}>{t.displayName ? `${t.name} — ${t.displayName}` : t.name}</option>
+              <SelectItem key={t.id} value={t.name} text={t.displayName ? `${t.name} — ${t.displayName}` : t.name} />
             ))}
-          </select>
+          </Select>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 4, flexShrink: 0 }}>
-          <button
+          <Button
             type="submit"
+            kind="primary"
+            size="sm"
             disabled={isSubmitting || !name.trim()}
-            style={{
-              padding: '5px 12px',
-              background: THEME.accent,
-              color: '#FFF',
-              borderRadius: 6,
-              border: 'none',
-              fontSize: 12,
-              fontWeight: 600,
-              opacity: isSubmitting || !name.trim() ? 0.4 : 1,
-              cursor: isSubmitting || !name.trim() ? 'not-allowed' : 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: 4,
-            }}
+            renderIcon={Check}
           >
-            <Check className="w-3 h-3" />
             Save
-          </button>
-          <button
+          </Button>
+          <Button
             type="button"
+            kind="ghost"
+            size="sm"
+            hasIconOnly
+            iconDescription="Cancel"
+            renderIcon={X}
             onClick={onCancel}
-            style={{
-              padding: '5px 10px',
-              background: 'transparent',
-              border: `1px solid ${THEME.border}`,
-              borderRadius: 6,
-              fontSize: 12,
-              color: THEME.text.muted,
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: 3,
-            }}
-            className="hover:border-red-400 hover:text-red-400"
-          >
-            <X className="w-3 h-3" />
-          </button>
+          />
         </div>
       </div>
     </form>
@@ -596,10 +566,10 @@ function SortableTreeNode({
         alignItems: 'center',
         gap: 4,
         padding: '6px 10px',
-        borderRadius: 8,
+        borderRadius: 0,
         marginLeft: level * 20,
-        background: isDragging ? `${THEME.accent}10` : 'transparent',
-        border: isDragging ? `1px solid ${THEME.accent}40` : '1px solid transparent',
+        background: isDragging ? '#e0e0e0' : 'transparent',
+        border: isDragging ? '1px solid #e0e0e0' : '1px solid transparent',
         position: 'relative',
       }} className="hover:bg-[var(--t-panel-hover)] group">
         
@@ -619,105 +589,29 @@ function SortableTreeNode({
 
         <div style={{ display: 'flex', alignItems: 'center', gap: 4, flex: 1, minWidth: 0 }}>
           {/* Kebab Menu */}
-          <div ref={menuRef} style={{ position: 'relative' }}>
-            <button
-              onClick={(e) => { e.stopPropagation(); setMenuOpen(!menuOpen) }}
-              style={{
-                padding: 2,
-                color: menuOpen ? THEME.accent : THEME.text.muted,
-                borderRadius: 6,
-                background: menuOpen ? `${THEME.accent}15` : 'transparent',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                cursor: 'pointer',
-              }}
-              className="hover:bg-[var(--t-panel-hover)]"
-              title="Actions"
+          <div ref={menuRef} style={{ position: 'relative' }} onClick={(e) => e.stopPropagation()}>
+            <OverflowMenu
+              size="sm"
+              flipped={false}
+              aria-label="Actions"
+              iconDescription="Actions"
+              renderIcon={MoreVertical}
             >
-              <MoreVertical className="w-3.5 h-3.5" />
-            </button>
-            {menuOpen && (
-              <div style={{
-                position: 'absolute',
-                top: '100%',
-                left: 0,
-                marginTop: 4,
-                background: THEME.panel,
-                border: `1px solid ${THEME.border}`,
-                borderRadius: 8,
-                boxShadow: '0 4px 16px rgba(0,0,0,0.25)',
-                zIndex: 50,
-                minWidth: 140,
-                padding: 4,
-                fontFamily: "'Prompt', sans-serif",
-              }}>
-                <button
-                  onClick={(e) => { e.stopPropagation(); setMenuOpen(false); setShowAddForm(true) }}
-                  style={{
-                    width: '100%',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 8,
-                    padding: '6px 10px',
-                    fontSize: 12,
-                    fontWeight: 500,
-                    color: THEME.accent,
-                    borderRadius: 6,
-                    background: 'transparent',
-                    border: 'none',
-                    cursor: 'pointer',
-                  }}
-                  className="hover:bg-[var(--t-panel-hover)]"
-                >
-                  <Plus className="w-3.5 h-3.5" />
-                  Add Child
-                </button>
-                <button
-                  onClick={(e) => { e.stopPropagation(); setMenuOpen(false); setShowEditForm(!showEditForm); setShowAddForm(false) }}
-                  style={{
-                    width: '100%',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 8,
-                    padding: '6px 10px',
-                    fontSize: 12,
-                    fontWeight: 500,
-                    color: '#60A5FA',
-                    borderRadius: 6,
-                    background: 'transparent',
-                    border: 'none',
-                    cursor: 'pointer',
-                  }}
-                  className="hover:bg-[var(--t-panel-hover)]"
-                >
-                  <Edit3 className="w-3.5 h-3.5" />
-                  Edit
-                </button>
-                <div style={{ height: 1, background: THEME.border, margin: '2px 6px' }} />
-                <button
-                  onClick={(e) => { e.stopPropagation(); setMenuOpen(false); onDelete(dataset.id) }}
-                  style={{
-                    width: '100%',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 8,
-                    padding: '6px 10px',
-                    fontSize: 12,
-                    fontWeight: 500,
-                    color: '#F87171',
-                    borderRadius: 6,
-                    background: 'transparent',
-                    border: 'none',
-                    cursor: 'pointer',
-                  }}
-                  className="hover:bg-red-500/10"
-                >
-                  <Trash2 className="w-3.5 h-3.5" />
-                  Delete
-                </button>
-              </div>
-            )}
+              <OverflowMenuItem
+                itemText="Add Child"
+                onClick={(e: React.MouseEvent) => { e.stopPropagation(); setMenuOpen(false); setShowAddForm(true) }}
+              />
+              <OverflowMenuItem
+                itemText="Edit"
+                onClick={(e: React.MouseEvent) => { e.stopPropagation(); setMenuOpen(false); setShowEditForm(!showEditForm); setShowAddForm(false) }}
+              />
+              <OverflowMenuItem
+                itemText="Delete"
+                isDelete
+                hasDivider
+                onClick={(e: React.MouseEvent) => { e.stopPropagation(); setMenuOpen(false); onDelete(dataset.id) }}
+              />
+            </OverflowMenu>
           </div>
 
           {/* Expand/Collapse */}
@@ -729,7 +623,7 @@ function SortableTreeNode({
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              borderRadius: 6,
+              borderRadius: 0,
               color: THEME.text.muted,
               visibility: hasChildren ? 'visible' : 'hidden',
             }} 
@@ -742,9 +636,9 @@ function SortableTreeNode({
           <div {...attributes} {...listeners} style={{
             width: 26,
             height: 22,
-            background: hasChildren ? `${THEME.accent}15` : THEME.bg,
-            border: `1px solid ${hasChildren ? `${THEME.accent}40` : THEME.border}`,
-            borderRadius: 6,
+            background: 'transparent',
+            border: '1px solid #e0e0e0',
+            borderRadius: 0,
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
@@ -777,17 +671,17 @@ function SortableTreeNode({
               }}>{dataset.name}</span>
               <span style={{ 
                 padding: '1px 6px', 
-                borderRadius: 8, 
+                borderRadius: 0, 
                 fontSize: 11,
                 fontWeight: 600,
                 background: statusColor.bg,
                 color: statusColor.text,
-                border: `1px solid ${statusColor.text}30`,
+                border: '1px solid #e0e0e0',
               }}>{dataset.status}</span>
               {hasChildren && (
                 <span style={{
                   padding: '1px 5px',
-                  borderRadius: 8,
+                  borderRadius: 0,
                   fontSize: 10,
                   fontWeight: 500,
                   background: THEME.bg,
@@ -1075,86 +969,35 @@ export default function DatasetsClientPage() {
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
         <div>
-          <h1 style={{ fontSize: 22, fontWeight: 700, color: THEME.text.primary }}>Data Catalogs</h1>
+          <h1 style={{ fontSize: 20, fontWeight: 400, color: THEME.text.primary }}>Data Catalogs</h1>
           <p style={{ fontSize: 13, color: THEME.text.muted, marginTop: 1 }}>
             {stats.total} total • {stats.root} root • {stats.withChildren} with children
           </p>
         </div>
-        <button 
-          onClick={() => setShowRootAddForm(!showRootAddForm)} 
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 4,
-            padding: '6px 14px',
-            background: THEME.accent,
-            color: '#FFFFFF',
-            borderRadius: 8,
-            fontSize: 13,
-            fontWeight: 600,
-            border: 'none',
-            cursor: 'pointer',
-            transition: 'all 0.15s ease',
-          }}
-          className="hover:bg-blue-500"
-        >
-          <Plus className="w-3.5 h-3.5" />
-          + Add Root
-        </button>
+        <Button size="sm" kind="primary" renderIcon={Plus} onClick={() => setShowRootAddForm(!showRootAddForm)}>
+          Add Root
+        </Button>
       </div>
 
       {/* Search & Controls */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
         <div style={{ position: 'relative', flex: 1, maxWidth: 280 }}>
-          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5" style={{ color: THEME.text.muted }} />
-          <input 
-            type="text" 
+          <Search
+            id="datasets-search"
+            size="sm"
+            labelText="Search"
             placeholder="Search..."
-            value={searchText} 
-            onChange={(e) => setSearchText(e.target.value)}
-            style={{
-              width: '100%',
-              padding: '6px 10px 6px 28px',
-              background: 'var(--t-input)',
-              border: `1px solid ${THEME.border}`,
-              borderRadius: 8,
-              fontSize: 13,
-              color: THEME.text.primary,
-              outline: 'none',
-            }}
+            value={searchText}
+            onChange={(e) => setSearchText(typeof e === 'string' ? e : e.target.value)}
           />
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-          <button
-            onClick={handleExpandAll}
-            style={{
-              padding: '4px 8px',
-              background: THEME.panel,
-              border: `1px solid ${THEME.border}`,
-              borderRadius: 6,
-              fontSize: 11,
-              color: THEME.text.muted,
-              cursor: 'pointer',
-            }}
-            className="hover:border-blue-300 hover:text-blue-400"
-          >
+          <Button size="sm" kind="tertiary" onClick={handleExpandAll}>
             Expand
-          </button>
-          <button
-            onClick={handleCollapseAll}
-            style={{
-              padding: '4px 8px',
-              background: THEME.panel,
-              border: `1px solid ${THEME.border}`,
-              borderRadius: 6,
-              fontSize: 11,
-              color: THEME.text.muted,
-              cursor: 'pointer',
-            }}
-            className="hover:border-blue-300 hover:text-blue-400"
-          >
+          </Button>
+          <Button size="sm" kind="tertiary" onClick={handleCollapseAll}>
             Collapse
-          </button>
+          </Button>
         </div>
       </div>
 
@@ -1175,28 +1018,9 @@ export default function DatasetsClientPage() {
       {/* Root Level Add Button */}
       {!showRootAddForm && (
         <div style={{ marginBottom: 8 }}>
-          <button 
-            onClick={() => setShowRootAddForm(true)} 
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 4,
-              padding: '6px 10px',
-              background: 'transparent',
-              border: `1px dashed ${THEME.border}`,
-              borderRadius: 8,
-              fontSize: 13,
-              fontWeight: 600,
-              color: THEME.text.muted,
-              cursor: 'pointer',
-              width: '100%',
-              transition: 'all 0.15s ease',
-            }} 
-            className="hover:border-blue-400 hover:text-blue-400 hover:bg-blue-500/10"
-          >
-            <Plus className="w-3.5 h-3.5" />
-            + Add Root
-          </button>
+          <Button kind="ghost" size="sm" renderIcon={Plus} onClick={() => setShowRootAddForm(true)} style={{ width: '100%', maxWidth: 'none' }}>
+            Add Root
+          </Button>
         </div>
       )}
 
@@ -1221,7 +1045,7 @@ export default function DatasetsClientPage() {
             height: 30, 
             background: THEME.panel, 
             border: `1px solid ${THEME.border}`, 
-            borderRadius: 8, 
+            borderRadius: 0, 
             display: 'flex', 
             alignItems: 'center', 
             justifyContent: 'center', 
@@ -1246,7 +1070,7 @@ export default function DatasetsClientPage() {
           <div style={{ 
             background: THEME.panel, 
             border: `1px solid ${THEME.border}`, 
-            borderRadius: 6, 
+            borderRadius: 0, 
             padding: 8,
           }}>
             <SortableContext items={flatDatasets.map(d => d.id)} strategy={verticalListSortingStrategy}>
@@ -1272,17 +1096,17 @@ export default function DatasetsClientPage() {
             {activeDataset ? (
               <div style={{ 
                 background: THEME.panel, 
-                border: `1px solid ${THEME.accent}50`, 
-                borderRadius: 8, 
+                border: '1px solid #e0e0e0', 
+                borderRadius: 0, 
                 padding: 8, 
-                boxShadow: '0 4px 12px rgba(0,0,0,0.4)',
+                boxShadow: 'none',
               }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                   <MoreVertical className="w-3.5 h-3.5" style={{ color: THEME.text.muted }} />
                   <div style={{ 
                     width: 3, 
                     height: 20, 
-                    borderRadius: 2, 
+                    borderRadius: 0, 
                     background: categoryColors[activeDataset.category] || categoryColors.other 
                   }} />
                   <Folder className="w-4 h-4" style={{ color: THEME.accent }} />

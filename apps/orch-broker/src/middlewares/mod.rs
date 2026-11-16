@@ -6,3 +6,4 @@ pub mod ip_filter;
 pub mod api_key_auth;
 pub mod quota;
 pub mod idempotency;
+pub mod internal_auth;

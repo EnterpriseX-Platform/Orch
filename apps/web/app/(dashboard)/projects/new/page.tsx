@@ -3,7 +3,15 @@
 import { useState } from 'react'
 import { useMutation } from '@tanstack/react-query'
 import { useRouter } from 'next/navigation'
-import Link from 'next/link'
+import {
+  Button,
+  TextInput,
+  TextArea,
+  Select,
+  SelectItem,
+  Tag as CarbonTag,
+  PasswordInput,
+} from '@carbon/react'
 import {
   ArrowLeft,
   Save,
@@ -22,9 +30,8 @@ import {
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { projectApi } from '@/lib/api'
-import { CustomSelect } from '@/components/ui/CustomSelect'
 
-const FONT = "'Prompt', sans-serif"
+const FONT = '"IBM Plex Sans Thai", "IBM Plex Sans", "Sarabun", system-ui, sans-serif'
 
 const THEME = {
   bg: 'var(--t-bg)',
@@ -58,7 +65,7 @@ function SectionCard({
       style={{
         background: THEME.panel,
         border: `1px solid ${THEME.border}`,
-        borderRadius: 8,
+        borderRadius: 0,
         overflow: 'hidden',
       }}
     >
@@ -78,7 +85,7 @@ function SectionCard({
             fontSize: 14,
             fontWeight: 600,
             color: THEME.text.primary,
-            letterSpacing: '0.02em',
+            
           }}
         >
           {title}
@@ -91,55 +98,13 @@ function SectionCard({
   )
 }
 
-function Label({ children, required }: { children: React.ReactNode; required?: boolean }) {
+function LabelText({ children, required }: { children: React.ReactNode; required?: boolean }) {
   return (
-    <label
-      style={{
-        fontFamily: FONT,
-        fontSize: 13,
-        fontWeight: 500,
-        color: THEME.text.secondary,
-        display: 'flex',
-        alignItems: 'center',
-        gap: 2,
-      }}
-    >
+    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 2 }}>
       {children}
-      {required && <span style={{ color: '#F87171' }}>*</span>}
-    </label>
+      {required && <span style={{ color: '#da1e28' }}>*</span>}
+    </span>
   )
-}
-
-function FieldGroup({ children }: { children: React.ReactNode }) {
-  return <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>{children}</div>
-}
-
-const inputStyle: React.CSSProperties = {
-  fontFamily: FONT,
-  fontSize: 13,
-  padding: '6px 10px',
-  border: `1px solid ${THEME.border}`,
-  borderRadius: 6,
-  outline: 'none',
-  color: THEME.text.primary,
-  background: 'var(--t-input)',
-  width: '100%',
-  transition: 'border-color 0.15s',
-}
-
-const selectStyle: React.CSSProperties = {
-  ...inputStyle,
-  appearance: 'none' as const,
-  backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%235A6178' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E")`,
-  backgroundRepeat: 'no-repeat',
-  backgroundPosition: 'right 8px center',
-  paddingRight: 28,
-}
-
-const textareaStyle: React.CSSProperties = {
-  ...inputStyle,
-  resize: 'vertical' as const,
-  minHeight: 60,
 }
 
 // ========== Page Component ==========
@@ -153,7 +118,7 @@ export default function NewProjectPage() {
   const [slugManuallyEdited, setSlugManuallyEdited] = useState(false)
   const [description, setDescription] = useState('')
   const [imageUrl, setImageUrl] = useState('')
-  const [themeColor, setThemeColor] = useState('#60A5FA')
+  const [themeColor, setThemeColor] = useState('#0f62fe')
 
   // ---- Section 2: API Configuration ----
   const [baseUrl, setBaseUrl] = useState('')
@@ -280,47 +245,34 @@ export default function NewProjectPage() {
   }
 
   return (
-    <div style={{ fontFamily: FONT, minHeight: '100vh', background: THEME.bg }}>
+    <div style={{ fontFamily: FONT }}>
       {/* Header */}
       <div
         style={{
-          background: THEME.panel,
-          borderBottom: `1px solid ${THEME.border}`,
-          padding: '12px 24px',
+          maxWidth: 900,
+          margin: '0 auto',
+          padding: '4px 24px 0',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
           flexWrap: 'wrap' as const,
           gap: 12,
-          position: 'sticky',
-          top: 0,
-          zIndex: 20,
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, minWidth: 0, flex: 1 }}>
-          <Link
-            href="/projects"
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              width: 28,
-              height: 28,
-              borderRadius: 6,
-              border: `1px solid ${THEME.border}`,
-              color: THEME.text.secondary,
-              textDecoration: 'none',
-              transition: 'all 0.15s',
-              flexShrink: 0,
-            }}
-          >
-            <ArrowLeft size={14} />
-          </Link>
+          <Button
+            kind="ghost"
+            size="sm"
+            hasIconOnly
+            renderIcon={ArrowLeft}
+            iconDescription="Back"
+            onClick={() => router.push('/projects')}
+          />
           <div style={{ minWidth: 0 }}>
             <h1
               style={{
                 fontSize: 18,
-                fontWeight: 700,
+                fontWeight: 600,
                 color: THEME.text.primary,
                 margin: 0,
                 whiteSpace: 'nowrap' as const,
@@ -335,112 +287,70 @@ export default function NewProjectPage() {
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
-          <Link
-            href="/projects"
-            style={{
-              fontFamily: FONT,
-              fontSize: 13,
-              padding: '6px 14px',
-              borderRadius: 6,
-              border: `1px solid ${THEME.border}`,
-              background: THEME.panel,
-              color: THEME.text.secondary,
-              cursor: 'pointer',
-              textDecoration: 'none',
-              display: 'flex',
-              alignItems: 'center',
-              gap: 4,
-              fontWeight: 500,
-            }}
-          >
-            <X size={12} />
+          <Button kind="secondary" size="sm" renderIcon={X} onClick={() => router.push('/projects')}>
             Cancel
-          </Link>
-          <button
+          </Button>
+          <Button
+            kind="primary"
+            size="sm"
             onClick={handleSubmit}
             disabled={createMutation.isPending}
-            style={{
-              fontFamily: FONT,
-              fontSize: 13,
-              padding: '6px 14px',
-              borderRadius: 6,
-              border: 'none',
-              background: createMutation.isPending ? 'var(--t-text-muted)' : THEME.accent,
-              color: '#fff',
-              cursor: createMutation.isPending ? 'not-allowed' : 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: 4,
-              fontWeight: 600,
-            }}
+            renderIcon={createMutation.isPending ? Loader2 : Save}
           >
-            {createMutation.isPending ? (
-              <Loader2 size={12} style={{ animation: 'spin 1s linear infinite' }} />
-            ) : (
-              <Save size={12} />
-            )}
             {createMutation.isPending ? 'Saving...' : 'Save'}
-          </button>
+          </Button>
         </div>
       </div>
-
-      {/* Spinner keyframes */}
-      <style>{`@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }`}</style>
 
       {/* Body */}
       <div style={{ maxWidth: 900, margin: '0 auto', padding: '20px 24px 60px', width: '100%', boxSizing: 'border-box' as const }}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
           {/* Section 1: General Information */}
           <SectionCard icon={FolderKanban} title="General Information">
-            <FieldGroup>
-              <Label required>Project Name</Label>
-              <input
-                style={inputStyle}
-                placeholder="e.g. Customer Portal API"
-                value={name}
-                onChange={(e) => handleNameChange(e.target.value)}
-              />
-            </FieldGroup>
+            <TextInput
+              id="project-name"
+              labelText={<LabelText required>Project Name</LabelText>}
+              placeholder="e.g. Customer Portal API"
+              value={name}
+              onChange={(e) => handleNameChange(e.target.value)}
+            />
 
-            <FieldGroup>
-              <Label required>Slug</Label>
-              <input
-                style={inputStyle}
-                placeholder="auto-generated-from-name"
-                value={slug}
-                onChange={(e) => {
-                  setSlug(e.target.value)
-                  setSlugManuallyEdited(true)
-                }}
-                onBlur={() => {
-                  if (!slug.trim()) {
-                    setSlugManuallyEdited(false)
-                    setSlug(generateSlug(name))
-                  }
-                }}
-              />
-              <span style={{ fontSize: 12, color: THEME.text.muted }}>
-                Auto-generated from name. Lowercase, hyphens only.
-              </span>
-            </FieldGroup>
+            <TextInput
+              id="project-slug"
+              labelText={<LabelText required>Slug</LabelText>}
+              placeholder="auto-generated-from-name"
+              helperText="Auto-generated from name. Lowercase, hyphens only."
+              value={slug}
+              onChange={(e) => {
+                setSlug(e.target.value)
+                setSlugManuallyEdited(true)
+              }}
+              onBlur={() => {
+                if (!slug.trim()) {
+                  setSlugManuallyEdited(false)
+                  setSlug(generateSlug(name))
+                }
+              }}
+            />
 
-            <FieldGroup>
-              <Label>Description</Label>
-              <textarea
-                style={textareaStyle}
-                placeholder="Describe what this project is about..."
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-              />
-            </FieldGroup>
+            <TextArea
+              id="project-description"
+              labelText="Description"
+              placeholder="Describe what this project is about..."
+              rows={3}
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+            />
 
-            <FieldGroup>
-              <Label>
-                <ImageIcon size={12} style={{ marginRight: 2 }} />
-                Image URL
-              </Label>
-              <input
-                style={inputStyle}
+            <div>
+              <TextInput
+                id="project-image-url"
+                labelText={
+                  <LabelText>
+                    <ImageIcon size={12} style={{ marginRight: 2 }} />
+                    Image URL
+                  </LabelText>
+                }
                 placeholder="https://example.com/logo.png"
                 value={imageUrl}
                 onChange={(e) => setImageUrl(e.target.value)}
@@ -451,7 +361,6 @@ export default function NewProjectPage() {
                     marginTop: 4,
                     padding: 8,
                     background: THEME.borderLight,
-                    borderRadius: 6,
                     border: `1px solid ${THEME.border}`,
                     display: 'flex',
                     alignItems: 'center',
@@ -462,247 +371,204 @@ export default function NewProjectPage() {
                   <img
                     src={imageUrl.trim()}
                     alt="Project preview"
-                    style={{
-                      maxWidth: 120,
-                      maxHeight: 80,
-                      borderRadius: 4,
-                      objectFit: 'contain',
-                    }}
+                    style={{ maxWidth: 120, maxHeight: 80, objectFit: 'contain' }}
                     onError={(e) => {
                       ;(e.target as HTMLImageElement).style.display = 'none'
                     }}
                   />
                 </div>
               )}
-            </FieldGroup>
+            </div>
 
-            <FieldGroup>
-              <Label>
-                <Palette size={12} style={{ marginRight: 2 }} />
-                Theme Color
-              </Label>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <input
-                  type="color"
+            <div style={{ display: 'flex', alignItems: 'flex-end', gap: 8 }}>
+              <input
+                type="color"
+                aria-label="Theme color picker"
+                value={themeColor}
+                onChange={(e) => setThemeColor(e.target.value)}
+                style={{
+                  width: 40,
+                  height: 40,
+                  padding: 0,
+                  border: `1px solid ${THEME.border}`,
+                  cursor: 'pointer',
+                  background: 'none',
+                }}
+              />
+              <div style={{ width: 160 }}>
+                <TextInput
+                  id="project-theme-color"
+                  labelText={
+                    <LabelText>
+                      <Palette size={12} style={{ marginRight: 2 }} />
+                      Theme Color
+                    </LabelText>
+                  }
                   value={themeColor}
                   onChange={(e) => setThemeColor(e.target.value)}
-                  style={{
-                    width: 32,
-                    height: 28,
-                    padding: 0,
-                    border: `1px solid ${THEME.border}`,
-                    borderRadius: 4,
-                    cursor: 'pointer',
-                    background: 'none',
-                  }}
-                />
-                <input
-                  style={{ ...inputStyle, width: 120 }}
-                  value={themeColor}
-                  onChange={(e) => setThemeColor(e.target.value)}
-                  placeholder="#60A5FA"
-                />
-                <div
-                  style={{
-                    width: 20,
-                    height: 20,
-                    borderRadius: 4,
-                    background: themeColor,
-                    border: `1px solid ${THEME.border}`,
-                    flexShrink: 0,
-                  }}
+                  placeholder="#0f62fe"
                 />
               </div>
-            </FieldGroup>
+              <div
+                style={{
+                  width: 20,
+                  height: 20,
+                  marginBottom: 10,
+                  background: themeColor,
+                  border: `1px solid ${THEME.border}`,
+                  flexShrink: 0,
+                }}
+              />
+            </div>
           </SectionCard>
 
           {/* Section 2: API Configuration */}
           <SectionCard icon={Globe} title="API Configuration">
-            <FieldGroup>
-              <Label required>Base URL</Label>
-              <input
-                type="url"
-                style={inputStyle}
-                placeholder="https://api.example.com"
-                value={baseUrl}
-                onChange={(e) => setBaseUrl(e.target.value)}
-              />
-              <span style={{ fontSize: 12, color: THEME.text.muted }}>
-                The root URL for all API endpoints in this project
-              </span>
-            </FieldGroup>
+            <TextInput
+              id="project-base-url"
+              type="url"
+              labelText={<LabelText required>Base URL</LabelText>}
+              placeholder="https://api.example.com"
+              helperText="The root URL for all API endpoints in this project"
+              value={baseUrl}
+              onChange={(e) => setBaseUrl(e.target.value)}
+            />
 
-            <FieldGroup>
-              <Label>
-                <Shield size={12} style={{ marginRight: 2 }} />
-                Auth Type
-              </Label>
-              <CustomSelect
-                value={authType}
-                onChange={(v) => setAuthType(v)}
-                options={[
-                  { value: 'NONE', label: 'None' },
-                  { value: 'JWT', label: 'JWT' },
-                  { value: 'API_KEY', label: 'API Key' },
-                  { value: 'OAUTH2', label: 'OAuth2' },
-                  { value: 'BASIC', label: 'Basic Auth' },
-                ]}
-              />
-            </FieldGroup>
+            <Select
+              id="project-auth-type"
+              labelText={
+                <LabelText>
+                  <Shield size={12} style={{ marginRight: 2 }} />
+                  Auth Type
+                </LabelText>
+              }
+              value={authType}
+              onChange={(e) => setAuthType(e.target.value)}
+            >
+              <SelectItem value="NONE" text="None" />
+              <SelectItem value="JWT" text="JWT" />
+              <SelectItem value="API_KEY" text="API Key" />
+              <SelectItem value="OAUTH2" text="OAuth2" />
+              <SelectItem value="BASIC" text="Basic Auth" />
+            </Select>
 
             {authType === 'API_KEY' && (
               <>
-                <FieldGroup>
-                  <Label>API Key</Label>
-                  <input
-                    type="password"
-                    style={inputStyle}
-                    placeholder="sk-..."
-                    value={apiKey}
-                    onChange={(e) => setApiKey(e.target.value)}
-                  />
-                </FieldGroup>
-                <FieldGroup>
-                  <Label>API Key Header</Label>
-                  <input
-                    style={inputStyle}
-                    placeholder="X-API-Key"
-                    value={apiKeyHeader}
-                    onChange={(e) => setApiKeyHeader(e.target.value)}
-                  />
-                  <span style={{ fontSize: 12, color: THEME.text.muted }}>
-                    Header name used to send the API key
-                  </span>
-                </FieldGroup>
+                <PasswordInput
+                  id="project-api-key"
+                  labelText="API Key"
+                  placeholder="sk-..."
+                  value={apiKey}
+                  onChange={(e) => setApiKey(e.target.value)}
+                />
+                <TextInput
+                  id="project-api-key-header"
+                  labelText="API Key Header"
+                  placeholder="X-API-Key"
+                  helperText="Header name used to send the API key"
+                  value={apiKeyHeader}
+                  onChange={(e) => setApiKeyHeader(e.target.value)}
+                />
               </>
             )}
 
-            <FieldGroup>
-              <Label>Status</Label>
-              <CustomSelect
-                value={status}
-                onChange={(v) => setStatus(v)}
-                options={[
-                  { value: 'ACTIVE', label: 'Active' },
-                  { value: 'INACTIVE', label: 'Inactive' },
-                ]}
-              />
-              <span style={{ fontSize: 12, color: THEME.text.muted }}>
-                {status === 'ACTIVE'
+            <Select
+              id="project-status"
+              labelText="Status"
+              value={status}
+              onChange={(e) => setStatus(e.target.value)}
+              helperText={
+                status === 'ACTIVE'
                   ? 'Project will be active immediately after creation'
-                  : 'Project will be inactive and not accessible via API'}
-              </span>
-            </FieldGroup>
+                  : 'Project will be inactive and not accessible via API'
+              }
+            >
+              <SelectItem value="ACTIVE" text="Active" />
+              <SelectItem value="INACTIVE" text="Inactive" />
+            </Select>
           </SectionCard>
 
           {/* Section 3: Organization */}
           <SectionCard icon={Building2} title="Organization">
-            <FieldGroup>
-              <Label>Project Group</Label>
-              <input
-                style={inputStyle}
-                placeholder="e.g. Finance, Healthcare"
-                value={projectGroup}
-                onChange={(e) => setProjectGroup(e.target.value)}
-              />
-            </FieldGroup>
+            <TextInput
+              id="project-group"
+              labelText="Project Group"
+              placeholder="e.g. Finance, Healthcare"
+              value={projectGroup}
+              onChange={(e) => setProjectGroup(e.target.value)}
+            />
 
-            <FieldGroup>
-              <Label>Agency</Label>
-              <input
-                style={inputStyle}
-                placeholder="Agency or department name"
-                value={agency}
-                onChange={(e) => setAgency(e.target.value)}
-              />
-            </FieldGroup>
+            <TextInput
+              id="project-agency"
+              labelText="Agency"
+              placeholder="Agency or department name"
+              value={agency}
+              onChange={(e) => setAgency(e.target.value)}
+            />
 
-            <FieldGroup>
-              <Label>
-                <Tag size={12} style={{ marginRight: 2 }} />
-                Tags
-              </Label>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                {tags.length > 0 && (
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
-                    {tags.map((tag) => (
-                      <span
-                        key={tag}
-                        style={{
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          gap: 3,
-                          fontSize: 11,
-                          fontFamily: FONT,
-                          padding: '2px 8px',
-                          borderRadius: 4,
-                          background: '#3B82F618',
-                          color: '#60A5FA',
-                          border: '1px solid #3B82F630',
-                        }}
-                      >
-                        {tag}
-                        <button
-                          onClick={() => removeTag(tag)}
-                          style={{
-                            background: 'none',
-                            border: 'none',
-                            padding: 0,
-                            cursor: 'pointer',
-                            display: 'flex',
-                            alignItems: 'center',
-                            color: '#60A5FA',
-                          }}
-                        >
-                          <X size={12} />
-                        </button>
-                      </span>
-                    ))}
-                  </div>
-                )}
-                <input
-                  style={inputStyle}
-                  placeholder="Type and press Enter, or separate with commas"
-                  value={tagsInput}
-                  onChange={(e) => setTagsInput(e.target.value)}
-                  onKeyDown={handleTagsKeyDown}
-                  onBlur={addTagsFromInput}
-                />
-              </div>
-            </FieldGroup>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+              {tags.length > 0 && (
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
+                  {tags.map((tag) => (
+                    <CarbonTag
+                      key={tag}
+                      type="blue"
+                      size="sm"
+                      filter
+                      title="Remove tag"
+                      onClose={() => removeTag(tag)}
+                    >
+                      {tag}
+                    </CarbonTag>
+                  ))}
+                </div>
+              )}
+              <TextInput
+                id="project-tags"
+                labelText={
+                  <LabelText>
+                    <Tag size={12} style={{ marginRight: 2 }} />
+                    Tags
+                  </LabelText>
+                }
+                placeholder="Type and press Enter, or separate with commas"
+                value={tagsInput}
+                onChange={(e) => setTagsInput(e.target.value)}
+                onKeyDown={handleTagsKeyDown}
+                onBlur={addTagsFromInput}
+              />
+            </div>
           </SectionCard>
 
           {/* Section 4: Contact Information */}
           <SectionCard icon={FileText} title="Contact Information">
-            <FieldGroup>
-              <Label>
-                <User size={12} style={{ marginRight: 2 }} />
-                Owner / Maintainer
-              </Label>
-              <input
-                style={inputStyle}
-                placeholder="Full name of the project owner"
-                value={owner}
-                onChange={(e) => setOwner(e.target.value)}
-              />
-            </FieldGroup>
+            <TextInput
+              id="project-owner"
+              labelText={
+                <LabelText>
+                  <User size={12} style={{ marginRight: 2 }} />
+                  Owner / Maintainer
+                </LabelText>
+              }
+              placeholder="Full name of the project owner"
+              value={owner}
+              onChange={(e) => setOwner(e.target.value)}
+            />
 
-            <FieldGroup>
-              <Label>
-                <Mail size={12} style={{ marginRight: 2 }} />
-                Contact Email
-              </Label>
-              <input
-                type="email"
-                style={inputStyle}
-                placeholder="email@example.com"
-                value={contactEmail}
-                onChange={(e) => setContactEmail(e.target.value)}
-              />
-              <span style={{ fontSize: 11, color: THEME.text.muted }}>
-                Used for notifications and support contact
-              </span>
-            </FieldGroup>
+            <TextInput
+              id="project-contact-email"
+              type="email"
+              labelText={
+                <LabelText>
+                  <Mail size={12} style={{ marginRight: 2 }} />
+                  Contact Email
+                </LabelText>
+              }
+              placeholder="email@example.com"
+              helperText="Used for notifications and support contact"
+              value={contactEmail}
+              onChange={(e) => setContactEmail(e.target.value)}
+            />
           </SectionCard>
         </div>
       </div>

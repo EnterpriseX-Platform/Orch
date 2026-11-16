@@ -1,13 +1,19 @@
 // Single RepoTable view + management.
 import { NextRequest } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { getTenantContext, featureGuard, isForeign } from '@/lib/tenant'
 import { dropPhysicalTable } from '@/lib/repo-physical'
 import { describe as routerDescribe, count as routerCount } from '@/lib/repo-router'
 import { ok, fail } from '../../_helpers'
 
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const ctx = await getTenantContext(_req)
+  const blocked = featureGuard(ctx, 'dataRepository')
+  if (blocked) return blocked
   try {
     const { id } = await params
+    const owner = await prisma.repoTable.findUnique({ where: { id }, select: { tenantId: true } })
+    if (isForeign(ctx, owner)) return fail('Not found', 404)
     const t = await prisma.repoTable.findUnique({
       where: { id },
       include: {
@@ -38,8 +44,13 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
 }
 
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const ctx = await getTenantContext(req)
+  const blocked = featureGuard(ctx, 'dataRepository')
+  if (blocked) return blocked
   try {
     const { id } = await params
+    const owner = await prisma.repoTable.findUnique({ where: { id }, select: { tenantId: true } })
+    if (isForeign(ctx, owner)) return fail('Not found', 404)
     const body = await req.json()
     const data: any = {}
     if (body.name !== undefined) data.name = body.name
@@ -54,8 +65,13 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 }
 
 export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const ctx = await getTenantContext(_req)
+  const blocked = featureGuard(ctx, 'dataRepository')
+  if (blocked) return blocked
   try {
     const { id } = await params
+    const owner = await prisma.repoTable.findUnique({ where: { id }, select: { tenantId: true } })
+    if (isForeign(ctx, owner)) return fail('Not found', 404)
     const t = await prisma.repoTable.findUnique({ where: { id }, select: { name: true, connectionId: true } })
     if (!t) return fail('Not found', 404)
     if (!t.connectionId) await dropPhysicalTable(t.name).catch(() => undefined)

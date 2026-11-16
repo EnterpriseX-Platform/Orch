@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { getTenantContext, featureGuard, isForeign } from '@/lib/tenant'
 import { generateOpenApiSpec } from '@/lib/openapi-generator'
 
 // GET /api/projects/[id]/openapi — Return stored spec or generate if not exists
@@ -7,6 +8,9 @@ export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const ctx = await getTenantContext(request)
+  const blocked = featureGuard(ctx, 'projects')
+  if (blocked) return blocked
   try {
     const { id } = await params
 
@@ -14,12 +18,13 @@ export async function GET(
       where: { id },
       select: {
         id: true,
+        tenantId: true,
         openApiSpec: true,
         openApiSpecUpdatedAt: true,
       },
     })
 
-    if (!project) {
+    if (!project || isForeign(ctx, project)) {
       return NextResponse.json({ error: 'Project not found' }, { status: 404 })
     }
 
@@ -58,16 +63,19 @@ export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const ctx = await getTenantContext(request)
+  const blocked = featureGuard(ctx, 'projects')
+  if (blocked) return blocked
   try {
     const { id } = await params
 
     // Check if project exists
     const existing = await prisma.project.findUnique({
       where: { id },
-      select: { id: true },
+      select: { id: true, tenantId: true },
     })
 
-    if (!existing) {
+    if (!existing || isForeign(ctx, existing)) {
       return NextResponse.json({ error: 'Project not found' }, { status: 404 })
     }
 

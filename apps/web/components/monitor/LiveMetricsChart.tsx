@@ -1,5 +1,6 @@
 'use client';
 
+import { StatStrip } from '@/components/common/StatStrip'
 import { useEffect, useState, useCallback } from 'react';
 import {
   LineChart,
@@ -136,33 +137,7 @@ export function LiveMetricsChart() {
       </div>
 
       {/* Current Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        {statCards.map(card => (
-          <div key={card.label} style={{
-            background: THEME.panel,
-            border: `1px solid ${THEME.border}`,
-            borderRadius: 8,
-            padding: 12,
-          }}>
-            <div className="flex items-center gap-2 mb-2">
-              <div style={{
-                width: 28, height: 28, borderRadius: 6,
-                background: `${card.color}12`,
-                border: `1px solid ${card.color}30`,
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-              }}>
-                <card.icon size={14} style={{ color: card.color }} />
-              </div>
-            </div>
-            <div style={{ fontSize: 22, fontWeight: 700, color: THEME.text.primary, lineHeight: 1.2 }}>
-              {card.value}
-            </div>
-            <div style={{ fontSize: 11, color: THEME.text.muted, marginTop: 2 }}>
-              {card.label}
-            </div>
-          </div>
-        ))}
-      </div>
+      <StatStrip items={statCards.map((c) => ({ label: c.label, value: c.value, icon: c.icon }))} />
 
       {/* CPU & Memory Chart */}
       <div style={{

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { getTenantContext, tenantWhere, featureGuard, isForeign } from '@/lib/tenant'
 import { z } from 'zod'
 
 const reorderSchema = z.object({
@@ -13,20 +14,23 @@ const reorderSchema = z.object({
 
 // PATCH /api/datasets/reorder - Reorder a dataset within its siblings
 export async function PATCH(request: NextRequest) {
+  const ctx = await getTenantContext(request)
+  const blocked = featureGuard(ctx, 'datasets')
+  if (blocked) return blocked
   try {
     const body = await request.json()
     const { id, parentId, sortOrder } = reorderSchema.parse(body)
 
     // Verify the dataset exists
     const dataset = await prisma.dataCatalog.findUnique({ where: { id } })
-    if (!dataset) {
+    if (!dataset || isForeign(ctx, dataset)) {
       return NextResponse.json({ error: 'Dataset not found' }, { status: 404 })
     }
 
     // Verify parent exists if specified
     if (parentId) {
       const parent = await prisma.dataCatalog.findUnique({ where: { id: parentId } })
-      if (!parent) {
+      if (!parent || isForeign(ctx, parent)) {
         return NextResponse.json({ error: 'Parent dataset not found' }, { status: 404 })
       }
       // Prevent circular: cannot move a node under itself or its descendants
@@ -45,6 +49,7 @@ export async function PATCH(request: NextRequest) {
         await tx.dataCatalog.updateMany({
           where: {
             parentId: oldParentId,
+            ...tenantWhere(ctx),
             sortOrder: { gt: oldSortOrder },
           },
           data: { sortOrder: { decrement: 1 } },
@@ -54,6 +59,7 @@ export async function PATCH(request: NextRequest) {
         await tx.dataCatalog.updateMany({
           where: {
             parentId: parentId,
+            ...tenantWhere(ctx),
             sortOrder: { gte: sortOrder },
           },
           data: { sortOrder: { increment: 1 } },
@@ -65,6 +71,7 @@ export async function PATCH(request: NextRequest) {
           await tx.dataCatalog.updateMany({
             where: {
               parentId: parentId,
+              ...tenantWhere(ctx),
               id: { not: id },
               sortOrder: { gte: sortOrder, lt: oldSortOrder },
             },
@@ -75,6 +82,7 @@ export async function PATCH(request: NextRequest) {
           await tx.dataCatalog.updateMany({
             where: {
               parentId: parentId,
+              ...tenantWhere(ctx),
               id: { not: id },
               sortOrder: { gt: oldSortOrder, lte: sortOrder },
             },

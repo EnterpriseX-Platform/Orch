@@ -1,11 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server'
 import crypto from 'crypto'
 import { prisma } from '@/lib/prisma'
+import { getTenantContext, featureGuard } from '@/lib/tenant'
 
 // POST /api/api-keys/validate — broker calls this to validate an API key
 // Body: { key: "sk_..." }  OR  { keyHash: "..." }
 // Returns: { valid: true, id, projectId, scopes, expiresAt } or { valid: false, reason }
 export async function POST(request: NextRequest) {
+  const ctx = await getTenantContext(request)
+  const blocked = featureGuard(ctx, 'projects')
+  if (blocked) return blocked
   try {
     const body = await request.json().catch(() => ({}))
     const { key, keyHash } = body as { key?: string; keyHash?: string }

@@ -44,38 +44,36 @@
 
 /* Handle Styles */
 .react-flow__handle {
-  width: 10px !important;
-  height: 10px !important;
-  background: var(--t-panel) !important;
-  border: 1px solid var(--t-border) !important;
+  width: 9px !important;
+  height: 9px !important;
+  background: #ffffff !important;
+  border: 1.5px solid #8d8d8d !important;
+  border-radius: 50% !important;
   opacity: 1 !important;
   transition: all 0.2s ease !important;
 }
 
 .react-flow__handle:hover {
-  background: var(--t-accent) !important;
-  border-color: var(--t-accent) !important;
-  transform: scale(1.2) !important;
+  background: #0f62fe !important;
+  border-color: #0f62fe !important;
 }
 
 /* Connection Line */
 .react-flow__connection-line {
-  stroke: var(--t-accent) !important;
+  stroke: #0f62fe !important;
   stroke-width: 1.5 !important;
-  stroke-dasharray: 5 4 !important;
 }
 
-/* Edge Styles */
+/* Edge Styles — solid grey; blue when hovered or selected */
 .react-flow__edge-path {
-  stroke: var(--t-accent-light) !important;
+  stroke: #8d8d8d !important;
   stroke-width: 1.5 !important;
-  stroke-dasharray: 6 3 !important;
-  opacity: 0.6 !important;
 }
 
-.react-flow__edge:hover .react-flow__edge-path {
+.react-flow__edge:hover .react-flow__edge-path,
+.react-flow__edge.selected .react-flow__edge-path {
+  stroke: #0f62fe !important;
   stroke-width: 2 !important;
-  opacity: 0.8 !important;
 }
 
 /* Selection */
@@ -89,27 +87,30 @@
 /* ==================== BASE STYLES ==================== */
 
 :root {
-  --font-sans: 'Prompt', sans-serif;
+  --font-sans: "IBM Plex Sans Thai", "IBM Plex Sans", "Sarabun", system-ui, sans-serif;
   --font-mono: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
 
   /* Default: Dark Theme */
-  --t-bg: #0F1117;
-  --t-panel: #1A1D28;
-  --t-panel-hover: #1E2132;
-  --t-border: #232736;
-  --t-border-light: #1D2130;
-  --t-text: #E2E8F0;
-  --t-text-secondary: #8B92A5;
-  --t-text-muted: #5A6178;
-  --t-accent: #3B82F6;
-  --t-accent-hover: #2563EB;
-  --t-accent-light: #60A5FA;
-  --t-input: #151821;
-  --t-header: #12141D;
-  --t-sidebar: #0B0D14;
-  --t-card-hover: #252836;
-  --t-shadow: rgba(0,0,0,0.3);
-  --t-code-bg: #151821;
+  --t-bg: #f4f4f4;
+  --t-panel: #ffffff;
+  --t-panel-hover: #e8e8e8;
+  --t-border: #e0e0e0;
+  --t-border-light: #e0e0e0;
+  --t-text: #161616;
+  --t-text-secondary: #525252;
+  --t-text-muted: #6f6f6f;
+  --t-accent: #0f62fe;
+  --t-accent-hover: #0353e9;
+  --t-accent-light: #0f62fe;
+  --t-input: #f4f4f4;
+  --t-header: #ffffff;
+  --t-sidebar: #ffffff;
+  --t-card-hover: #e8e8e8;
+  --t-shadow: transparent;
+  --t-code-bg: #f4f4f4;
+  --t-layer-selected: #e0e0e0;
+  --t-border-strong: #8d8d8d;
+  --t-shell-header: #161616;
 
   /* Legacy compat */
   --color-bg: var(--t-bg);
@@ -122,23 +123,26 @@
 
 /* Light Theme Override */
 [data-theme="light"] {
-  --t-bg: #EBEEF3;
-  --t-panel: #F5F6FA;
-  --t-panel-hover: #ECEEF4;
-  --t-border: #E8ECF2;
-  --t-border-light: #EFF2F7;
-  --t-text: #1A2030;
-  --t-text-secondary: #5A6578;
-  --t-text-muted: #8892A2;
-  --t-accent: #3B82F6;
-  --t-accent-hover: #2563EB;
-  --t-accent-light: #60A5FA;
-  --t-input: #E8EBF1;
-  --t-header: #F0F1F6;
-  --t-sidebar: #F0F1F6;
-  --t-card-hover: #E8EBF1;
-  --t-shadow: rgba(15,20,35,0.06);
-  --t-code-bg: #ECEEF4;
+  --t-bg: #f4f4f4;
+  --t-panel: #ffffff;
+  --t-panel-hover: #e8e8e8;
+  --t-border: #e0e0e0;
+  --t-border-light: #e0e0e0;
+  --t-text: #161616;
+  --t-text-secondary: #525252;
+  --t-text-muted: #6f6f6f;
+  --t-accent: #0f62fe;
+  --t-accent-hover: #0353e9;
+  --t-accent-light: #0f62fe;
+  --t-input: #f4f4f4;
+  --t-header: #ffffff;
+  --t-sidebar: #ffffff;
+  --t-card-hover: #e8e8e8;
+  --t-shadow: transparent;
+  --t-code-bg: #f4f4f4;
+  --t-layer-selected: #e0e0e0;
+  --t-border-strong: #8d8d8d;
+  --t-shell-header: #161616;
 }
 
 @theme inline {
@@ -244,3 +248,71 @@
 [data-theme="light"] .swagger-ui-dark .swagger-ui .response-col_description__inner p {
   color: #64748B !important;
 }
+
+
+/* ==================== IBM Carbon g10 (MaintainX design system) ==================== */
+/* Carbon g10, compact density (same system as FILEHUB-X carbon.css):
+   no radius, no shadow, one type scale. Exceptions: circles and status tags. */
+*:not(.rounded-full):not(.cds-tag):not([class*="cds--"]):not([style*="border-radius: 50%"]):not([style*="border-radius: 9999"]) {
+  border-radius: 0 !important;
+}
+:where(*:not([class*="cds--"]), *:not([class*="cds--"])::before, *:not([class*="cds--"])::after) { box-shadow: none !important; }
+main h1 { font-size: 20px !important; line-height: 28px !important; font-weight: 400 !important; letter-spacing: 0; }
+main h2 { font-size: 16px !important; line-height: 22px !important; font-weight: 400 !important; }
+main h3 { font-size: 14px !important; line-height: 20px !important; font-weight: 600 !important; }
+main th { font-size: 12px !important; font-weight: 600 !important; text-transform: none !important; letter-spacing: 0 !important; }
+body, input, select, textarea, button { font-family: var(--font-sans); }
+body { font-size: 13px; line-height: 1.43; letter-spacing: 0.16px; }
+:focus-visible { outline: 2px solid #0f62fe !important; outline-offset: -2px; }
+.cds-tag { border-radius: 24px !important; }
+td, .tabular-nums { font-variant-numeric: tabular-nums; }
+/* Buttons never wrap their label (tabs, toolbars); rows that can't fit scroll instead. */
+main button { white-space: nowrap; }
+
+/* ==================== Carbon form controls (global baseline) ====================
+   Every text field / select / textarea inside the app content gets the Carbon
+   "field" look: #f4f4f4 fill, no box border, 1px bottom rule, blue 2px focus.
+   Overrides the many inline borders left from the old theme. */
+:where(main, [role="dialog"], .fixed.inset-0) :is(
+  input:not([type="checkbox"]):not([type="radio"]):not([type="color"]):not([type="range"]):not([type="file"]):not([type="hidden"]),
+  select, textarea
+):not(.react-flow *):not([class*="cds--"]) {
+  background-color: #f4f4f4 !important;
+  border: 0 !important;
+  border-bottom: 1px solid #8d8d8d !important;
+  border-radius: 0 !important;
+  color: #161616 !important;
+  font-size: 14px !important;
+  outline: none;
+}
+:where(main, [role="dialog"], .fixed.inset-0) :is(
+  input:not([type="checkbox"]):not([type="radio"]):not([type="color"]):not([type="range"]):not([type="file"]):not([type="hidden"]),
+  select
+):not(.react-flow *):not([class*="cds--"]) {
+  min-height: 36px;
+}
+:where(main, [role="dialog"], .fixed.inset-0) :is(input, select, textarea):focus-visible,
+:where(main, [role="dialog"], .fixed.inset-0) :is(input, select, textarea):focus {
+  outline: 2px solid #0f62fe !important;
+  outline-offset: -2px !important;
+  border-bottom-color: transparent !important;
+}
+:where(main, [role="dialog"], .fixed.inset-0) :is(input, textarea)::placeholder { color: #a8a8a8 !important; }
+:where(main, [role="dialog"], .fixed.inset-0) :is(input, select, textarea):disabled {
+  color: #c6c6c6 !important; border-bottom-color: transparent !important; cursor: not-allowed;
+}
+/* Fields that sit on a grey surface use white fill (Carbon "field-02"). */
+.bg-\[var\(--t-bg\)\] :is(input, select, textarea) { background-color: #ffffff !important; }
+:where(main, [role="dialog"], .fixed.inset-0) input[type="checkbox"],
+:where(main, [role="dialog"], .fixed.inset-0) input[type="radio"] { accent-color: #161616; }
+
+/* Modal backdrop + surface: Carbon overlay, flat white container. */
+.fixed.inset-0.bg-black\/50, .fixed.inset-0.bg-black\/40, .fixed.inset-0.bg-black\/60 { background-color: rgba(22,22,22,.5) !important; }
+/* Horizontal scroll rows (tabs, wide tables): thin, quiet scrollbar */
+main .overflow-x-auto { scrollbar-width: thin; scrollbar-color: #c6c6c6 transparent; }
+main .overflow-x-auto::-webkit-scrollbar { height: 4px; }
+main .overflow-x-auto::-webkit-scrollbar-thumb { background: #c6c6c6; }
+
+
+
+

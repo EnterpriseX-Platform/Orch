@@ -7,6 +7,7 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Plus, Pencil, Trash2, Shield, Loader2 } from 'lucide-react'
+import { Button, Checkbox, Modal, Tag, TextInput } from '@carbon/react'
 import { auditConfigApi } from '@/lib/api'
 import { toast } from 'sonner'
 import { confirmDialog } from '@/components/common/ConfirmDialog'
@@ -40,9 +41,9 @@ export function AuditConfigsSection({ projectId }: { projectId: string }) {
   return (
     <div>
       <div className="flex items-center justify-end mb-3">
-        <button onClick={() => setShowCreate(true)} className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold text-white bg-[var(--t-accent)] hover:bg-[#2563EB]">
-          <Plus className="w-3.5 h-3.5" /> New Config
-        </button>
+        <Button kind="primary" size="sm" renderIcon={Plus} onClick={() => setShowCreate(true)}>
+          New Config
+        </Button>
       </div>
 
       {isLoading ? (
@@ -50,10 +51,10 @@ export function AuditConfigsSection({ projectId }: { projectId: string }) {
       ) : items.length === 0 ? (
         <Empty onCreate={() => setShowCreate(true)} />
       ) : (
-        <div className="rounded-lg bg-[var(--t-panel)] border border-[var(--t-border)] overflow-hidden">
+        <div className="rounded-none bg-[var(--t-panel)] border border-[var(--t-border)] overflow-hidden">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-[var(--t-border)] bg-[var(--t-bg)]">
+              <tr className="bg-[#e0e0e0] h-10">
                 <Th>Name</Th><Th>Status</Th><Th>Used by</Th><Th>Actions</Th>
               </tr>
             </thead>
@@ -63,12 +64,12 @@ export function AuditConfigsSection({ projectId }: { projectId: string }) {
                   <td className="px-4 py-2.5">
                     <div className="font-medium text-[var(--t-text)]">{ac.name}</div>
                     {ac.description && <div className="text-xs text-[var(--t-text-muted)]">{ac.description}</div>}
-                    {!ac.projectId && <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-400 mt-1 inline-block">global</span>}
+                    {!ac.projectId && <Tag type="warm-gray" size="sm" className="mt-1">global</Tag>}
                   </td>
                   <td className="px-4 py-2.5">
-                    <span className={`text-xs font-semibold px-2 py-0.5 rounded ${ac.enabled ? 'bg-emerald-500/15 text-emerald-400' : 'bg-slate-500/20 text-slate-400'}`}>
+                    <Tag type={ac.enabled ? 'green' : 'gray'} size="sm">
                       {ac.enabled ? 'Enabled' : 'Disabled'}
-                    </span>
+                    </Tag>
                   </td>
                   <td className="px-4 py-2.5">
                     <span className="text-xs font-semibold">{ac._count?.messageFormats ?? 0}</span>
@@ -76,12 +77,8 @@ export function AuditConfigsSection({ projectId }: { projectId: string }) {
                   </td>
                   <td className="px-4 py-2.5">
                     <div className="flex items-center gap-2">
-                      <button onClick={() => setEditing(ac)} className="p-1.5 rounded hover:bg-[var(--t-panel-hover)]">
-                        <Pencil className="w-3.5 h-3.5 text-[var(--t-text-muted)]" />
-                      </button>
-                      <button onClick={async () => { if (await confirmDialog({ title: `Delete "${ac.name}"?`, variant: 'danger' })) del.mutate(ac.id) }} className="p-1.5 rounded hover:bg-red-500/10">
-                        <Trash2 className="w-3.5 h-3.5 text-red-400" />
-                      </button>
+                      <Button kind="ghost" size="sm" hasIconOnly renderIcon={Pencil} iconDescription="Edit" onClick={() => setEditing(ac)} />
+                      <Button kind="danger--ghost" size="sm" hasIconOnly renderIcon={Trash2} iconDescription="Delete" onClick={async () => { if (await confirmDialog({ title: `Delete "${ac.name}"?`, variant: 'danger' })) del.mutate(ac.id) }} />
                     </div>
                   </td>
                 </tr>
@@ -104,15 +101,15 @@ export function AuditConfigsSection({ projectId }: { projectId: string }) {
 }
 
 function Th({ children }: { children: React.ReactNode }) {
-  return <th className="text-left px-4 py-2 text-[10px] font-semibold uppercase tracking-wider text-[var(--t-text-muted)]">{children}</th>
+  return <th className="text-left px-4 py-2 text-[12px] text-[#525252]">{children}</th>
 }
 
 function Empty({ onCreate }: { onCreate: () => void }) {
   return (
-    <div className="text-center py-12 rounded-lg bg-[var(--t-panel)] border border-dashed border-[var(--t-border)]">
+    <div className="text-center py-12 rounded-none bg-[var(--t-panel)] border border-dashed border-[var(--t-border)]">
       <Shield className="w-8 h-8 text-[var(--t-text-muted)] mx-auto mb-2" />
       <p className="text-sm text-[var(--t-text)]">No audit configs yet</p>
-      <button onClick={onCreate} className="mt-3 text-xs px-3 py-1.5 rounded bg-[var(--t-accent)] text-white">Create one</button>
+      <Button kind="primary" size="sm" onClick={onCreate} className="mt-3">Create one</Button>
     </div>
   )
 }
@@ -131,35 +128,21 @@ function Editor({ item, projectId, onClose, onSaved }: { item: AC | null; projec
   })
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4" onClick={onClose}>
-      <div className="bg-[var(--t-panel)] border border-[var(--t-border)] rounded-xl w-full max-w-md" onClick={(e) => e.stopPropagation()}>
-        <div className="flex items-center justify-between px-5 py-3 border-b border-[var(--t-border)]">
-          <h2 className="text-lg font-semibold text-[var(--t-text)]">{isEdit ? 'Edit Audit Config' : 'New Audit Config'}</h2>
-          <button onClick={onClose} className="text-[var(--t-text-muted)]">✕</button>
-        </div>
-        <div className="p-5 space-y-4">
-          <Field label="Name *">
-            <input value={form.name ?? ''} onChange={(e) => set('name', e.target.value)} className="w-full px-3 py-2 text-sm rounded border border-[var(--t-border)] bg-[var(--t-input)] text-[var(--t-text)]" placeholder="Strict / Default / Off" />
-          </Field>
-          <Field label="Description">
-            <input value={form.description ?? ''} onChange={(e) => set('description', e.target.value)} className="w-full px-3 py-2 text-sm rounded border border-[var(--t-border)] bg-[var(--t-input)] text-[var(--t-text)]" />
-          </Field>
-          <label className="flex items-center gap-2">
-            <input type="checkbox" checked={form.enabled ?? true} onChange={(e) => set('enabled', e.target.checked)} className="rounded" />
-            <span className="text-sm text-[var(--t-text)]">Enabled (write to audit_logs)</span>
-          </label>
-        </div>
-        <div className="px-5 py-3 border-t border-[var(--t-border)] flex justify-end gap-2">
-          <button onClick={onClose} className="px-4 py-2 text-sm text-[var(--t-text-secondary)]">Cancel</button>
-          <button onClick={() => save.mutate()} disabled={!form.name || save.isPending} className="px-4 py-2 text-sm rounded bg-[var(--t-accent)] text-white disabled:opacity-50">
-            {save.isPending ? <Loader2 className="w-4 h-4 animate-spin inline mr-1" /> : null}Save
-          </button>
-        </div>
+    <Modal
+      open
+      size="sm"
+      modalHeading={isEdit ? 'Edit Audit Config' : 'New Audit Config'}
+      primaryButtonText={save.isPending ? 'Saving…' : 'Save'}
+      secondaryButtonText="Cancel"
+      primaryButtonDisabled={!form.name || save.isPending}
+      onRequestClose={onClose}
+      onRequestSubmit={() => save.mutate()}
+    >
+      <div className="space-y-4">
+        <TextInput id="audit-config-name" labelText="Name *" value={form.name ?? ''} onChange={(e) => set('name', e.target.value)} placeholder="Strict / Default / Off" />
+        <TextInput id="audit-config-description" labelText="Description" value={form.description ?? ''} onChange={(e) => set('description', e.target.value)} />
+        <Checkbox id="audit-config-enabled" labelText="Enabled (write to audit_logs)" checked={form.enabled ?? true} onChange={(_, { checked }) => set('enabled', checked)} />
       </div>
-    </div>
+    </Modal>
   )
-}
-
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
-  return <div><label className="block text-xs font-medium text-[var(--t-text-secondary)] mb-1">{label}</label>{children}</div>
 }

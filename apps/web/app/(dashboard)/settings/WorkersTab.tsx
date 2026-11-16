@@ -9,34 +9,43 @@
 import { useState, useCallback, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
-import { 
-  Cpu, 
-  Play, 
-  Square, 
-  RotateCcw, 
-  Trash2, 
-  Plus, 
-  AlertCircle, 
-  CheckCircle, 
+import {
+  Cpu,
+  Play,
+  Square,
+  RotateCcw,
   Pause,
   X,
-  AlertTriangle,
-  MoreHorizontal,
-  Settings2,
+  AlertCircle,
+  CheckCircle,
   RefreshCw,
   WifiOff,
   Edit2,
-  Check
+  Check,
+  Plus,
 } from 'lucide-react';
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-  DropdownMenuSeparator,
-} from '@/components/ui/dropdown-menu';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
+  Button,
+  TextInput,
+  Toggle,
+  Tag,
+  Modal,
+  ComposedModal,
+  ModalHeader,
+  ModalBody,
+  ModalFooter,
+  OverflowMenu,
+  OverflowMenuItem,
+  RadioButtonGroup,
+  RadioButton,
+  Table,
+  TableHead,
+  TableRow,
+  TableHeader,
+  TableBody,
+  TableCell,
+} from '@carbon/react';
+
 
 const THEME = {
   bg: 'var(--t-bg)',
@@ -46,12 +55,12 @@ const THEME = {
   text: { primary: 'var(--t-text)', secondary: 'var(--t-text-secondary)', muted: 'var(--t-text-muted)' },
   accent: 'var(--t-accent)',
   colors: {
-    blue: '#3B82F6',
-    emerald: '#10B981',
-    purple: '#8B5CF6',
-    amber: '#F59E0B',
-    red: '#EF4444',
-    cyan: '#06B6D4',
+    blue: '#0f62fe',
+    emerald: '#24a148',
+    purple: '#8a3ffc',
+    amber: '#ba4e00',
+    red: '#da1e28',
+    cyan: '#1192e8',
   }
 };
 
@@ -92,33 +101,29 @@ interface WorkerData {
   timestamp: string;
 }
 
-// Simple Toggle Switch Component
-function ToggleSwitch({ 
-  checked, 
-  onChange, 
-  label 
-}: { 
-  checked: boolean; 
+// Simple Toggle Switch Component (Carbon Toggle)
+function ToggleSwitch({
+  checked,
+  onChange,
+  label,
+  id,
+}: {
+  checked: boolean;
   onChange: (checked: boolean) => void;
   label: string;
+  id: string;
 }) {
   return (
-    <div className="flex items-center justify-between py-2">
-      <span className="text-sm text-gray-700">{label}</span>
-      <button
-        onClick={() => onChange(!checked)}
-        className={`
-          relative inline-flex h-6 w-11 items-center rounded-full transition-colors
-          ${checked ? 'bg-blue-600' : 'bg-[var(--t-border)]'}
-        `}
-      >
-        <span
-          className={`
-            inline-block h-4 w-4 transform rounded-full bg-[var(--t-panel)] transition-transform
-            ${checked ? 'translate-x-6' : 'translate-x-1'}
-          `}
-        />
-      </button>
+    <div className="py-2">
+      <Toggle
+        id={id}
+        size="sm"
+        labelText={label}
+        labelA="Off"
+        labelB="On"
+        toggled={checked}
+        onToggle={(next: boolean) => onChange(next)}
+      />
     </div>
   );
 }
@@ -330,35 +335,16 @@ export function WorkersTab() {
 
   const getStatusBadge = (status: Worker['status']) => {
     const config = {
-      running: { color: '#059669', bg: '#D1FAE5', border: '#A7F3D0', label: 'Running', dot: '#10B981' },
-      paused: { color: '#D97706', bg: '#FEF3C7', border: '#FDE68A', label: 'Paused', dot: '#F59E0B' },
-      stopped: { color: '#6B7280', bg: '#F3F4F6', border: '#E5E7EB', label: 'Stopped', dot: '#9CA3AF' },
-      error: { color: '#DC2626', bg: '#FEE2E2', border: '#FECACA', label: 'Error', dot: '#EF4444' },
-    };
+      running: { type: 'green', label: 'Running' },
+      paused: { type: 'warm-gray', label: 'Paused' },
+      stopped: { type: 'gray', label: 'Stopped' },
+      error: { type: 'red', label: 'Error' },
+    } as const;
     const c = config[status];
     return (
-      <span style={{
-        display: 'inline-flex',
-        alignItems: 'center',
-        gap: 6,
-        padding: '4px 10px',
-        borderRadius: 4,
-        fontSize: 11,
-        fontWeight: 600,
-        color: c.color,
-        background: c.bg,
-        border: `1px solid ${c.border}`,
-      }}>
-        <span style={{
-          width: 7,
-          height: 7,
-          borderRadius: '50%',
-          background: c.dot,
-          opacity: status === 'running' ? 1 : 0.6,
-          boxShadow: status === 'running' ? `0 0 4px ${c.dot}` : 'none',
-        }} />
+      <Tag type={c.type} size="sm">
         {c.label}
-      </span>
+      </Tag>
     );
   };
 
@@ -367,7 +353,7 @@ export function WorkersTab() {
   if (isPending && !workerData) {
     return (
       <div className="flex items-center justify-center h-64">
-        <RefreshCw className="w-8 h-8 animate-spin text-blue-500" />
+        <RefreshCw className="w-8 h-8 animate-spin text-[#0f62fe]" />
       </div>
     );
   }
@@ -376,11 +362,10 @@ export function WorkersTab() {
   // refetch failure falls through to the table view with stale data.
   if (error && !workerData) {
     return (
-      <div className="flex flex-col items-center justify-center h-64 text-red-500">
+      <div className="flex flex-col items-center justify-center h-64 text-[#da1e28]">
         <WifiOff className="w-12 h-12 mb-2" />
         <p className="text-sm">Failed to load workers</p>
-        <Button variant="outline" size="sm" onClick={() => refetch()} className="mt-4">
-          <RefreshCw className="w-4 h-4 mr-2" />
+        <Button kind="tertiary" size="sm" renderIcon={RefreshCw} onClick={() => refetch()} className="mt-4">
           Retry
         </Button>
       </div>
@@ -388,7 +373,7 @@ export function WorkersTab() {
   }
 
   return (
-    <div style={{ fontFamily: "'Prompt', sans-serif" }}>
+    <div style={{ fontFamily: '"IBM Plex Sans Thai", "IBM Plex Sans", "Sarabun", system-ui, sans-serif' }}>
       {/* Stats Cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3 mb-5">
         <StatCard title="Total Workers" value={stats.total} icon={Cpu} color={THEME.colors.blue} />
@@ -396,123 +381,92 @@ export function WorkersTab() {
         <StatCard title="Paused" value={stats.paused} icon={Pause} color={THEME.colors.amber} />
         <StatCard title="Stopped" value={stats.stopped} icon={Square} color={THEME.colors.cyan} />
         <StatCard title="Errors" value={stats.error} icon={AlertCircle} color={THEME.colors.red} />
-        <StatCard 
-          title="Processed" 
-          value={workers.reduce((sum, w) => sum + w.processed, 0).toLocaleString()} 
-          icon={CheckCircle} 
-          color={THEME.colors.purple} 
+        <StatCard
+          title="Processed"
+          value={workers.reduce((sum, w) => sum + w.processed, 0).toLocaleString()}
+          icon={CheckCircle}
+          color={THEME.colors.purple}
         />
-        <StatCard 
-          title="Failed" 
-          value={workers.reduce((sum, w) => sum + w.failed, 0).toLocaleString()} 
-          icon={AlertCircle} 
-          color={THEME.colors.red} 
+        <StatCard
+          title="Failed"
+          value={workers.reduce((sum, w) => sum + w.failed, 0).toLocaleString()}
+          icon={AlertCircle}
+          color={THEME.colors.red}
         />
       </div>
 
       {/* Actions Bar */}
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
-          <h3 style={{ fontSize: 14, fontWeight: 600, color: THEME.text.primary }}>
+          <h3 style={{ fontSize: 16, fontWeight: 400, color: THEME.text.primary }}>
             Worker Instances
           </h3>
-          <span style={{
-            fontSize: 11,
-            padding: '2px 8px',
-            background: THEME.bg,
-            border: `1px solid ${THEME.border}`,
-            borderRadius: 4,
-            color: THEME.text.secondary,
-            fontWeight: 500,
-          }}>
-            {workers.length}
-          </span>
+          <Tag type="gray" size="sm">{workers.length}</Tag>
         </div>
         <div className="flex items-center gap-2">
           {/* Background refetch failed but we're still showing prior data — flag
               it so the admin knows the numbers may be stale. */}
           {error && workerData && (
-            <span className="flex items-center gap-1 text-[11px] text-amber-500">
+            <span className="flex items-center gap-1 text-[11px] text-[#8a3800]">
               <WifiOff className="w-3.5 h-3.5" />
               Live updates paused
             </span>
           )}
           <Button
-            variant="outline"
+            kind="tertiary"
             size="sm"
             onClick={() => refetch()}
-            className="h-9 text-xs bg-[var(--t-panel)] hover:bg-[var(--t-panel-hover)]"
+            renderIcon={(props: React.SVGProps<SVGSVGElement>) => (
+              <RefreshCw {...props} className={`${props.className ?? ''} ${isFetching ? 'animate-spin' : ''}`} />
+            )}
           >
-            <RefreshCw className={`w-4 h-4 mr-1.5 ${isFetching ? 'animate-spin' : ''}`} />
             Refresh
           </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setShowAddDialog(true)}
-            className="h-9 text-xs bg-[var(--t-panel)] hover:bg-[var(--t-panel-hover)]"
-          >
-            <Plus className="w-4 h-4 mr-1.5" />
+          <Button kind="primary" size="sm" renderIcon={Plus} onClick={() => setShowAddDialog(true)}>
             Add Worker
           </Button>
         </div>
       </div>
 
       {/* Workers Table */}
-      <div style={{
-        background: THEME.panel,
-        border: `1px solid ${THEME.border}`,
-        borderRadius: 6,
-        overflow: 'hidden',
-        boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
-      }}>
-        <table className="w-full">
-          <thead>
-            <tr style={{ background: THEME.bg, borderBottom: `1px solid ${THEME.border}` }}>
-              <th className="text-left px-4 py-3 text-[11px] font-semibold uppercase tracking-wide" style={{ color: THEME.text.muted }}>Worker</th>
-              <th className="text-left px-4 py-3 text-[11px] font-semibold uppercase tracking-wide" style={{ color: THEME.text.muted }}>Queue</th>
-              <th className="text-left px-4 py-3 text-[11px] font-semibold uppercase tracking-wide" style={{ color: THEME.text.muted }}>Status</th>
-              <th className="text-left px-4 py-3 text-[11px] font-semibold uppercase tracking-wide" style={{ color: THEME.text.muted }}>Host:PID</th>
-              <th className="text-right px-4 py-3 text-[11px] font-semibold uppercase tracking-wide" style={{ color: THEME.text.muted }}>Processed</th>
-              <th className="text-right px-4 py-3 text-[11px] font-semibold uppercase tracking-wide" style={{ color: THEME.text.muted }}>Failed</th>
-              <th className="text-right px-4 py-3 text-[11px] font-semibold uppercase tracking-wide" style={{ color: THEME.text.muted }}>CPU</th>
-              <th className="text-right px-4 py-3 text-[11px] font-semibold uppercase tracking-wide" style={{ color: THEME.text.muted }}>Memory</th>
-              <th className="text-center px-4 py-3 text-[11px] font-semibold uppercase tracking-wide" style={{ color: THEME.text.muted }}>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
+      <div style={{ border: `1px solid ${THEME.border}`, overflow: 'hidden' }}>
+        <Table size="lg" useZebraStyles={false}>
+          <TableHead>
+            <TableRow>
+              <TableHeader>Worker</TableHeader>
+              <TableHeader>Queue</TableHeader>
+              <TableHeader>Status</TableHeader>
+              <TableHeader>Host:PID</TableHeader>
+              <TableHeader className="text-right">Processed</TableHeader>
+              <TableHeader className="text-right">Failed</TableHeader>
+              <TableHeader className="text-right">CPU</TableHeader>
+              <TableHeader className="text-right">Memory</TableHeader>
+              <TableHeader className="text-center">Actions</TableHeader>
+            </TableRow>
+          </TableHead>
+          <TableBody>
             {workers.map((worker) => (
-              <tr 
-                key={worker.id} 
-                style={{ borderBottom: `1px solid ${THEME.borderLight}` }}
-                className="hover:bg-[var(--t-panel-hover)] transition-colors"
-              >
-                <td className="px-4 py-3">
+              <TableRow key={worker.id} className="group">
+                <TableCell>
                   {editingWorkerId === worker.id ? (
-                    <div className="flex items-center gap-2">
-                      <input
-                        type="text"
-                        value={editNameValue}
-                        onChange={(e) => setEditNameValue(e.target.value)}
-                        className="h-8 text-xs w-32 px-2 border rounded"
-                        autoFocus
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter') saveEditName();
-                          if (e.key === 'Escape') cancelEditName();
-                        }}
-                      />
-                      <button 
-                        onClick={saveEditName}
-                        className="p-1 bg-green-100 text-green-600 rounded hover:bg-green-200"
-                      >
-                        <Check className="w-3.5 h-3.5" />
-                      </button>
-                      <button 
-                        onClick={cancelEditName}
-                        className="p-1 bg-[var(--t-panel-hover)] text-[var(--t-text-secondary)] rounded hover:bg-[var(--t-border)]"
-                      >
-                        <X className="w-3.5 h-3.5" />
-                      </button>
+                    <div className="flex items-center gap-1">
+                      <div className="w-40">
+                        <TextInput
+                          id={`worker-rename-${worker.id}`}
+                          labelText="Worker name"
+                          hideLabel
+                          size="sm"
+                          value={editNameValue}
+                          onChange={(e) => setEditNameValue(e.target.value)}
+                          autoFocus
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') saveEditName();
+                            if (e.key === 'Escape') cancelEditName();
+                          }}
+                        />
+                      </div>
+                      <Button kind="ghost" size="sm" hasIconOnly renderIcon={Check} iconDescription="Save" onClick={saveEditName} />
+                      <Button kind="ghost" size="sm" hasIconOnly renderIcon={X} iconDescription="Cancel" onClick={cancelEditName} />
                     </div>
                   ) : (
                     <div className="flex items-center gap-2">
@@ -520,429 +474,238 @@ export function WorkersTab() {
                         <div style={{ fontSize: 13, fontWeight: 600, color: THEME.text.primary }}>
                           {worker.name}
                         </div>
-                        <div style={{ fontSize: 10, color: THEME.text.muted, marginTop: 2 }}>
+                        <div style={{ fontSize: 12, color: '#6f6f6f', marginTop: 2 }}>
                           Started {new Date(worker.startedAt).toLocaleDateString('th-TH')}
                         </div>
                       </div>
-                      <button 
+                      <Button
+                        kind="ghost"
+                        size="sm"
+                        hasIconOnly
+                        renderIcon={Edit2}
+                        iconDescription="Rename"
                         onClick={() => startEditName(worker)}
-                        className="p-1 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded opacity-0 group-hover:opacity-100 transition-all"
-                        style={{ marginLeft: 4 }}
-                      >
-                        <Edit2 className="w-3 h-3" />
-                      </button>
+                        className="opacity-0 group-hover:opacity-100 transition-all"
+                      />
                     </div>
                   )}
-                </td>
-                <td className="px-4 py-3">
-                  <Badge variant="outline" className="text-[10px] font-medium px-2 py-0.5">
-                    {worker.queue}
-                  </Badge>
-                </td>
-                <td className="px-4 py-3">
-                  {getStatusBadge(worker.status)}
-                </td>
-                <td className="px-4 py-3">
+                </TableCell>
+                <TableCell>
+                  <Tag type="gray" size="sm">{worker.queue}</Tag>
+                </TableCell>
+                <TableCell>{getStatusBadge(worker.status)}</TableCell>
+                <TableCell>
                   <div style={{ fontSize: 11, color: THEME.text.secondary, fontFamily: 'monospace' }}>
                     {worker.status === 'error' ? '-' : `${worker.host}:${worker.pid}`}
                   </div>
-                </td>
-                <td className="px-4 py-3 text-right">
+                </TableCell>
+                <TableCell className="text-right">
                   <span style={{ fontSize: 12, fontWeight: 500, color: THEME.text.primary, fontFamily: 'monospace' }}>
                     {worker.processed.toLocaleString()}
                   </span>
-                </td>
-                <td className="px-4 py-3 text-right">
-                  <span style={{ 
-                    fontSize: 12, 
-                    fontWeight: 500, 
+                </TableCell>
+                <TableCell className="text-right">
+                  <span style={{
+                    fontSize: 12,
+                    fontWeight: 500,
                     color: worker.failed > 0 ? THEME.colors.red : THEME.text.muted,
                     fontFamily: 'monospace'
                   }}>
                     {worker.failed.toLocaleString()}
                   </span>
-                </td>
-                <td className="px-4 py-3 text-right">
+                </TableCell>
+                <TableCell className="text-right">
                   <span style={{ fontSize: 11, color: THEME.text.secondary, fontFamily: 'monospace' }}>
                     {worker.status === 'running' ? `${worker.cpu.toFixed(1)}%` : '-'}
                   </span>
-                </td>
-                <td className="px-4 py-3 text-right">
+                </TableCell>
+                <TableCell className="text-right">
                   <span style={{ fontSize: 11, color: THEME.text.secondary, fontFamily: 'monospace' }}>
                     {worker.status === 'running' ? `${worker.memory.toFixed(1)} MB` : '-'}
                   </span>
-                </td>
-                <td className="px-4 py-3 text-center">
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="sm" className="h-8 w-8 p-0 hover:bg-[var(--t-border)]">
-                        <MoreHorizontal className="w-4 h-4" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent 
-                      align="end" 
-                      className="w-[180px] bg-[var(--t-panel)] border border-[var(--t-border)] shadow-lg p-1"
-                    >
-                      <DropdownMenuItem 
-                        onClick={() => startEditName(worker)} 
-                        className="text-xs cursor-pointer hover:bg-blue-50 rounded-sm px-2 py-1.5 h-8"
-                      >
-                        <Edit2 className="w-3.5 h-3.5 mr-2 text-blue-600 flex-shrink-0" />
-                        <span className="truncate">Rename</span>
-                      </DropdownMenuItem>
-                      
-                      <DropdownMenuSeparator className="my-1 h-px bg-[var(--t-panel-hover)]" />
-                      
-                      {(worker.status === 'stopped' || worker.status === 'error') && (
-                        <DropdownMenuItem 
-                          onClick={() => handleStart(worker.id)} 
-                          className="text-xs cursor-pointer hover:bg-green-50 rounded-sm px-2 py-1.5 h-8"
-                        >
-                          <Play className="w-3.5 h-3.5 mr-2 text-green-600 flex-shrink-0" />
-                          <span className="truncate">Start</span>
-                        </DropdownMenuItem>
-                      )}
-                      
-                      {worker.status === 'running' && (
-                        <DropdownMenuItem 
-                          onClick={() => handlePause(worker.id)} 
-                          className="text-xs cursor-pointer hover:bg-amber-50 rounded-sm px-2 py-1.5 h-8"
-                        >
-                          <Pause className="w-3.5 h-3.5 mr-2 text-amber-600 flex-shrink-0" />
-                          <span className="truncate">Pause</span>
-                        </DropdownMenuItem>
-                      )}
-                      
-                      {worker.status === 'paused' && (
-                        <DropdownMenuItem 
-                          onClick={() => handleResume(worker.id)} 
-                          className="text-xs cursor-pointer hover:bg-green-50 rounded-sm px-2 py-1.5 h-8"
-                        >
-                          <Play className="w-3.5 h-3.5 mr-2 text-green-600 flex-shrink-0" />
-                          <span className="truncate">Resume</span>
-                        </DropdownMenuItem>
-                      )}
-                      
-                      {(worker.status === 'running' || worker.status === 'paused') && (
-                        <DropdownMenuItem 
-                          onClick={() => handleStop(worker.id)} 
-                          className="text-xs cursor-pointer hover:bg-[var(--t-panel-hover)] rounded-sm px-2 py-1.5 h-8"
-                        >
-                          <Square className="w-3.5 h-3.5 mr-2 text-[var(--t-text-secondary)] flex-shrink-0" />
-                          <span className="truncate">Stop</span>
-                        </DropdownMenuItem>
-                      )}
-                      
-                      <DropdownMenuSeparator className="my-1 h-px bg-[var(--t-panel-hover)]" />
-                      
-                      <DropdownMenuItem 
-                        onClick={() => handleRestart(worker.id)} 
-                        className="text-xs cursor-pointer hover:bg-blue-50 rounded-sm px-2 py-1.5 h-8"
-                      >
-                        <RotateCcw className="w-3.5 h-3.5 mr-2 text-blue-600 flex-shrink-0" />
-                        <span className="truncate">Restart</span>
-                      </DropdownMenuItem>
-                      
-                      <DropdownMenuItem 
-                        onClick={() => { 
-                          setSelectedWorker(worker); 
-                          setShowConfigDialog(true); 
-                        }} 
-                        className="text-xs cursor-pointer hover:bg-[var(--t-panel-hover)] rounded-sm px-2 py-1.5 h-8"
-                      >
-                        <Settings2 className="w-3.5 h-3.5 mr-2 text-[var(--t-text-secondary)] flex-shrink-0" />
-                        <span className="truncate">Configure</span>
-                      </DropdownMenuItem>
-                      
-                      <DropdownMenuSeparator className="my-1 h-px bg-[var(--t-panel-hover)]" />
-                      
-                      <DropdownMenuItem 
-                        onClick={() => handleRemove(worker)} 
-                        className="text-xs text-red-600 cursor-pointer hover:bg-red-50 rounded-sm px-2 py-1.5 h-8"
-                      >
-                        <Trash2 className="w-3.5 h-3.5 mr-2 flex-shrink-0" />
-                        <span className="truncate">Remove</span>
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </td>
-              </tr>
+                </TableCell>
+                <TableCell className="text-center">
+                  <OverflowMenu size="sm" flipped iconDescription="Actions" aria-label="Worker actions">
+                    <OverflowMenuItem itemText="Rename" onClick={() => startEditName(worker)} />
+                    {(worker.status === 'stopped' || worker.status === 'error') && (
+                      <OverflowMenuItem hasDivider itemText="Start" onClick={() => handleStart(worker.id)} />
+                    )}
+                    {worker.status === 'running' && (
+                      <OverflowMenuItem hasDivider itemText="Pause" onClick={() => handlePause(worker.id)} />
+                    )}
+                    {worker.status === 'paused' && (
+                      <OverflowMenuItem hasDivider itemText="Resume" onClick={() => handleResume(worker.id)} />
+                    )}
+                    {(worker.status === 'running' || worker.status === 'paused') && (
+                      <OverflowMenuItem itemText="Stop" onClick={() => handleStop(worker.id)} />
+                    )}
+                    <OverflowMenuItem hasDivider itemText="Restart" onClick={() => handleRestart(worker.id)} />
+                    <OverflowMenuItem
+                      itemText="Configure"
+                      onClick={() => {
+                        setSelectedWorker(worker);
+                        setShowConfigDialog(true);
+                      }}
+                    />
+                    <OverflowMenuItem hasDivider isDelete itemText="Remove" onClick={() => handleRemove(worker)} />
+                  </OverflowMenu>
+                </TableCell>
+              </TableRow>
             ))}
             {workers.length === 0 && (
-              <tr>
-                <td colSpan={9} className="px-4 py-12 text-center">
+              <TableRow>
+                <TableCell colSpan={9} className="text-center" style={{ padding: '48px 16px' }}>
                   <div className="flex flex-col items-center gap-2">
-                    <Cpu className="w-12 h-12 text-gray-300" />
-                    <p className="text-sm text-gray-500">No workers found</p>
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
-                      onClick={() => setShowAddDialog(true)}
-                      className="mt-2"
-                    >
-                      <Plus className="w-4 h-4 mr-2" />
+                    <Cpu className="w-12 h-12 text-[#6f6f6f]" />
+                    <p className="text-sm text-[#6f6f6f]">No workers found</p>
+                    <Button kind="tertiary" size="sm" renderIcon={Plus} onClick={() => setShowAddDialog(true)} className="mt-2">
                       Add Worker
                     </Button>
                   </div>
-                </td>
-              </tr>
+                </TableCell>
+              </TableRow>
             )}
-          </tbody>
-        </table>
+          </TableBody>
+        </Table>
       </div>
 
       {/* Add Worker Dialog */}
-      {showAddDialog && (
-        <div 
-          className="fixed inset-0 z-[100]"
-          style={{ backgroundColor: 'rgba(0, 0, 0, 0.6)' }}
-          onClick={() => setShowAddDialog(false)}
-        >
-          <div className="flex items-center justify-center min-h-screen p-4">
-            <div 
-              className="bg-[var(--t-panel)] rounded-lg w-full max-w-md"
-              style={{ boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)' }}
-              onClick={e => e.stopPropagation()}
+      <Modal
+        open={showAddDialog}
+        size="sm"
+        modalHeading="Add New Worker"
+        primaryButtonText={createMutation.isPending ? 'Creating...' : 'Create Worker'}
+        secondaryButtonText="Cancel"
+        primaryButtonDisabled={createMutation.isPending || !newWorkerName.trim()}
+        onRequestSubmit={handleAddWorker}
+        onRequestClose={() => setShowAddDialog(false)}
+        onSecondarySubmit={() => {
+          setShowAddDialog(false);
+          setNewWorkerName('');
+          setNewWorkerQueue('default');
+        }}
+      >
+        {showAddDialog && (
+          <div className="space-y-4">
+            <TextInput
+              id="add-worker-name"
+              labelText="Worker Name *"
+              value={newWorkerName}
+              onChange={(e) => setNewWorkerName(e.target.value)}
+              placeholder="e.g., Worker-001"
+              autoFocus
+              data-modal-primary-focus
+            />
+            <RadioButtonGroup
+              legendText="Queue"
+              name="add-worker-queue"
+              orientation="horizontal"
+              valueSelected={newWorkerQueue}
+              onChange={(value) => setNewWorkerQueue(String(value))}
             >
-              <div className="flex items-center justify-between p-4 border-b border-[var(--t-border)]">
-                <h2 className="text-sm font-semibold text-gray-900">Add New Worker</h2>
-                <button 
-                  onClick={() => setShowAddDialog(false)}
-                  className="p-1 hover:bg-[var(--t-border)] rounded-md transition-colors"
-                >
-                  <X className="w-4 h-4 text-gray-500" />
-                </button>
-              </div>
-              <div className="p-4 space-y-4">
-                <div>
-                  <label className="block text-xs font-medium text-gray-700 mb-1.5">
-                    Worker Name <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    value={newWorkerName}
-                    onChange={(e) => setNewWorkerName(e.target.value)}
-                    placeholder="e.g., Worker-001"
-                    className="w-full h-10 px-3 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    autoFocus
-                  />
-                </div>
-                
-                <div>
-                  <label className="block text-xs font-medium text-gray-700 mb-1.5">
-                    Queue
-                  </label>
-                  <div className="grid grid-cols-2 gap-2">
-                    {['default', 'high', 'low', 'critical'].map(queue => (
-                      <button
-                        key={queue}
-                        onClick={() => setNewWorkerQueue(queue)}
-                        className={`flex items-center gap-2 p-2.5 text-left border rounded-md transition-all ${
-                          newWorkerQueue === queue 
-                            ? 'border-blue-500 bg-blue-50' 
-                            : 'border-[var(--t-border)] hover:border-blue-300 hover:bg-[var(--t-panel-hover)]'
-                        }`}
-                      >
-                        <div className={`p-1.5 rounded ${newWorkerQueue === queue ? 'bg-blue-200' : 'bg-[var(--t-panel-hover)]'}`}>
-                          <Cpu className={`w-3.5 h-3.5 ${newWorkerQueue === queue ? 'text-blue-700' : 'text-[var(--t-text-secondary)]'}`} />
-                        </div>
-                        <span className={`text-xs font-medium capitalize ${newWorkerQueue === queue ? 'text-blue-700' : 'text-gray-700'}`}>
-                          {queue}
-                        </span>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              </div>
-              <div className="flex gap-3 p-4 pt-2 border-t border-[var(--t-panel-hover)]">
-                <Button 
-                  variant="outline" 
-                  className="flex-1 h-9 text-xs bg-[var(--t-panel)]"
-                  onClick={() => {
-                    setShowAddDialog(false);
-                    setNewWorkerName('');
-                    setNewWorkerQueue('default');
-                  }}
-                >
-                  Cancel
-                </Button>
-                <Button 
-                  className="flex-1 h-9 text-xs bg-blue-600 hover:bg-blue-700 text-white"
-                  onClick={handleAddWorker}
-                  disabled={createMutation.isPending || !newWorkerName.trim()}
-                >
-                  {createMutation.isPending ? 'Creating...' : 'Create Worker'}
-                </Button>
-              </div>
-            </div>
+              {['default', 'high', 'low', 'critical'].map(queue => (
+                <RadioButton key={queue} id={`add-worker-queue-${queue}`} value={queue} labelText={queue} />
+              ))}
+            </RadioButtonGroup>
           </div>
-        </div>
-      )}
+        )}
+      </Modal>
 
       {/* CONFIG DIALOG - SIMPLIFIED VERSION */}
-      {showConfigDialog && selectedWorker && (
-        <div 
-          className="fixed inset-0 z-[100] flex items-center justify-center p-4"
-          style={{ backgroundColor: 'rgba(0, 0, 0, 0.6)' }}
-          onClick={() => setShowConfigDialog(false)}
-        >
-          <div 
-            className="bg-[var(--t-panel)] rounded-lg w-full max-w-md shadow-2xl"
-            onClick={e => e.stopPropagation()}
-          >
-            {/* Header */}
-            <div className="flex items-center justify-between p-4 border-b border-[var(--t-border)]">
-              <div>
-                <h2 className="text-sm font-semibold text-gray-900">Worker Configuration</h2>
-                <p className="text-xs text-gray-500 mt-0.5">{selectedWorker.name}</p>
-              </div>
-              <button 
-                onClick={() => setShowConfigDialog(false)}
-                className="p-1 hover:bg-[var(--t-border)] rounded-md transition-colors"
-              >
-                <X className="w-4 h-4 text-gray-500" />
-              </button>
-            </div>
-
-            {/* Content */}
-            <div className="p-4 space-y-4">
-              {/* Info */}
-              <div className="grid grid-cols-2 gap-3">
-                <div className="bg-[var(--t-input)] p-3 rounded-md border border-[var(--t-panel-hover)]">
-                  <label className="text-xs text-gray-500 block mb-1">Worker ID</label>
-                  <div className="font-mono text-xs text-gray-900 font-medium">{selectedWorker.id}</div>
-                </div>
-                <div className="bg-[var(--t-input)] p-3 rounded-md border border-[var(--t-panel-hover)]">
-                  <label className="text-xs text-gray-500 block mb-1">Queue</label>
-                  <span className="text-xs font-medium">{selectedWorker.queue}</span>
-                </div>
-              </div>
-
-              {/* Settings - WORKING VERSION */}
-              <div className="border-t pt-4">
-                <div className="flex items-center justify-between mb-3">
-                  <h4 className="text-xs font-semibold text-gray-900">Settings</h4>
-                  {hasConfigChanges && (
-                    <span className="text-[10px] text-amber-600 bg-amber-50 px-2 py-0.5 rounded">
-                      Unsaved changes
-                    </span>
-                  )}
-                </div>
-                
-                <div className="space-y-1">
-                  {/* Auto Restart Toggle */}
-                  <div className="flex items-center justify-between py-2">
-                    <span className="text-sm text-gray-700">Auto-restart on failure</span>
-                    <button
-                      onClick={() => {
-                        setConfigAutoRestart(!configAutoRestart);
-                        setHasConfigChanges(true);
-                      }}
-                      className={`
-                        relative inline-flex h-6 w-11 items-center rounded-full transition-colors
-                        ${configAutoRestart ? 'bg-blue-600' : 'bg-[var(--t-border)]'}
-                      `}
-                    >
-                      <span
-                        className={`
-                          inline-block h-4 w-4 transform rounded-full bg-[var(--t-panel)] transition-transform
-                          ${configAutoRestart ? 'translate-x-6' : 'translate-x-1'}
-                        `}
-                      />
-                    </button>
+      <ComposedModal
+        open={showConfigDialog && !!selectedWorker}
+        size="sm"
+        onClose={() => {
+          setShowConfigDialog(false);
+          return false;
+        }}
+      >
+        {selectedWorker && (
+          <>
+            <ModalHeader title="Worker Configuration" label={selectedWorker.name} />
+            <ModalBody>
+              <div className="space-y-4">
+                {/* Info */}
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="bg-[#f4f4f4] p-3">
+                    <div className="text-xs text-[#6f6f6f] mb-1">Worker ID</div>
+                    <div className="font-mono text-xs text-[#161616] font-medium break-all">{selectedWorker.id}</div>
                   </div>
-
-                  {/* Enable Logging Toggle */}
-                  <div className="flex items-center justify-between py-2">
-                    <span className="text-sm text-gray-700">Enable logging</span>
-                    <button
-                      onClick={() => {
-                        setConfigEnableLogging(!configEnableLogging);
-                        setHasConfigChanges(true);
-                      }}
-                      className={`
-                        relative inline-flex h-6 w-11 items-center rounded-full transition-colors
-                        ${configEnableLogging ? 'bg-blue-600' : 'bg-[var(--t-border)]'}
-                      `}
-                    >
-                      <span
-                        className={`
-                          inline-block h-4 w-4 transform rounded-full bg-[var(--t-panel)] transition-transform
-                          ${configEnableLogging ? 'translate-x-6' : 'translate-x-1'}
-                        `}
-                      />
-                    </button>
-                  </div>
-
-                  {/* High Priority Toggle */}
-                  <div className="flex items-center justify-between py-2">
-                    <span className="text-sm text-gray-700">High priority mode</span>
-                    <button
-                      onClick={() => {
-                        setConfigHighPriority(!configHighPriority);
-                        setHasConfigChanges(true);
-                      }}
-                      className={`
-                        relative inline-flex h-6 w-11 items-center rounded-full transition-colors
-                        ${configHighPriority ? 'bg-blue-600' : 'bg-[var(--t-border)]'}
-                      `}
-                    >
-                      <span
-                        className={`
-                          inline-block h-4 w-4 transform rounded-full bg-[var(--t-panel)] transition-transform
-                          ${configHighPriority ? 'translate-x-6' : 'translate-x-1'}
-                        `}
-                      />
-                    </button>
+                  <div className="bg-[#f4f4f4] p-3">
+                    <div className="text-xs text-[#6f6f6f] mb-1">Queue</div>
+                    <span className="text-xs font-medium">{selectedWorker.queue}</span>
                   </div>
                 </div>
-              </div>
 
-              {/* Status Control */}
-              <div className="border-t pt-4">
-                <h4 className="text-xs font-semibold text-gray-900 mb-3">Status Control</h4>
-                <div className="flex gap-2">
-                  {selectedWorker.status === 'running' ? (
-                    <Button 
-                      variant="outline" 
+                {/* Settings */}
+                <div className="border-t pt-4">
+                  <div className="flex items-center justify-between mb-3">
+                    <h4 className="text-xs font-semibold text-[#161616]">Settings</h4>
+                    {hasConfigChanges && (
+                      <Tag type="warm-gray" size="sm">Unsaved changes</Tag>
+                    )}
+                  </div>
+                  <div className="space-y-1">
+                    <ToggleSwitch
+                      id="worker-config-auto-restart"
+                      label="Auto-restart on failure"
+                      checked={configAutoRestart}
+                      onChange={(v) => { setConfigAutoRestart(v); setHasConfigChanges(true); }}
+                    />
+                    <ToggleSwitch
+                      id="worker-config-enable-logging"
+                      label="Enable logging"
+                      checked={configEnableLogging}
+                      onChange={(v) => { setConfigEnableLogging(v); setHasConfigChanges(true); }}
+                    />
+                    <ToggleSwitch
+                      id="worker-config-high-priority"
+                      label="High priority mode"
+                      checked={configHighPriority}
+                      onChange={(v) => { setConfigHighPriority(v); setHasConfigChanges(true); }}
+                    />
+                  </div>
+                </div>
+
+                {/* Status Control */}
+                <div className="border-t pt-4">
+                  <h4 className="text-xs font-semibold text-[#161616] mb-3">Status Control</h4>
+                  <div className="flex gap-2">
+                    {selectedWorker.status === 'running' ? (
+                      <Button
+                        kind="tertiary"
+                        size="sm"
+                        renderIcon={Pause}
+                        onClick={() => { handlePause(selectedWorker.id); setShowConfigDialog(false); }}
+                      >
+                        Pause
+                      </Button>
+                    ) : (
+                      <Button
+                        kind="tertiary"
+                        size="sm"
+                        renderIcon={Play}
+                        onClick={() => { handleStart(selectedWorker.id); setShowConfigDialog(false); }}
+                      >
+                        Start
+                      </Button>
+                    )}
+                    <Button
+                      kind="secondary"
                       size="sm"
-                      className="flex-1 h-9 text-xs border-amber-300 text-amber-700 hover:bg-amber-50 bg-[var(--t-panel)]"
-                      onClick={() => { handlePause(selectedWorker.id); setShowConfigDialog(false); }}
+                      renderIcon={RotateCcw}
+                      onClick={() => { handleRestart(selectedWorker.id); setShowConfigDialog(false); }}
                     >
-                      <Pause className="w-3.5 h-3.5 mr-1.5" />
-                      Pause
+                      Restart
                     </Button>
-                  ) : (
-                    <Button 
-                      variant="outline" 
-                      size="sm"
-                      className="flex-1 h-9 text-xs border-green-300 text-green-700 hover:bg-green-50 bg-[var(--t-panel)]"
-                      onClick={() => { handleStart(selectedWorker.id); setShowConfigDialog(false); }}
-                    >
-                      <Play className="w-3.5 h-3.5 mr-1.5" />
-                      Start
-                    </Button>
-                  )}
-                  <Button 
-                    variant="outline" 
-                    size="sm"
-                    className="flex-1 h-9 text-xs bg-[var(--t-panel)]"
-                    onClick={() => { handleRestart(selectedWorker.id); setShowConfigDialog(false); }}
-                  >
-                    <RotateCcw className="w-3.5 h-3.5 mr-1.5" />
-                    Restart
-                  </Button>
+                  </div>
                 </div>
               </div>
-            </div>
-
-            {/* Footer */}
-            <div className="flex justify-end gap-2 p-4 border-t border-[var(--t-border)] bg-[var(--t-input)] rounded-b-lg">
+            </ModalBody>
+            <ModalFooter>
               {hasConfigChanges && (
-                <Button 
-                  variant="outline" 
-                  size="sm"
-                  className="h-9 text-xs bg-[var(--t-panel)]"
+                <Button
+                  kind="ghost"
                   onClick={() => {
                     // Reset to original values
                     const cfg = selectedWorker.config;
@@ -955,18 +718,12 @@ export function WorkersTab() {
                   Reset
                 </Button>
               )}
-              <Button 
-                variant="outline" 
-                size="sm"
-                className="h-9 text-xs bg-[var(--t-panel)]"
-                onClick={() => setShowConfigDialog(false)}
-              >
+              <Button kind="secondary" onClick={() => setShowConfigDialog(false)}>
                 {hasConfigChanges ? 'Cancel' : 'Close'}
               </Button>
               {hasConfigChanges && (
-                <Button 
-                  size="sm"
-                  className="h-9 text-xs bg-blue-600 hover:bg-blue-700 text-white"
+                <Button
+                  kind="primary"
                   onClick={() => {
                     configMutation.mutate({
                       id: selectedWorker.id,
@@ -982,54 +739,33 @@ export function WorkersTab() {
                   {configMutation.isPending ? 'Saving...' : 'Save Changes'}
                 </Button>
               )}
-            </div>
-          </div>
-        </div>
-      )}
+            </ModalFooter>
+          </>
+        )}
+      </ComposedModal>
 
       {/* Delete Confirm Dialog */}
-      {showDeleteConfirm && workerToDelete && (
-        <div 
-          className="fixed inset-0 z-[101] flex items-center justify-center p-4"
-          style={{ backgroundColor: 'rgba(0, 0, 0, 0.6)' }}
-          onClick={() => setShowDeleteConfirm(false)}
-        >
-          <div 
-            className="bg-[var(--t-panel)] rounded-lg w-full max-w-sm shadow-2xl"
-            onClick={e => e.stopPropagation()}
-          >
-            <div className="p-6 text-center">
-              <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-3">
-                <AlertTriangle className="w-6 h-6 text-red-600" />
-              </div>
-              <h3 className="text-sm font-semibold text-gray-900 mb-1">Remove Worker?</h3>
-              <p className="text-xs text-gray-500">
-                Are you sure you want to remove <span className="font-medium">{workerToDelete.name}</span>? This action cannot be undone.
-              </p>
-            </div>
-            <div className="flex gap-3 p-4 pt-0">
-              <Button 
-                variant="outline" 
-                className="flex-1 h-9 text-xs bg-[var(--t-panel)]"
-                onClick={() => setShowDeleteConfirm(false)}
-              >
-                Cancel
-              </Button>
-              <Button 
-                variant="destructive"
-                className="flex-1 h-9 text-xs"
-                onClick={confirmDelete}
-                disabled={deleteMutation.isPending}
-              >
-                {deleteMutation.isPending ? 'Removing...' : 'Remove'}
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
+      <Modal
+        open={showDeleteConfirm && !!workerToDelete}
+        danger
+        size="xs"
+        modalHeading="Remove Worker?"
+        primaryButtonText={deleteMutation.isPending ? 'Removing...' : 'Remove'}
+        secondaryButtonText="Cancel"
+        primaryButtonDisabled={deleteMutation.isPending}
+        onRequestSubmit={confirmDelete}
+        onRequestClose={() => setShowDeleteConfirm(false)}
+      >
+        {workerToDelete && (
+          <p className="text-sm text-[#525252]">
+            Are you sure you want to remove <span className="font-medium">{workerToDelete.name}</span>? This action cannot be undone.
+          </p>
+        )}
+      </Modal>
     </div>
   );
 }
+
 
 function StatCard({ 
   title, 
@@ -1046,25 +782,17 @@ function StatCard({
     <div style={{
       background: THEME.panel,
       border: `1px solid ${THEME.border}`,
-      borderRadius: 6,
+      borderRadius: 0,
       padding: '12px 14px',
-      boxShadow: '0 1px 2px rgba(0,0,0,0.03)',
+      boxShadow: 'none',
     }}>
       <div className="flex items-center gap-3">
-        <div style={{
-          width: 28, height: 24,
-          background: `${color}15`,
-          border: `1px solid ${color}30`,
-          borderRadius: 4,
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-        }}>
-          <Icon className="w-3.5 h-3.5" style={{ color }} />
-        </div>
+        <Icon className="w-4 h-4" style={{ color: '#525252' }} />
         <div>
-          <div style={{ fontSize: 16, fontWeight: 700, color: THEME.text.primary, lineHeight: 1.2 }}>
+          <div style={{ fontSize: 20, fontWeight: 300, color: THEME.text.primary, lineHeight: 1.2 }}>
             {value}
           </div>
-          <div style={{ fontSize: 10, color: THEME.text.muted, fontWeight: 500 }}>{title}</div>
+          <div style={{ fontSize: 12, color: '#525252' }}>{title}</div>
         </div>
       </div>
     </div>

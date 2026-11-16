@@ -6,6 +6,7 @@
  */
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { getTenantContext, featureGuard, isForeign } from '@/lib/tenant'
 import { z } from 'zod'
 
 const buttonSchema = z.object({
@@ -19,8 +20,15 @@ const buttonSchema = z.object({
 })
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const ctx = await getTenantContext(req)
+  const blocked = featureGuard(ctx, 'projects')
+  if (blocked) return blocked
   try {
     const { id } = await params
+    if (ctx.tenantId) {
+      const own = await prisma.screen.findUnique({ where: { id: id }, select: { project: { select: { tenantId: true } } } })
+      if (isForeign(ctx, own?.project)) return NextResponse.json({ error: 'not found' }, { status: 404 })
+    }
     const body = buttonSchema.parse(await req.json())
     const created = await prisma.screenButton.create({
       data: { ...body, screenId: id },

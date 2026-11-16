@@ -8,6 +8,7 @@
 // vs write) — admin role required by the page-level auth.
 import { NextRequest } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { getTenantContext, featureGuard, isForeign } from '@/lib/tenant'
 import {
   withPgClient, withMysqlConn, withOracleConn,
   type ConnectionConfig, type ConnectionType,
@@ -15,13 +16,16 @@ import {
 import { ok, fail } from '../../_helpers'
 
 export async function POST(req: NextRequest) {
+  const ctx = await getTenantContext(req)
+  const blocked = featureGuard(ctx, 'dataRepository')
+  if (blocked) return blocked
   try {
     const body = await req.json()
     const { connectionId, sql, params } = body || {}
     if (!connectionId || !sql) return fail('connectionId and sql required')
 
     const conn = await prisma.repoConnection.findUnique({ where: { id: connectionId } })
-    if (!conn) return fail('Connection not found', 404)
+    if (!conn || isForeign(ctx, conn)) return fail('Connection not found', 404)
 
     const cfg = conn.config as ConnectionConfig
     const t0 = Date.now()

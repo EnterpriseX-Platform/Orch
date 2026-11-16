@@ -1,9 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import bcrypt from 'bcryptjs'
+import { requireAdmin } from '@/lib/auth'
 
 // GET /api/users - List all users
 export async function GET(request: NextRequest) {
+  const denied = requireAdmin(request)
+  if (denied) return denied
   try {
     const users = await prisma.user.findMany({
       select: {
@@ -30,6 +33,8 @@ export async function GET(request: NextRequest) {
 
 // POST /api/users - Create new user
 export async function POST(request: NextRequest) {
+  const denied = requireAdmin(request)
+  if (denied) return denied
   try {
     const body = await request.json()
     const { username, email, password, firstName, lastName, department, roles, isActive } = body

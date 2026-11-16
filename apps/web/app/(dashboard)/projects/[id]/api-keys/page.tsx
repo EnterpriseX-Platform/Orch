@@ -6,8 +6,25 @@ import Link from 'next/link'
 import { toast } from 'sonner'
 import { ArrowLeft, Copy, Key, Plus, Trash2, Check, X } from 'lucide-react'
 import { confirmDialog } from '@/components/common/ConfirmDialog'
+import {
+  Button,
+  ComposedModal,
+  ModalHeader,
+  ModalBody,
+  ModalFooter,
+  Modal,
+  TextInput,
+  InlineNotification,
+  TableContainer,
+  Table,
+  TableHead,
+  TableRow,
+  TableHeader,
+  TableBody,
+  TableCell,
+} from '@carbon/react'
 
-const FONT = "'Prompt', sans-serif"
+const FONT = '"IBM Plex Sans Thai", "IBM Plex Sans", "Sarabun", system-ui, sans-serif'
 const THEME = {
   bg: 'var(--t-bg)',
   panel: 'var(--t-panel)',
@@ -95,7 +112,7 @@ export default function ApiKeysPage() {
   const handleRevoke = async (id: string) => {
     const ok = await confirmDialog({
       title: 'Revoke API key?',
-      body: 'This API key will stop working immediately — any application using this key will lose access.',
+      body: 'This API key stops working immediately — applications using it lose access.',
       variant: 'danger',
       confirmLabel: 'Revoke',
       cancelLabel: 'Cancel',
@@ -104,7 +121,7 @@ export default function ApiKeysPage() {
     try {
       const res = await fetch(`/orch/api/api-keys/${id}`, { method: 'DELETE' })
       if (!res.ok) throw new Error('Failed to revoke')
-      toast.success('Revoked successfully')
+      toast.success('Revoked')
       load()
     } catch (e: any) {
       toast.error(e.message || 'Failed to revoke')
@@ -124,300 +141,136 @@ export default function ApiKeysPage() {
 
   return (
     <div style={{ fontFamily: FONT, color: THEME.text.primary, padding: 24 }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 24 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 24, flexWrap: 'wrap' }}>
         <Link href={`/projects/${projectId}`} style={{ color: THEME.text.secondary }}>
           <ArrowLeft size={18} />
         </Link>
         <Key size={22} />
-        <h1 style={{ fontSize: 20, fontWeight: 600, margin: 0 }}>API Keys</h1>
+        <h1 style={{ fontSize: 20, fontWeight: 400, margin: 0 }}>API Keys</h1>
         <div style={{ marginLeft: 'auto' }}>
-          <button
-            onClick={() => setShowCreate(true)}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 6,
-              padding: '8px 14px',
-              background: THEME.accent,
-              color: '#fff',
-              border: 'none',
-              borderRadius: 6,
-              cursor: 'pointer',
-              fontFamily: FONT,
-              fontSize: 13,
-            }}
-          >
-            <Plus size={16} /> Create API Key
-          </button>
+          <Button kind="primary" size="sm" renderIcon={Plus} onClick={() => setShowCreate(true)}>
+            Create API key
+          </Button>
         </div>
       </div>
 
-      <div
-        style={{
-          background: THEME.panel,
-          border: `1px solid ${THEME.border}`,
-          borderRadius: 8,
-          overflow: 'hidden',
-        }}
-      >
-        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
-          <thead>
-            <tr style={{ background: THEME.bg, textAlign: 'left' }}>
-              <th style={{ padding: '12px 16px', color: THEME.text.secondary, fontWeight: 500 }}>Name</th>
-              <th style={{ padding: '12px 16px', color: THEME.text.secondary, fontWeight: 500 }}>Prefix</th>
-              <th style={{ padding: '12px 16px', color: THEME.text.secondary, fontWeight: 500 }}>Expires</th>
-              <th style={{ padding: '12px 16px', color: THEME.text.secondary, fontWeight: 500 }}>Last used</th>
-              <th style={{ padding: '12px 16px', color: THEME.text.secondary, fontWeight: 500 }}>Created</th>
-              <th style={{ padding: '12px 16px', color: THEME.text.secondary, fontWeight: 500 }}>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {loading ? (
-              <tr>
-                <td colSpan={6} style={{ padding: 32, textAlign: 'center', color: THEME.text.muted }}>
-                  Loading...
-                </td>
-              </tr>
-            ) : keys.length === 0 ? (
-              <tr>
-                <td colSpan={6} style={{ padding: 32, textAlign: 'center', color: THEME.text.muted }}>
-                  No API keys yet — click &quot;Create API Key&quot; to get started
-                </td>
-              </tr>
-            ) : (
-              keys.map((k) => (
-                <tr key={k.id} style={{ borderTop: `1px solid ${THEME.border}` }}>
-                  <td style={{ padding: '12px 16px' }}>{k.name}</td>
-                  <td style={{ padding: '12px 16px', fontFamily: 'monospace', color: THEME.text.secondary }}>
-                    {k.prefix}…
-                  </td>
-                  <td style={{ padding: '12px 16px', color: THEME.text.secondary }}>
-                    {k.expiresAt ? new Date(k.expiresAt).toLocaleDateString('th-TH') : '—'}
-                  </td>
-                  <td style={{ padding: '12px 16px', color: THEME.text.secondary }}>
-                    {k.lastUsedAt ? new Date(k.lastUsedAt).toLocaleString('th-TH') : '—'}
-                  </td>
-                  <td style={{ padding: '12px 16px', color: THEME.text.secondary }}>
-                    {new Date(k.createdAt).toLocaleString('th-TH')}
-                  </td>
-                  <td style={{ padding: '12px 16px' }}>
-                    <button
-                      onClick={() => handleRevoke(k.id)}
-                      style={{
-                        background: 'transparent',
-                        border: `1px solid ${THEME.border}`,
-                        color: '#F87171',
-                        borderRadius: 4,
-                        padding: '4px 10px',
-                        cursor: 'pointer',
-                        fontFamily: FONT,
-                        fontSize: 12,
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        gap: 4,
-                      }}
-                    >
-                      <Trash2 size={12} /> Revoke
-                    </button>
-                  </td>
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
-      </div>
+      <TableContainer>
+        <div style={{ overflowX: 'auto' }}>
+          <Table size="md">
+            <TableHead>
+              <TableRow>
+                <TableHeader>Name</TableHeader>
+                <TableHeader>Prefix</TableHeader>
+                <TableHeader>Expires</TableHeader>
+                <TableHeader>Last used</TableHeader>
+                <TableHeader>Created</TableHeader>
+                <TableHeader>Actions</TableHeader>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {loading ? (
+                <TableRow>
+                  <TableCell colSpan={6} style={{ padding: 32, textAlign: 'center', color: THEME.text.muted }}>
+                    Loading...
+                  </TableCell>
+                </TableRow>
+              ) : keys.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={6} style={{ padding: 32, textAlign: 'center', color: THEME.text.muted }}>
+                    No API keys yet — click &quot;Create API key&quot; to get started
+                  </TableCell>
+                </TableRow>
+              ) : (
+                keys.map((k) => (
+                  <TableRow key={k.id}>
+                    <TableCell>{k.name}</TableCell>
+                    <TableCell style={{ fontFamily: 'monospace' }}>{k.prefix}…</TableCell>
+                    <TableCell>{k.expiresAt ? new Date(k.expiresAt).toLocaleDateString('th-TH') : '—'}</TableCell>
+                    <TableCell>{k.lastUsedAt ? new Date(k.lastUsedAt).toLocaleString('th-TH') : '—'}</TableCell>
+                    <TableCell>{new Date(k.createdAt).toLocaleString('th-TH')}</TableCell>
+                    <TableCell>
+                      <Button kind="danger--ghost" size="sm" renderIcon={Trash2} onClick={() => handleRevoke(k.id)}>
+                        Revoke
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
+        </div>
+      </TableContainer>
 
       {/* Create modal */}
-      {showCreate && (
-        <div
-          style={{
-            position: 'fixed',
-            inset: 0,
-            background: 'rgba(0,0,0,0.5)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            zIndex: 100,
-          }}
-          onClick={() => setShowCreate(false)}
-        >
-          <div
-            onClick={(e) => e.stopPropagation()}
-            style={{
-              background: THEME.panel,
-              border: `1px solid ${THEME.border}`,
-              borderRadius: 8,
-              padding: 24,
-              width: 420,
-            }}
-          >
-            <h2 style={{ margin: '0 0 16px', fontSize: 16, fontWeight: 600 }}>Create new API key</h2>
-            <div style={{ marginBottom: 12 }}>
-              <label style={{ fontSize: 13, color: THEME.text.secondary, display: 'block', marginBottom: 6 }}>
-                Name
-              </label>
-              <input
-                value={newKeyName}
-                onChange={(e) => setNewKeyName(e.target.value)}
-                placeholder="e.g. Integration server"
-                style={{
-                  width: '100%',
-                  padding: '8px 10px',
-                  background: THEME.bg,
-                  border: `1px solid ${THEME.border}`,
-                  color: THEME.text.primary,
-                  borderRadius: 6,
-                  fontSize: 13,
-                  fontFamily: FONT,
-                }}
-              />
-            </div>
-            <div style={{ marginBottom: 20 }}>
-              <label style={{ fontSize: 13, color: THEME.text.secondary, display: 'block', marginBottom: 6 }}>
-                Expiry date (optional)
-              </label>
-              <input
-                type="date"
-                value={newKeyExpires}
-                onChange={(e) => setNewKeyExpires(e.target.value)}
-                style={{
-                  width: '100%',
-                  padding: '8px 10px',
-                  background: THEME.bg,
-                  border: `1px solid ${THEME.border}`,
-                  color: THEME.text.primary,
-                  borderRadius: 6,
-                  fontSize: 13,
-                  fontFamily: FONT,
-                }}
-              />
-            </div>
-            <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
-              <button
-                onClick={() => setShowCreate(false)}
-                style={{
-                  padding: '8px 14px',
-                  background: 'transparent',
-                  border: `1px solid ${THEME.border}`,
-                  color: THEME.text.primary,
-                  borderRadius: 6,
-                  cursor: 'pointer',
-                  fontFamily: FONT,
-                  fontSize: 13,
-                }}
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleCreate}
-                disabled={creating}
-                style={{
-                  padding: '8px 14px',
-                  background: THEME.accent,
-                  border: 'none',
-                  color: '#fff',
-                  borderRadius: 6,
-                  cursor: 'pointer',
-                  fontFamily: FONT,
-                  fontSize: 13,
-                  opacity: creating ? 0.6 : 1,
-                }}
-              >
-                {creating ? 'Creating...' : 'Create'}
-              </button>
-            </div>
-          </div>
+      <Modal
+        open={showCreate}
+        onRequestClose={() => setShowCreate(false)}
+        modalHeading="Create new API key"
+        primaryButtonText={creating ? 'Creating...' : 'Create'}
+        secondaryButtonText="Cancel"
+        primaryButtonDisabled={creating}
+        onRequestSubmit={handleCreate}
+        size="sm"
+      >
+        <div style={{ marginBottom: 16 }}>
+          <TextInput
+            id="api-key-name"
+            labelText="Name"
+            value={newKeyName}
+            onChange={(e) => setNewKeyName(e.target.value)}
+            placeholder="e.g. Integration server"
+          />
         </div>
-      )}
+        <TextInput
+          id="api-key-expires"
+          type="date"
+          labelText="Expiry date (optional)"
+          value={newKeyExpires}
+          onChange={(e) => setNewKeyExpires(e.target.value)}
+        />
+      </Modal>
 
       {/* Reveal-key modal (shows FULL KEY ONCE) */}
-      {revealedKey && (
-        <div
-          style={{
-            position: 'fixed',
-            inset: 0,
-            background: 'rgba(0,0,0,0.5)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            zIndex: 110,
-          }}
-        >
+      <ComposedModal open={!!revealedKey} preventCloseOnClickOutside onClose={() => { setRevealedKey(null); setCopied(false); return true }}>
+        <ModalHeader title="Your API key" />
+        <ModalBody>
+          <InlineNotification
+            kind="warning"
+            lowContrast
+            hideCloseButton
+            title=""
+            subtitle="Store this key securely — the system cannot show it again after you close this window."
+          />
           <div
             style={{
-              background: THEME.panel,
+              background: THEME.bg,
               border: `1px solid ${THEME.border}`,
-              borderRadius: 8,
-              padding: 24,
-              width: 480,
+              padding: 12,
+              fontFamily: 'monospace',
+              fontSize: 13,
+              wordBreak: 'break-all',
+              marginTop: 12,
             }}
           >
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
-              <Key size={18} />
-              <h2 style={{ margin: 0, fontSize: 16, fontWeight: 600 }}>Your API key</h2>
-            </div>
-            <p style={{ fontSize: 12, color: '#FBBF24', margin: '0 0 12px' }}>
-              Store this key securely — the system cannot show it again after you close this window.
-            </p>
-            <div
-              style={{
-                background: THEME.bg,
-                border: `1px solid ${THEME.border}`,
-                borderRadius: 6,
-                padding: 12,
-                fontFamily: 'monospace',
-                fontSize: 13,
-                wordBreak: 'break-all',
-                marginBottom: 12,
-              }}
-            >
-              {revealedKey}
-            </div>
-            <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
-              <button
-                onClick={handleCopy}
-                style={{
-                  padding: '8px 14px',
-                  background: 'transparent',
-                  border: `1px solid ${THEME.border}`,
-                  color: THEME.text.primary,
-                  borderRadius: 6,
-                  cursor: 'pointer',
-                  fontFamily: FONT,
-                  fontSize: 13,
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: 6,
-                }}
-              >
-                {copied ? <Check size={14} /> : <Copy size={14} />}
-                {copied ? 'Copied' : 'Copy'}
-              </button>
-              <button
-                onClick={() => {
-                  setRevealedKey(null)
-                  setCopied(false)
-                }}
-                style={{
-                  padding: '8px 14px',
-                  background: THEME.accent,
-                  border: 'none',
-                  color: '#fff',
-                  borderRadius: 6,
-                  cursor: 'pointer',
-                  fontFamily: FONT,
-                  fontSize: 13,
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: 6,
-                }}
-              >
-                <X size={14} /> Close
-              </button>
-            </div>
+            {revealedKey}
           </div>
-        </div>
-      )}
+        </ModalBody>
+        <ModalFooter>
+          <Button kind="secondary" renderIcon={copied ? Check : Copy} onClick={handleCopy}>
+            {copied ? 'Copied' : 'Copy'}
+          </Button>
+          <Button
+            kind="primary"
+            renderIcon={X}
+            onClick={() => {
+              setRevealedKey(null)
+              setCopied(false)
+            }}
+          >
+            Close
+          </Button>
+        </ModalFooter>
+      </ComposedModal>
     </div>
   )
 }

@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import jwt from 'jsonwebtoken'
+import { getJwtSecret } from '@/lib/jwt-secret'
 
-const JWT_SECRET = process.env.JWT_SECRET || 'orch-secret-key'
 
 // Mock user data - in production this would come from JWT/session
 const MOCK_USER = {
@@ -30,7 +30,7 @@ export async function GET(request: NextRequest) {
     // Verify token
     let decoded: any
     try {
-      decoded = jwt.verify(token, JWT_SECRET)
+      decoded = jwt.verify(token, getJwtSecret())
     } catch {
       return NextResponse.json(
         { error: 'Invalid token' },

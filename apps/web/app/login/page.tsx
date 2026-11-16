@@ -5,10 +5,11 @@ import { useRouter } from 'next/navigation'
 import { useAuthStore } from '@/stores/authStore'
 import { authApi } from '@/lib/api'
 import { AuthResponse } from '@/types'
-import { Layers, AlertCircle, Eye, EyeOff, ArrowRight, Sun, Moon } from 'lucide-react'
+import { Layers, ArrowRight, Sun, Moon } from 'lucide-react'
+import { Button, TextInput, PasswordInput, InlineNotification, Tag } from '@carbon/react'
 import { useThemeStore } from '@/stores/themeStore'
 
-const FONT = "'Prompt', sans-serif";
+const FONT = '"IBM Plex Sans Thai", "IBM Plex Sans", "Sarabun", system-ui, sans-serif';
 
 export default function LoginPage() {
   const router = useRouter()
@@ -93,58 +94,20 @@ export default function LoginPage() {
           from { opacity: 0; transform: translateY(16px); }
           to { opacity: 1; transform: translateY(0); }
         }
-        @keyframes shimmer {
-          0% { background-position: -200% 0; }
-          100% { background-position: 200% 0; }
-        }
-        .login-input:focus {
-          border-color: #3B82F6 !important;
-          box-shadow: 0 0 0 3px rgba(59,130,246,0.12) !important;
-        }
-        .login-btn:hover:not(:disabled) {
-          transform: translateY(-1px);
-          box-shadow: 0 8px 24px rgba(59,130,246,0.35) !important;
-        }
-        .login-btn:active:not(:disabled) {
-          transform: translateY(0);
-        }
       `}</style>
 
       {/* Theme toggle */}
-      <button
-        onClick={toggleTheme}
-        style={{
-          position: 'fixed',
-          top: 20,
-          right: 20,
-          width: 38,
-          height: 38,
-          borderRadius: 10,
-          background: 'var(--t-panel)',
-          border: '1px solid var(--t-border)',
-          color: 'var(--t-text-secondary)',
-          cursor: 'pointer',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          transition: 'all 0.2s ease',
-          zIndex: 10,
-        }}
-        onMouseEnter={(e) => {
-          e.currentTarget.style.background = 'var(--t-panel-hover)'
-          e.currentTarget.style.color = 'var(--t-text)'
-        }}
-        onMouseLeave={(e) => {
-          e.currentTarget.style.background = 'var(--t-panel)'
-          e.currentTarget.style.color = 'var(--t-text-secondary)'
-        }}
-        title={mode === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
-      >
-        {mode === 'dark'
-          ? <Sun style={{ width: 18, height: 18 }} />
-          : <Moon style={{ width: 18, height: 18 }} />
-        }
-      </button>
+      <div style={{ position: 'fixed', top: 20, right: 20, zIndex: 10 }}>
+        <Button
+          kind="ghost"
+          size="md"
+          hasIconOnly
+          renderIcon={mode === 'dark' ? Sun : Moon}
+          iconDescription={mode === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+          tooltipPosition="left"
+          onClick={toggleTheme}
+        />
+      </div>
 
       <div style={{ position: 'relative', width: '100%', maxWidth: 400, animation: 'slideUp 0.5s ease-out' }}>
         {/* Logo Section - outside card */}
@@ -153,7 +116,7 @@ export default function LoginPage() {
             style={{
               width: 56,
               height: 56,
-              background: 'linear-gradient(135deg, #3B82F6, #60A5FA)',
+              background: 'linear-gradient(135deg, #0f62fe, #0f62fe)',
               borderRadius: 14,
               display: 'flex',
               alignItems: 'center',
@@ -169,19 +132,7 @@ export default function LoginPage() {
             <h1 style={{ fontSize: 22, fontWeight: 700, color: 'var(--t-text)', letterSpacing: '-0.01em' }}>
               Orch
             </h1>
-            <span
-              style={{
-                padding: '2px 7px',
-                fontSize: 9,
-                background: 'rgba(59,130,246,0.1)',
-                color: '#60A5FA',
-                borderRadius: 5,
-                fontWeight: 600,
-                border: '1px solid rgba(59,130,246,0.2)',
-              }}
-            >
-              BETA
-            </span>
+            <Tag type="blue" size="sm">BETA</Tag>
           </div>
           {/* removed tagline */}
         </div>
@@ -198,156 +149,55 @@ export default function LoginPage() {
         >
           {/* Error Message */}
           {error && (
-            <div
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 10,
-                padding: '10px 14px',
-                background: 'rgba(239,68,68,0.08)',
-                border: '1px solid rgba(239,68,68,0.2)',
-                borderRadius: 10,
-                marginBottom: 20,
-              }}
-            >
-              <AlertCircle style={{ width: 16, height: 16, color: '#F87171', flexShrink: 0 }} />
-              <span style={{ fontSize: 13, color: '#F87171' }}>{error}</span>
-            </div>
+            <InlineNotification
+              kind="error"
+              lowContrast
+              hideCloseButton
+              title={error}
+              style={{ marginBottom: 20, maxWidth: '100%' }}
+            />
           )}
 
           {/* Login Form */}
           <form onSubmit={handleSubmit}>
-            {/* Username Field */}
             <div style={{ marginBottom: 16 }}>
-              <label
-                style={{
-                  display: 'block',
-                  fontSize: 12,
-                  color: 'var(--t-text-secondary)',
-                  marginBottom: 6,
-                  fontWeight: 500,
-                }}
-              >
-                Username
-              </label>
-              <input
-                className="login-input"
+              <TextInput
+                id="login-username"
+                labelText="Username"
                 type="text"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
                 placeholder="Enter username"
                 autoFocus
-                style={{
-                  width: '100%',
-                  padding: '10px 14px',
-                  background: 'var(--t-input)',
-                  border: '1px solid var(--t-border)',
-                  borderRadius: 8,
-                  fontSize: 14,
-                  color: 'var(--t-text)',
-                  fontFamily: FONT,
-                  outline: 'none',
-                  transition: 'all 0.2s ease',
-                }}
                 required
               />
             </div>
 
-            {/* Password Field */}
             <div style={{ marginBottom: 24 }}>
-              <label
-                style={{
-                  display: 'block',
-                  fontSize: 12,
-                  color: 'var(--t-text-secondary)',
-                  marginBottom: 6,
-                  fontWeight: 500,
-                }}
-              >
-                Password
-              </label>
-              <div style={{ position: 'relative' }}>
-                <input
-                  className="login-input"
-                  type={showPassword ? 'text' : 'password'}
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="Enter password"
-                  style={{
-                    width: '100%',
-                    padding: '10px 40px 10px 14px',
-                    background: 'var(--t-input)',
-                    border: '1px solid var(--t-border)',
-                    borderRadius: 8,
-                    fontSize: 14,
-                    color: 'var(--t-text)',
-                    fontFamily: FONT,
-                    outline: 'none',
-                    transition: 'all 0.2s ease',
-                  }}
-                  required
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  style={{
-                    position: 'absolute',
-                    right: 10,
-                    top: '50%',
-                    transform: 'translateY(-50%)',
-                    background: 'none',
-                    border: 'none',
-                    cursor: 'pointer',
-                    padding: 2,
-                    color: 'var(--t-text-muted)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    transition: 'color 0.2s',
-                  }}
-                  onMouseEnter={(e) => { e.currentTarget.style.color = 'var(--t-text-secondary)' }}
-                  onMouseLeave={(e) => { e.currentTarget.style.color = 'var(--t-text-muted)' }}
-                >
-                  {showPassword
-                    ? <EyeOff style={{ width: 16, height: 16 }} />
-                    : <Eye style={{ width: 16, height: 16 }} />
-                  }
-                </button>
-              </div>
+              <PasswordInput
+                id="login-password"
+                labelText="Password"
+                type={showPassword ? 'text' : 'password'}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                onTogglePasswordVisibility={() => setShowPassword(!showPassword)}
+                placeholder="Enter password"
+                showPasswordLabel="Show password"
+                hidePasswordLabel="Hide password"
+                required
+              />
             </div>
 
-            {/* Submit Button */}
-            <button
-              className="login-btn"
+            <Button
               type="submit"
+              kind="primary"
+              size="lg"
               disabled={isLoading}
-              style={{
-                width: '100%',
-                padding: '11px 0',
-                background: isLoading
-                  ? 'rgba(59,130,246,0.5)'
-                  : 'linear-gradient(135deg, #3B82F6, #2563EB)',
-                border: 'none',
-                borderRadius: 8,
-                fontSize: 14,
-                fontWeight: 600,
-                color: '#FFFFFF',
-                cursor: isLoading ? 'not-allowed' : 'pointer',
-                fontFamily: FONT,
-                transition: 'all 0.2s ease',
-                boxShadow: '0 4px 14px rgba(59,130,246,0.25)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: 8,
-              }}
+              renderIcon={isLoading ? undefined : ArrowRight}
+              style={{ width: '100%', maxWidth: '100%' }}
             >
-              {isLoading ? 'Signing in...' : (
-                <>
-                  Sign In
-                  <ArrowRight style={{ width: 16, height: 16 }} />
-                </>
-              )}
-            </button>
+              {isLoading ? 'Signing in...' : 'Sign In'}
+            </Button>
           </form>
         </div>
 

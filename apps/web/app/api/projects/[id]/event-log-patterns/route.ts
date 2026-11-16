@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { getTenantContext, featureGuard, isForeign } from '@/lib/tenant'
 import { z } from 'zod'
 
 const captureEnum = z.enum(['SUMMARY', 'FULL_BODY', 'NONE'])
@@ -27,8 +28,15 @@ export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
+  const ctx = await getTenantContext(request)
+  const blocked = featureGuard(ctx, 'projects')
+  if (blocked) return blocked
   try {
     const { id: projectId } = await params
+    if (ctx.tenantId) {
+      const own = await prisma.project.findUnique({ where: { id: projectId }, select: { tenantId: true } })
+      if (isForeign(ctx, own)) return NextResponse.json({ error: 'Project not found' }, { status: 404 })
+    }
     const includeGlobal = request.nextUrl.searchParams.get('includeGlobal') === 'true'
 
     // Project rules always; global rules optional (some screens want
@@ -52,8 +60,15 @@ export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
+  const ctx = await getTenantContext(request)
+  const blocked = featureGuard(ctx, 'projects')
+  if (blocked) return blocked
   try {
     const { id: projectId } = await params
+    if (ctx.tenantId) {
+      const own = await prisma.project.findUnique({ where: { id: projectId }, select: { tenantId: true } })
+      if (isForeign(ctx, own)) return NextResponse.json({ error: 'Project not found' }, { status: 404 })
+    }
     const body = await request.json()
     const input = createSchema.parse(body)
 

@@ -1,12 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { getTenantContext, featureGuard, isForeign } from '@/lib/tenant'
 
 // DELETE /api/api-keys/[id] — revoke a key (soft delete via revokedAt)
 export async function DELETE(_req: NextRequest, ctx: { params: Promise<{ id: string }> }) {
+  const tctx = await getTenantContext(_req)
+  const blocked = featureGuard(tctx, 'projects')
+  if (blocked) return blocked
   try {
     const { id } = await ctx.params
     const existing = await prisma.apiKey.findUnique({ where: { id } })
-    if (!existing) {
+    if (!existing || isForeign(tctx, existing)) {
       return NextResponse.json({ error: 'API key not found' }, { status: 404 })
     }
     if (existing.revokedAt) {

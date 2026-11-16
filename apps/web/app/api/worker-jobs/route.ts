@@ -1,9 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { getTenantContext, featureGuard, tenantWhere } from '@/lib/tenant'
 import { prisma } from '@/lib/prisma'
 
 // POST /api/worker-jobs - Create or update a worker job result (from broker)
 export async function POST(request: NextRequest) {
   try {
+    const ctx = await getTenantContext(request)
+    const blocked = featureGuard(ctx, 'flows')
+    if (blocked) return blocked
     const body = await request.json()
 
     const {
@@ -103,6 +107,9 @@ export async function POST(request: NextRequest) {
 // GET /api/worker-jobs - List worker jobs with filters
 export async function GET(request: NextRequest) {
   try {
+    const ctx = await getTenantContext(request)
+    const blocked = featureGuard(ctx, 'flows')
+    if (blocked) return blocked
     const { searchParams } = request.nextUrl
     const page = parseInt(searchParams.get('page') || '1')
     const limit = parseInt(searchParams.get('limit') || '50')
@@ -121,6 +128,8 @@ export async function GET(request: NextRequest) {
     if (status) where.status = status
     if (queueName) where.queueName = queueName
     if (nodeType) where.nodeType = nodeType
+    const tenantFlowIds = (ctx.tenantId ? (await prisma.flowIntegration.findMany({ where: tenantWhere(ctx), select: { id: true } })).map((f) => f.id) : null)
+    if (tenantFlowIds) where.AND = [{ flowId: { in: tenantFlowIds } }]
 
     const [jobs, total] = await Promise.all([
       prisma.workerJob.findMany({

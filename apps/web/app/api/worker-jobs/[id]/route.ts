@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { getTenantContext, featureGuard, isForeign, flowAllowed } from '@/lib/tenant'
 import { prisma } from '@/lib/prisma'
 
 // GET /api/worker-jobs/:id - Get single worker job
@@ -7,13 +8,19 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const ctx = await getTenantContext(request)
+    const blocked = featureGuard(ctx, 'flows')
+    if (blocked) return blocked
     const { id } = await params
 
     const job = await prisma.workerJob.findUnique({
       where: { id },
     })
 
-    if (!job) {
+    const jobFlow = job && ctx.tenantId
+      ? await prisma.flowIntegration.findUnique({ where: { id: job.flowId }, select: { tenantId: true } })
+      : null
+    if (!job || (ctx.tenantId && (!jobFlow || isForeign(ctx, jobFlow)))) {
       return NextResponse.json(
         { error: 'Worker job not found' },
         { status: 404 }
@@ -36,7 +43,16 @@ export async function PUT(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const ctx = await getTenantContext(request)
+    const blocked = featureGuard(ctx, 'flows')
+    if (blocked) return blocked
     const { id } = await params
+    if (ctx.tenantId) {
+      const existing = await prisma.workerJob.findUnique({ where: { id }, select: { flowId: true } })
+      if (existing && !(await flowAllowed(ctx, existing.flowId))) {
+        return NextResponse.json({ error: 'Worker job not found' }, { status: 404 })
+      }
+    }
     const body = await request.json()
 
     const updateData: any = {}

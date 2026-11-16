@@ -1,5 +1,6 @@
 import { NextRequest } from 'next/server';
 import { getBrokerUrl } from '@/lib/system-config';
+import { brokerAuthHeaders } from '@/lib/broker-auth'
 
 // Worker actions (start, stop, pause, restart) via Broker
 export async function PATCH(
@@ -38,7 +39,7 @@ export async function PATCH(
 
     const response = await fetch(endpoint, {
       method: 'POST',
-      headers: {
+      headers: { ...brokerAuthHeaders(), 
         'Content-Type': 'application/json',
       },
       signal: AbortSignal.timeout(10000),
@@ -75,7 +76,7 @@ export async function DELETE(
 
     const response = await fetch(`${BROKER_URL}/broker/admin/workers/${id}`, {
       method: 'DELETE',
-      headers: {
+      headers: { ...brokerAuthHeaders(), 
         'Content-Type': 'application/json',
       },
       signal: AbortSignal.timeout(10000),

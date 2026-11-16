@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useId } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { projectApi, apiRegistrationApi } from '@/lib/api'
@@ -28,7 +28,6 @@ import {
   Code,
   SlidersHorizontal,
   Edit3,
-  Eye,
   Workflow,
   MessageSquareText,
   Share2,
@@ -52,6 +51,21 @@ import { SystemConfigPanel } from '@/components/settings/SystemConfigPanel'
 import { Combobox } from '@/components/ui/combobox'
 import { EnvAwareInput } from '@/components/common/EnvAwareInput'
 import yaml from 'js-yaml'
+import {
+  Button,
+  ComposedModal,
+  ContentSwitcher,
+  ModalBody,
+  ModalHeader,
+  Switch,
+  Tab,
+  TabList,
+  Tabs,
+  Tag as CdsTag,
+  TextArea,
+  TextInput,
+  Toggle,
+} from '@carbon/react'
 
 // Swagger UI CSS
 import 'swagger-ui-react/swagger-ui.css'
@@ -60,7 +74,7 @@ import 'swagger-ui-react/swagger-ui.css'
 const SwaggerUI = dynamic(() => import('swagger-ui-react'), {
   ssr: false,
   loading: () => (
-    <div style={{ padding: 40, textAlign: 'center', color: 'var(--t-text-secondary)', fontFamily: "'Prompt', sans-serif" }}>
+    <div style={{ padding: 40, textAlign: 'center', color: 'var(--t-text-secondary)', fontFamily: '"IBM Plex Sans Thai", "IBM Plex Sans", "Sarabun", system-ui, sans-serif' }}>
       <Loader2 size={24} className="animate-spin" style={{ margin: '0 auto 12px' }} />
       <p style={{ fontSize: 13 }}>Loading Swagger UI...</p>
     </div>
@@ -69,7 +83,7 @@ const SwaggerUI = dynamic(() => import('swagger-ui-react'), {
 
 // ==================== CONSTANTS ====================
 
-const FONT = "'Prompt', sans-serif"
+const FONT = '"IBM Plex Sans Thai", "IBM Plex Sans", "Sarabun", system-ui, sans-serif'
 
 const THEME = {
   bg: 'var(--t-bg)',
@@ -82,18 +96,18 @@ const THEME = {
 }
 
 const METHOD_COLORS: Record<string, string> = {
-  GET: '#60A5FA',
-  POST: '#10B981',
-  PUT: '#F59E0B',
-  DELETE: '#EF4444',
-  PATCH: '#8B5CF6',
+  GET: '#0f62fe',
+  POST: '#24a148',
+  PUT: '#ba4e00',
+  DELETE: '#da1e28',
+  PATCH: '#8a3ffc',
 }
 
 const STATUS_STYLES: Record<string, { bg: string; color: string }> = {
-  ACTIVE: { bg: '#10B98118', color: '#34D399' },
+  ACTIVE: { bg: '#24a14818', color: '#24a148' },
   INACTIVE: { bg: '#5A617818', color: '#8B92A5' },
-  DRAFT: { bg: '#F59E0B18', color: '#FBBF24' },
-  DEPRECATED: { bg: '#EF444418', color: '#F87171' },
+  DRAFT: { bg: '#ba4e0018', color: '#ba4e00' },
+  DEPRECATED: { bg: '#da1e2818', color: '#da1e28' },
 }
 
 // Project page tabs — Field Mappings / Audit Configs / Clients are
@@ -156,7 +170,7 @@ function FormField({
           fontFamily: FONT,
         }}
       >
-        {label} {required && <span style={{ color: '#DC2626' }}>*</span>}
+        {label} {required && <span style={{ color: '#da1e28' }}>*</span>}
       </label>
       {children}
       {hint && (
@@ -166,6 +180,20 @@ function FormField({
       )}
     </div>
   )
+}
+
+// Spinner usable as a Carbon `renderIcon`.
+function SpinIcon(props: { size?: number | string; className?: string }) {
+  return <Loader2 size={typeof props.size === 'number' ? props.size : 16} className={`animate-spin ${props.className ?? ''}`} />
+}
+
+// Carbon Tag type for a semantic hex colour (green / red / blue, else grey).
+function tagType(color: string): 'green' | 'red' | 'blue' | 'gray' {
+  const c = (color || '').toLowerCase()
+  if (['#24a148', '#198038', '#10b981', '#22c55e'].includes(c)) return 'green'
+  if (['#da1e28', '#ef4444', '#a2191f'].includes(c)) return 'red'
+  if (['#0f62fe', '#0043ce', '#3b82f6', '#0353e9'].includes(c)) return 'blue'
+  return 'gray'
 }
 
 function InputField({
@@ -181,30 +209,18 @@ function InputField({
   type?: string
   disabled?: boolean
 }) {
+  const id = useId()
   return (
-    <input
+    <TextInput
+      id={id}
+      labelText=""
+      hideLabel
       type={type}
       value={value}
       onChange={(e) => onChange(e.target.value)}
       placeholder={placeholder}
       disabled={disabled}
-      style={{
-        width: '100%',
-        padding: '8px 12px',
-        backgroundColor: 'var(--t-input)',
-        border: `1px solid ${THEME.border}`,
-        borderRadius: 6,
-        fontSize: 13,
-        color: THEME.text.primary,
-        fontFamily: FONT,
-        outline: 'none',
-        transition: 'border-color 0.15s',
-        opacity: disabled ? 0.5 : 1,
-        cursor: disabled ? 'not-allowed' : 'text',
-        boxSizing: 'border-box' as const,
-      }}
-      onFocus={(e) => (e.target.style.borderColor = THEME.accent)}
-      onBlur={(e) => (e.target.style.borderColor = THEME.border)}
+      style={{ width: '100%' }}
     />
   )
 }
@@ -220,28 +236,16 @@ function TextareaField({
   placeholder?: string
   rows?: number
 }) {
+  const id = useId()
   return (
-    <textarea
+    <TextArea
+      id={id}
+      labelText=""
+      hideLabel
       value={value}
       onChange={(e) => onChange(e.target.value)}
       placeholder={placeholder}
       rows={rows}
-      style={{
-        width: '100%',
-        padding: '8px 12px',
-        backgroundColor: 'var(--t-input)',
-        border: `1px solid ${THEME.border}`,
-        borderRadius: 6,
-        fontSize: 13,
-        color: THEME.text.primary,
-        fontFamily: FONT,
-        outline: 'none',
-        resize: 'vertical' as const,
-        transition: 'border-color 0.15s',
-        boxSizing: 'border-box' as const,
-      }}
-      onFocus={(e) => (e.target.style.borderColor = THEME.accent)}
-      onBlur={(e) => (e.target.style.borderColor = THEME.border)}
     />
   )
 }
@@ -265,45 +269,18 @@ function SelectField({
 function StatusBadge({ status }: { status: string }) {
   const style = STATUS_STYLES[status] || { bg: '#5A617818', color: '#8B92A5' }
   return (
-    <span
-      style={{
-        display: 'inline-flex',
-        alignItems: 'center',
-        padding: '2px 10px',
-        borderRadius: 9999,
-        fontSize: 11,
-        fontWeight: 600,
-        backgroundColor: style.bg,
-        color: style.color,
-        fontFamily: FONT,
-      }}
-    >
+    <CdsTag size="sm" type={tagType(style.color)} style={{ margin: 0 }}>
       {status}
-    </span>
+    </CdsTag>
   )
 }
 
 function MethodBadge({ method }: { method: string }) {
   const color = METHOD_COLORS[method] || '#64748B'
   return (
-    <span
-      style={{
-        display: 'inline-flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        padding: '2px 8px',
-        borderRadius: 4,
-        fontSize: 11,
-        fontWeight: 700,
-        fontFamily: 'monospace',
-        backgroundColor: color + '18',
-        color: color,
-        minWidth: 52,
-        letterSpacing: 0.5,
-      }}
-    >
+    <CdsTag size="sm" type={tagType(color)} style={{ margin: 0, minWidth: 52, justifyContent: 'center', fontFamily: 'monospace' }}>
       {method}
-    </span>
+    </CdsTag>
   )
 }
 
@@ -314,7 +291,7 @@ function SkeletonBlock({ height = 20, width = '100%' }: { height?: number; width
         height,
         width,
         backgroundColor: THEME.borderLight,
-        borderRadius: 8,
+        borderRadius: 0,
         animation: 'pulse 1.5s ease-in-out infinite',
       }}
     />
@@ -446,9 +423,13 @@ function ApiRow({
       <StatusBadge status={api.status} />
 
       {onDelete && (
-        <button
-          type="button"
-          onClick={(e) => {
+        <Button
+          kind="ghost"
+          size="sm"
+          hasIconOnly
+          iconDescription="Delete API"
+          renderIcon={deletingId === api.id ? SpinIcon : Trash2}
+          onClick={(e: React.MouseEvent) => {
             // The whole row is wrapped in a <Link>; without these
             // the click navigates to the detail page before our
             // confirm dialog opens.
@@ -457,37 +438,7 @@ function ApiRow({
             onDelete(api)
           }}
           disabled={deletingId === api.id}
-          title="Delete API"
-          style={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            width: 28,
-            height: 28,
-            borderRadius: 6,
-            border: 'none',
-            background: 'transparent',
-            color: THEME.text.muted,
-            cursor: deletingId === api.id ? 'not-allowed' : 'pointer',
-            opacity: deletingId === api.id ? 0.5 : 0.6,
-            transition: 'background-color 0.15s, color 0.15s, opacity 0.15s',
-          }}
-          onMouseEnter={(e) => {
-            if (deletingId === api.id) return
-            e.currentTarget.style.backgroundColor = '#EF444418'
-            e.currentTarget.style.color = '#F87171'
-            e.currentTarget.style.opacity = '1'
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.backgroundColor = 'transparent'
-            e.currentTarget.style.color = THEME.text.muted
-            e.currentTarget.style.opacity = deletingId === api.id ? '0.5' : '0.6'
-          }}
-        >
-          {deletingId === api.id
-            ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
-            : <Trash2 className="w-3.5 h-3.5" />}
-        </button>
+        />
       )}
 
       <ExternalLink
@@ -580,12 +531,12 @@ function ApisTab({ projectId }: { projectId: string }) {
               display: 'inline-flex',
               alignItems: 'center',
               gap: 6,
-              padding: '8px 16px',
+              padding: '0 12px', height: 32,
               backgroundColor: THEME.accent,
               color: '#FFFFFF',
-              borderRadius: 8,
+              borderRadius: 0,
               fontSize: 13,
-              fontWeight: 500,
+              fontWeight: 400,
               fontFamily: FONT,
               textDecoration: 'none',
               transition: 'background-color 0.15s',
@@ -616,7 +567,7 @@ function ApisTab({ projectId }: { projectId: string }) {
             textAlign: 'center',
             backgroundColor: THEME.panel,
             border: `1px solid ${THEME.border}`,
-            borderRadius: 12,
+            borderRadius: 0,
           }}
         >
           <Globe size={40} style={{ color: THEME.text.muted, margin: '0 auto 12px' }} />
@@ -640,8 +591,8 @@ function ApisTab({ projectId }: { projectId: string }) {
                 key={key}
                 style={{
                   backgroundColor: THEME.panel,
-                  border: `1px solid #3B82F625`,
-                  borderRadius: 12,
+                  border: '1px solid #e0e0e0',
+                  borderRadius: 0,
                   overflow: 'hidden',
                 }}
               >
@@ -653,10 +604,10 @@ function ApisTab({ projectId }: { projectId: string }) {
                     gap: 10,
                     padding: '12px 20px',
                     borderBottom: `1px solid ${THEME.borderLight}`,
-                    background: 'linear-gradient(135deg, #3B82F608, transparent)',
+                    background: 'transparent',
                   }}
                 >
-                  <Network size={15} style={{ color: '#60A5FA', flexShrink: 0 }} />
+                  <Network size={15} style={{ color: '#0f62fe', flexShrink: 0 }} />
                   <MethodBadge method={method} />
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -682,9 +633,9 @@ function ApisTab({ projectId }: { projectId: string }) {
                       padding: '2px 8px',
                       fontSize: 11,
                       fontWeight: 500,
-                      color: '#60A5FA',
-                      backgroundColor: '#3B82F615',
-                      borderRadius: 6,
+                      color: '#0043ce',
+                      backgroundColor: '#d0e2ff',
+                      borderRadius: 0,
                       fontFamily: FONT,
                     }}
                   >
@@ -749,8 +700,8 @@ function ApisTab({ projectId }: { projectId: string }) {
                   key={key}
                   style={{
                     backgroundColor: THEME.panel,
-                    border: `1px solid #F59E0B25`,
-                    borderRadius: 12,
+                    border: '1px solid #e0e0e0',
+                    borderRadius: 0,
                     overflow: 'hidden',
                   }}
                 >
@@ -762,7 +713,7 @@ function ApisTab({ projectId }: { projectId: string }) {
                       gap: 10,
                       padding: '10px 20px',
                       borderBottom: `1px solid ${THEME.borderLight}`,
-                      background: 'linear-gradient(135deg, #F59E0B08, transparent)',
+                      background: 'transparent',
                     }}
                   >
                     <MethodBadge method={method} />
@@ -787,9 +738,9 @@ function ApisTab({ projectId }: { projectId: string }) {
                         padding: '2px 8px',
                         fontSize: 11,
                         fontWeight: 500,
-                        color: '#F59E0B',
-                        backgroundColor: '#F59E0B15',
-                        borderRadius: 6,
+                        color: '#161616',
+                        backgroundColor: '#e0e0e0',
+                        borderRadius: 0,
                         fontFamily: FONT,
                       }}
                     >
@@ -814,7 +765,7 @@ function ApisTab({ projectId }: { projectId: string }) {
                 style={{
                   backgroundColor: THEME.panel,
                   border: `1px solid ${THEME.border}`,
-                  borderRadius: 12,
+                  borderRadius: 0,
                   overflow: 'hidden',
                 }}
               >
@@ -867,7 +818,7 @@ function SettingsTab({ project }: { project: Project }) {
     slug: project.slug || '',
     description: project.description || '',
     image: project.image || '',
-    themeColor: project.themeColor || '#60A5FA',
+    themeColor: project.themeColor || '#0f62fe',
     baseUrl: project.baseUrl || '',
     proxyTargetUrl: project.proxyTargetUrl || '',
     authType: project.authType || 'NONE',
@@ -950,7 +901,7 @@ function SettingsTab({ project }: { project: Project }) {
     padding: '8px 12px',
     backgroundColor: 'var(--t-input)',
     border: `1px solid ${THEME.border}`,
-    borderRadius: 8,
+    borderRadius: 0,
     fontSize: 13,
     color: THEME.text.primary,
     fontFamily: FONT,
@@ -965,7 +916,7 @@ function SettingsTab({ project }: { project: Project }) {
         style={{
           backgroundColor: THEME.panel,
           border: `1px solid ${THEME.border}`,
-          borderRadius: 12,
+          borderRadius: 0,
           padding: 24,
         }}
       >
@@ -1025,7 +976,7 @@ function SettingsTab({ project }: { project: Project }) {
                   width: 32,
                   height: 32,
                   border: `1px solid ${THEME.border}`,
-                  borderRadius: 6,
+                  borderRadius: 0,
                   cursor: 'pointer',
                   padding: 0,
                   flexShrink: 0,
@@ -1034,7 +985,7 @@ function SettingsTab({ project }: { project: Project }) {
               <InputField
                 value={form.themeColor}
                 onChange={(v) => updateField('themeColor', v)}
-                placeholder="#60A5FA"
+                placeholder="#0f62fe"
               />
             </div>
           </FormField>
@@ -1046,7 +997,7 @@ function SettingsTab({ project }: { project: Project }) {
         style={{
           backgroundColor: THEME.panel,
           border: `1px solid ${THEME.border}`,
-          borderRadius: 12,
+          borderRadius: 0,
           padding: 24,
         }}
       >
@@ -1126,7 +1077,7 @@ function SettingsTab({ project }: { project: Project }) {
         style={{
           backgroundColor: THEME.panel,
           border: `1px solid ${THEME.border}`,
-          borderRadius: 12,
+          borderRadius: 0,
           padding: 24,
         }}
       >
@@ -1196,64 +1147,25 @@ function SettingsTab({ project }: { project: Project }) {
 
       {/* Actions */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <button
+        <Button
+          kind="danger"
+          size="md"
+          renderIcon={deleteMutation.isPending ? SpinIcon : Trash2}
           onClick={handleDelete}
           disabled={deleteMutation.isPending}
-          style={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: 6,
-            padding: '8px 16px',
-            backgroundColor: '#EF444418',
-            color: '#F87171',
-            border: '1px solid #EF444430',
-            borderRadius: 8,
-            fontSize: 13,
-            fontWeight: 500,
-            fontFamily: FONT,
-            cursor: deleteMutation.isPending ? 'not-allowed' : 'pointer',
-            opacity: deleteMutation.isPending ? 0.5 : 1,
-            transition: 'background-color 0.15s',
-          }}
-          onMouseEnter={(e) => {
-            if (!deleteMutation.isPending) e.currentTarget.style.backgroundColor = '#EF444425'
-          }}
-          onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = '#EF444418')}
         >
-          {deleteMutation.isPending ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14} />}
           Delete Project
-        </button>
+        </Button>
 
-        <button
+        <Button
+          kind="primary"
+          size="md"
+          renderIcon={updateMutation.isPending ? SpinIcon : Save}
           onClick={handleSave}
           disabled={updateMutation.isPending || !form.name || !form.slug || !form.baseUrl}
-          style={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: 6,
-            padding: '8px 20px',
-            backgroundColor: THEME.accent,
-            color: '#FFFFFF',
-            border: 'none',
-            borderRadius: 8,
-            fontSize: 13,
-            fontWeight: 500,
-            fontFamily: FONT,
-            cursor:
-              updateMutation.isPending || !form.name || !form.slug || !form.baseUrl
-                ? 'not-allowed'
-                : 'pointer',
-            opacity: updateMutation.isPending || !form.name || !form.slug || !form.baseUrl ? 0.5 : 1,
-            transition: 'background-color 0.15s',
-          }}
-          onMouseEnter={(e) => {
-            if (!updateMutation.isPending) e.currentTarget.style.backgroundColor = THEME.accentHover
-          }}
-          onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = THEME.accent)}
         >
-          {updateMutation.isPending ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}
           Save Changes
-        </button>
+        </Button>
       </div>
     </div>
   )
@@ -1413,40 +1325,22 @@ function EventLogTab({ project }: { project: Project }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
       <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center' }}>
-        <button
-          onClick={() => { setEditing('new'); setDraft(EMPTY_PATTERN) }}
-          style={{
-            display: 'inline-flex', alignItems: 'center', gap: 6,
-            padding: '8px 14px', backgroundColor: THEME.accent, color: '#fff',
-            borderRadius: 8, fontSize: 13, fontWeight: 500, border: 'none', cursor: 'pointer',
-          }}
-        >
-          <Plus size={14} /> Add Rule
-        </button>
+        <Button kind="primary" size="sm" renderIcon={Plus} onClick={() => { setEditing('new'); setDraft(EMPTY_PATTERN) }}>
+          Add Rule
+        </Button>
       </div>
 
-      {editing && (
-        <div
-          className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4"
-          onClick={() => { setEditing(null); setDraft(EMPTY_PATTERN) }}
-        >
-          <div
-            onClick={(e) => e.stopPropagation()}
-            className="w-full max-w-3xl max-h-[90vh] overflow-y-auto rounded-xl"
-            style={{ backgroundColor: THEME.panel, border: `1px solid ${THEME.border}` }}
-          >
-            <div style={{ padding: '14px 20px', borderBottom: `1px solid ${THEME.border}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <h2 style={{ fontSize: 16, fontWeight: 600, color: THEME.text.primary, margin: 0 }}>
-                {editing === 'new' ? 'Add Event Log Rule' : 'Edit Event Log Rule'}
-              </h2>
-              <button
-                onClick={() => { setEditing(null); setDraft(EMPTY_PATTERN) }}
-                style={{ padding: 4, border: 'none', background: 'transparent', color: THEME.text.muted, cursor: 'pointer' }}
-                title="Close"
-              >
-                <X size={16} />
-              </button>
-            </div>
+      <ComposedModal
+        open={!!editing}
+        size="lg"
+        onClose={() => { setEditing(null); setDraft(EMPTY_PATTERN) }}
+      >
+        <ModalHeader
+          title={editing === 'new' ? 'Add Event Log Rule' : 'Edit Event Log Rule'}
+          closeModal={() => { setEditing(null); setDraft(EMPTY_PATTERN) }}
+        />
+        <ModalBody hasScrollingContent style={{ paddingRight: 16 }}>
+          {editing && (
             <EventPatternForm
               draft={draft}
               setDraft={setDraft}
@@ -1454,18 +1348,18 @@ function EventLogTab({ project }: { project: Project }) {
               onCancel={() => { setEditing(null); setDraft(EMPTY_PATTERN) }}
               saving={createMut.isPending || updateMut.isPending}
             />
-          </div>
-        </div>
-      )}
+          )}
+        </ModalBody>
+      </ComposedModal>
 
       {isLoading ? (
         <SkeletonBlock height={64} />
       ) : rows.length === 0 ? (
-        <div style={{ padding: 32, textAlign: 'center', backgroundColor: THEME.panel, border: `1px solid ${THEME.border}`, borderRadius: 12, color: THEME.text.muted }}>
+        <div style={{ padding: 32, textAlign: 'center', backgroundColor: THEME.panel, border: `1px solid ${THEME.border}`, borderRadius: 0, color: THEME.text.muted }}>
           No rules yet. Add one to start capturing matching traffic.
         </div>
       ) : (
-        <div style={{ backgroundColor: THEME.panel, border: `1px solid ${THEME.border}`, borderRadius: 12, overflow: 'hidden' }}>
+        <div style={{ backgroundColor: THEME.panel, border: `1px solid ${THEME.border}`, borderRadius: 0, overflow: 'hidden' }}>
           {rows.map((r, i) => (
             <div
               key={r.id}
@@ -1489,27 +1383,25 @@ function EventLogTab({ project }: { project: Project }) {
                   </div>
                 )}
               </div>
-              <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 6, background: r.capture === 'FULL_BODY' ? '#3B82F618' : r.capture === 'NONE' ? '#6B728018' : '#10B98118', color: r.capture === 'FULL_BODY' ? '#60A5FA' : r.capture === 'NONE' ? THEME.text.muted : '#34D399', textAlign: 'center' }}>
+              <CdsTag size="sm" type={r.capture === 'FULL_BODY' ? 'blue' : r.capture === 'NONE' ? 'gray' : 'green'} style={{ justifySelf: 'center' }}>
                 {r.capture}
-              </span>
+              </CdsTag>
               <span style={{ fontSize: 11, color: THEME.text.muted, textAlign: 'center' }}>level: {r.level}</span>
-              <button
+              <Button
+                kind={r.enabled ? 'secondary' : 'tertiary'}
+                size="sm"
                 onClick={() => updateMut.mutate({ id: r.id, body: { enabled: !r.enabled } })}
-                style={{
-                  fontSize: 11, padding: '4px 10px', borderRadius: 6,
-                  border: `1px solid ${r.enabled ? '#10B98140' : THEME.border}`,
-                  background: r.enabled ? '#10B98115' : 'transparent',
-                  color: r.enabled ? '#34D399' : THEME.text.muted,
-                  cursor: 'pointer',
-                }}
               >
                 {r.enabled ? 'Enabled' : 'Disabled'}
-              </button>
-              <div style={{ display: 'flex', gap: 6 }}>
-                <button onClick={() => startEdit(r)} style={{ padding: 6, border: 'none', background: 'transparent', color: THEME.text.muted, cursor: 'pointer' }} title="Edit">
-                  <Edit3 size={14} />
-                </button>
-                <button
+              </Button>
+              <div style={{ display: 'flex', gap: 2 }}>
+                <Button kind="ghost" size="sm" hasIconOnly iconDescription="Edit" renderIcon={Edit3} onClick={() => startEdit(r)} />
+                <Button
+                  kind="ghost"
+                  size="sm"
+                  hasIconOnly
+                  iconDescription="Delete"
+                  renderIcon={Trash2}
                   onClick={async () => {
                     const ok = await confirmDialog({
                       title: `Delete rule "${r.name}"?`,
@@ -1519,11 +1411,7 @@ function EventLogTab({ project }: { project: Project }) {
                     })
                     if (ok) deleteMut.mutate(r.id)
                   }}
-                  style={{ padding: 6, border: 'none', background: 'transparent', color: THEME.text.muted, cursor: 'pointer' }}
-                  title="Delete"
-                >
-                  <Trash2 size={14} />
-                </button>
+                />
               </div>
             </div>
           ))}
@@ -1594,10 +1482,16 @@ function EventPatternForm({
           />
         </FormField>
         <FormField label="Enabled">
-          <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
-            <input type="checkbox" checked={draft.enabled} onChange={(e) => update('enabled', e.target.checked)} />
-            <span style={{ fontSize: 13, color: THEME.text.secondary }}>{draft.enabled ? 'On' : 'Off'}</span>
-          </label>
+          <Toggle
+            id="event-pattern-enabled"
+            size="sm"
+            labelText="Enabled"
+            hideLabel
+            labelA="Off"
+            labelB="On"
+            toggled={draft.enabled}
+            onToggle={(checked) => update('enabled', checked)}
+          />
         </FormField>
         <div style={{ gridColumn: '1 / -1' }}>
           <FormField label="Description">
@@ -1639,29 +1533,34 @@ function EventPatternForm({
                     }}
                     placeholder="expected value"
                   />
-                  <button
+                  <Button
+                    kind="ghost"
+                    size="sm"
+                    hasIconOnly
+                    iconDescription="Remove rule"
+                    renderIcon={X}
                     onClick={() => update('bodyMatch', draft.bodyMatch.filter((_, j) => j !== i))}
-                    style={{ padding: 6, background: 'transparent', border: 'none', color: THEME.text.muted, cursor: 'pointer' }}
-                  >
-                    <X size={14} />
-                  </button>
+                  />
                 </div>
               ))}
-              <button
+              <Button
+                kind="ghost"
+                size="sm"
+                renderIcon={Plus}
+                style={{ alignSelf: 'flex-start' }}
                 onClick={() => update('bodyMatch', [...draft.bodyMatch, { source: 'BODY' as const, field: '', value: '' }])}
-                style={{ alignSelf: 'flex-start', display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 12, padding: '4px 10px', borderRadius: 6, background: '#3B82F618', color: '#60A5FA', border: 'none', cursor: 'pointer' }}
               >
-                <Plus size={12} /> Add rule
-              </button>
+                Add rule
+              </Button>
             </div>
           </FormField>
         </div>
       </div>
       <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 16 }}>
-        <button onClick={onCancel} style={{ padding: '8px 16px', borderRadius: 8, border: `1px solid ${THEME.border}`, background: 'transparent', color: THEME.text.secondary, cursor: 'pointer' }}>Cancel</button>
-        <button onClick={onSave} disabled={saving} style={{ padding: '8px 16px', borderRadius: 8, border: 'none', background: THEME.accent, color: '#fff', cursor: saving ? 'not-allowed' : 'pointer', opacity: saving ? 0.5 : 1 }}>
+        <Button kind="secondary" size="md" onClick={onCancel}>Cancel</Button>
+        <Button kind="primary" size="md" onClick={onSave} disabled={saving}>
           {saving ? 'Saving…' : 'Save Rule'}
-        </button>
+        </Button>
       </div>
     </div>
   )
@@ -1684,31 +1583,22 @@ function RulesTab({ project }: { project: Project }) {
   ]
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-      {/* Sub-section selector — pills, not nested tabs, so it doesn't
-          fight the main tab visually. */}
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-        {sections.map((s) => {
-          const Icon = s.icon
-          const active = activeRule === s.id
-          return (
-            <button
-              key={s.id}
-              onClick={() => setActiveRule(s.id)}
-              style={{
-                display: 'inline-flex', alignItems: 'center', gap: 6,
-                padding: '8px 14px', borderRadius: 8, fontSize: 13,
-                fontWeight: active ? 600 : 400,
-                border: `1px solid ${active ? THEME.accent : THEME.border}`,
-                background: active ? `${THEME.accent}15` : THEME.panel,
-                color: active ? THEME.accent : THEME.text.secondary,
-                cursor: 'pointer',
-              }}
-            >
-              <Icon size={14} /> {s.label}
-            </button>
-          )
-        })}
-      </div>
+      {/* Sub-section selector — contained Carbon tabs */}
+      <Tabs
+        selectedIndex={Math.max(0, sections.findIndex((s) => s.id === activeRule))}
+        onChange={({ selectedIndex }) => {
+          const s = sections[selectedIndex]
+          if (s) setActiveRule(s.id)
+        }}
+      >
+        <TabList aria-label="Rule sections" contained>
+          {sections.map((s) => (
+            <Tab key={s.id} renderIcon={s.icon}>
+              {s.label}
+            </Tab>
+          ))}
+        </TabList>
+      </Tabs>
       <div>
         <p style={{ fontSize: 12, color: THEME.text.muted, marginBottom: 12 }}>
           {sections.find((s) => s.id === activeRule)?.hint}
@@ -1724,15 +1614,15 @@ function RulesTab({ project }: { project: Project }) {
 
 function RulesSubLink({ projectId, href, label, hint }: { projectId: string; href: string; label: string; hint: string }) {
   return (
-    <div style={{ background: THEME.panel, border: `1px solid ${THEME.border}`, borderRadius: 12, padding: 24, textAlign: 'center' }}>
+    <div style={{ background: THEME.panel, border: `1px solid ${THEME.border}`, borderRadius: 0, padding: 24, textAlign: 'center' }}>
       <p style={{ fontSize: 13, color: THEME.text.secondary, marginBottom: 4 }}>{hint}</p>
       <p style={{ fontSize: 11, color: THEME.text.muted, marginBottom: 16 }}>The {label.toLowerCase()} library has its own dedicated page with Add modal + inline editing.</p>
       <Link
         href={`/projects/${projectId}/${href}`}
         style={{
           display: 'inline-flex', alignItems: 'center', gap: 6,
-          padding: '10px 18px', backgroundColor: THEME.accent, color: '#fff',
-          borderRadius: 8, fontSize: 13, fontWeight: 500, textDecoration: 'none',
+          padding: '0 12px', height: 32, backgroundColor: THEME.accent, color: '#fff',
+          borderRadius: 0, fontSize: 13, fontWeight: 400, textDecoration: 'none',
         }}
       >
         <ExternalLink size={14} /> Open {label}
@@ -1830,22 +1720,6 @@ function OpenApiTab({ project }: { project: Project }) {
     return { endpoints, methods }
   }, [spec])
 
-  const btnBase = {
-    display: 'inline-flex' as const,
-    alignItems: 'center' as const,
-    gap: 6,
-    padding: '6px 14px',
-    backgroundColor: THEME.panel,
-    color: THEME.text.secondary,
-    border: `1px solid ${THEME.border}`,
-    borderRadius: 8,
-    fontSize: 12,
-    fontWeight: 500,
-    fontFamily: FONT,
-    cursor: 'pointer' as const,
-    transition: 'all 0.15s',
-  }
-
   if (isLoading) {
     return (
       <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
@@ -1863,7 +1737,7 @@ function OpenApiTab({ project }: { project: Project }) {
           textAlign: 'center',
           backgroundColor: THEME.panel,
           border: `1px solid ${THEME.border}`,
-          borderRadius: 12,
+          borderRadius: 0,
         }}
       >
         <Code size={40} style={{ color: THEME.text.muted, margin: '0 auto 12px' }} />
@@ -1881,38 +1755,15 @@ function OpenApiTab({ project }: { project: Project }) {
         >
           Generate OpenAPI specification from registered APIs
         </p>
-        <button
+        <Button
+          kind="primary"
+          size="sm"
+          renderIcon={regenerateMutation.isPending ? SpinIcon : FileText}
           onClick={() => regenerateMutation.mutate()}
           disabled={regenerateMutation.isPending}
-          style={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: 6,
-            padding: '8px 20px',
-            backgroundColor: THEME.accent,
-            color: '#FFFFFF',
-            border: 'none',
-            borderRadius: 8,
-            fontSize: 13,
-            fontWeight: 500,
-            fontFamily: FONT,
-            cursor: regenerateMutation.isPending ? 'not-allowed' : 'pointer',
-            opacity: regenerateMutation.isPending ? 0.5 : 1,
-            transition: 'background-color 0.15s',
-          }}
-          onMouseEnter={(e) => {
-            if (!regenerateMutation.isPending)
-              e.currentTarget.style.backgroundColor = THEME.accentHover
-          }}
-          onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = THEME.accent)}
         >
-          {regenerateMutation.isPending ? (
-            <Loader2 size={14} className="animate-spin" />
-          ) : (
-            <FileText size={14} />
-          )}
           Generate OpenAPI Spec
-        </button>
+        </Button>
       </div>
     )
   }
@@ -1936,96 +1787,54 @@ function OpenApiTab({ project }: { project: Project }) {
           </p>
           <div style={{ display: 'flex', gap: 6 }}>
             {Object.entries(specStats.methods).map(([method, count]) => (
-              <span
-                key={method}
-                style={{
-                  fontSize: 11,
-                  fontWeight: 600,
-                  padding: '2px 8px',
-                  borderRadius: 6,
-                  backgroundColor: `${METHOD_COLORS[method] || '#8B92A5'}18`,
-                  color: METHOD_COLORS[method] || 'var(--t-text-secondary)',
-                  fontFamily: FONT,
-                }}
-              >
+              <CdsTag key={method} size="sm" type={tagType(METHOD_COLORS[method] || '')} style={{ margin: 0 }}>
                 {method} {count}
-              </span>
+              </CdsTag>
             ))}
           </div>
         </div>
 
         {/* Right: Actions */}
-        <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+        <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
           {/* View Toggle */}
-          <div
-            style={{
-              display: 'flex',
-              backgroundColor: 'var(--t-input)',
-              borderRadius: 8,
-              border: `1px solid ${THEME.border}`,
-              overflow: 'hidden',
-            }}
+          <ContentSwitcher
+            size="sm"
+            selectedIndex={(['preview', 'yaml', 'json'] as const).indexOf(viewMode)}
+            onChange={({ name }) => setViewMode(name as 'preview' | 'yaml' | 'json')}
+            style={{ width: 'auto' }}
           >
             {(['preview', 'yaml', 'json'] as const).map((mode) => (
-              <button
-                key={mode}
-                onClick={() => setViewMode(mode)}
-                style={{
-                  ...btnBase,
-                  border: 'none',
-                  borderRadius: 0,
-                  backgroundColor: viewMode === mode ? THEME.accent : 'transparent',
-                  color: viewMode === mode ? '#fff' : THEME.text.muted,
-                  padding: '5px 12px',
-                }}
-              >
-                {mode === 'preview' && <Eye size={13} />}
-                {mode === 'yaml' && <Code size={13} />}
-                {mode === 'json' && <Code size={13} />}
-                {mode === 'preview' ? 'Preview' : mode.toUpperCase()}
-              </button>
+              <Switch key={mode} name={mode} text={mode === 'preview' ? 'Preview' : mode.toUpperCase()} />
             ))}
-          </div>
+          </ContentSwitcher>
 
-          <button
+          <Button
+            kind="tertiary"
+            size="sm"
+            renderIcon={copied ? Check : Copy}
             onClick={() => handleCopy(viewMode === 'json' ? 'json' : 'yaml')}
-            style={btnBase}
-            onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = 'var(--t-panel-hover)')}
-            onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = THEME.panel)}
           >
-            {copied ? <Check size={13} /> : <Copy size={13} />}
             {copied ? 'Copied' : 'Copy'}
-          </button>
+          </Button>
 
-          <button
+          <Button
+            kind="tertiary"
+            size="sm"
+            hasIconOnly
+            iconDescription="Download"
+            renderIcon={Download}
             onClick={() => handleDownload(viewMode === 'json' ? 'json' : 'yaml')}
-            style={btnBase}
-            onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = 'var(--t-panel-hover)')}
-            onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = THEME.panel)}
-          >
-            <Download size={13} />
-          </button>
+          />
 
-          <button
+          <Button
+            kind="tertiary"
+            size="sm"
+            renderIcon={regenerateMutation.isPending ? SpinIcon : RefreshCw}
             onClick={() => regenerateMutation.mutate()}
             disabled={regenerateMutation.isPending}
-            style={{
-              ...btnBase,
-              cursor: regenerateMutation.isPending ? 'not-allowed' : 'pointer',
-              opacity: regenerateMutation.isPending ? 0.5 : 1,
-            }}
-            onMouseEnter={(e) => {
-              if (!regenerateMutation.isPending) e.currentTarget.style.backgroundColor = 'var(--t-panel-hover)'
-            }}
-            onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = THEME.panel)}
           >
-            {regenerateMutation.isPending ? (
-              <Loader2 size={13} className="animate-spin" />
-            ) : (
-              <RefreshCw size={13} />
-            )}
             Regenerate
-          </button>
+          </Button>
         </div>
       </div>
 
@@ -2035,14 +1844,14 @@ function OpenApiTab({ project }: { project: Project }) {
         <div
           className="swagger-ui-dark"
           style={{
-            borderRadius: 12,
+            borderRadius: 0,
             overflow: 'hidden',
             border: `1px solid ${THEME.border}`,
           }}
         >
           <style>{`
             .swagger-ui-dark .swagger-ui {
-              font-family: 'Prompt', sans-serif;
+              font-family: var(--font-sans);
             }
             .swagger-ui-dark .swagger-ui .wrapper {
               padding: 20px;
@@ -2056,10 +1865,10 @@ function OpenApiTab({ project }: { project: Project }) {
             .swagger-ui-dark .swagger-ui .info .title,
             .swagger-ui-dark .swagger-ui .opblock-tag {
               color: var(--t-text);
-              font-family: 'Prompt', sans-serif;
+              font-family: var(--font-sans);
             }
             .swagger-ui-dark .swagger-ui .info .title small {
-              background: #3B82F6;
+              background: #0f62fe;
             }
             .swagger-ui-dark .swagger-ui .info .description p,
             .swagger-ui-dark .swagger-ui .info .description,
@@ -2068,10 +1877,10 @@ function OpenApiTab({ project }: { project: Project }) {
             .swagger-ui-dark .swagger-ui .info table td,
             .swagger-ui-dark .swagger-ui .info table th {
               color: var(--t-text-secondary);
-              font-family: 'Prompt', sans-serif;
+              font-family: var(--font-sans);
             }
             .swagger-ui-dark .swagger-ui .info a {
-              color: #60A5FA;
+              color: #0f62fe;
             }
             /* Operation blocks */
             .swagger-ui-dark .swagger-ui .opblock {
@@ -2098,7 +1907,7 @@ function OpenApiTab({ project }: { project: Project }) {
             }
             .swagger-ui-dark .swagger-ui .opblock .opblock-summary-description {
               color: var(--t-text-secondary);
-              font-family: 'Prompt', sans-serif;
+              font-family: var(--font-sans);
               font-size: 12px;
             }
             .swagger-ui-dark .swagger-ui .opblock .opblock-section-header {
@@ -2107,7 +1916,7 @@ function OpenApiTab({ project }: { project: Project }) {
             }
             .swagger-ui-dark .swagger-ui .opblock .opblock-section-header h4 {
               color: var(--t-text);
-              font-family: 'Prompt', sans-serif;
+              font-family: var(--font-sans);
             }
             .swagger-ui-dark .swagger-ui .opblock-body pre {
               background: var(--t-bg);
@@ -2116,43 +1925,43 @@ function OpenApiTab({ project }: { project: Project }) {
             }
             /* GET */
             .swagger-ui-dark .swagger-ui .opblock.opblock-get {
-              border-color: #60A5FA30;
-              background: #60A5FA08;
+              border-color: #0f62fe30;
+              background: #0f62fe08;
             }
             .swagger-ui-dark .swagger-ui .opblock.opblock-get .opblock-summary {
-              border-color: #60A5FA20;
+              border-color: #0f62fe20;
             }
             /* POST */
             .swagger-ui-dark .swagger-ui .opblock.opblock-post {
-              border-color: #10B98130;
-              background: #10B98108;
+              border-color: #24a14830;
+              background: #24a14808;
             }
             .swagger-ui-dark .swagger-ui .opblock.opblock-post .opblock-summary {
-              border-color: #10B98120;
+              border-color: #24a14820;
             }
             /* PUT */
             .swagger-ui-dark .swagger-ui .opblock.opblock-put {
-              border-color: #F59E0B30;
-              background: #F59E0B08;
+              border-color: #ba4e0030;
+              background: #ba4e0008;
             }
             .swagger-ui-dark .swagger-ui .opblock.opblock-put .opblock-summary {
-              border-color: #F59E0B20;
+              border-color: #ba4e0020;
             }
             /* DELETE */
             .swagger-ui-dark .swagger-ui .opblock.opblock-delete {
-              border-color: #EF444430;
-              background: #EF444408;
+              border-color: #da1e2830;
+              background: #da1e2808;
             }
             .swagger-ui-dark .swagger-ui .opblock.opblock-delete .opblock-summary {
-              border-color: #EF444420;
+              border-color: #da1e2820;
             }
             /* PATCH */
             .swagger-ui-dark .swagger-ui .opblock.opblock-patch {
-              border-color: #8B5CF630;
-              background: #8B5CF608;
+              border-color: #8a3ffc30;
+              background: #8a3ffc08;
             }
             .swagger-ui-dark .swagger-ui .opblock.opblock-patch .opblock-summary {
-              border-color: #8B5CF620;
+              border-color: #8a3ffc20;
             }
             /* Tables & Parameters */
             .swagger-ui-dark .swagger-ui table thead tr td,
@@ -2163,7 +1972,7 @@ function OpenApiTab({ project }: { project: Project }) {
               color: var(--t-text-secondary);
             }
             .swagger-ui-dark .swagger-ui .parameter__name.required::after {
-              color: #EF4444;
+              color: #da1e28;
             }
             .swagger-ui-dark .swagger-ui table tbody tr td {
               color: var(--t-text);
@@ -2194,7 +2003,7 @@ function OpenApiTab({ project }: { project: Project }) {
             /* Buttons & Inputs */
             .swagger-ui-dark .swagger-ui .btn {
               border-radius: 6px;
-              font-family: 'Prompt', sans-serif;
+              font-family: var(--font-sans);
             }
             .swagger-ui-dark .swagger-ui select {
               background: var(--t-panel);
@@ -2215,7 +2024,7 @@ function OpenApiTab({ project }: { project: Project }) {
             }
             /* Auth */
             .swagger-ui-dark .swagger-ui .authorization__btn svg {
-              fill: #60A5FA;
+              fill: #0f62fe;
             }
             /* Tag section */
             .swagger-ui-dark .swagger-ui .opblock-tag-section {
@@ -2272,7 +2081,7 @@ function OpenApiTab({ project }: { project: Project }) {
           style={{
             backgroundColor: 'var(--t-input)',
             border: `1px solid ${THEME.border}`,
-            borderRadius: 12,
+            borderRadius: 0,
             overflow: 'hidden',
           }}
         >
@@ -2302,6 +2111,7 @@ function OpenApiTab({ project }: { project: Project }) {
 export default function ProjectDetailPage() {
   const params = useParams()
   const id = params.id as string
+  const router = useRouter()
   const [activeTab, setActiveTab] = useState<TabId>('apis')
 
   const { data: project, isLoading } = useQuery<Project>({
@@ -2409,15 +2219,15 @@ export default function ProjectDetailPage() {
             style={{
               width: 48,
               height: 48,
-              borderRadius: 12,
-              backgroundColor: themeColor + '20',
+              backgroundColor: 'transparent',
+              border: '1px solid #e0e0e0',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               flexShrink: 0,
             }}
           >
-            <FolderKanban size={24} style={{ color: themeColor }} />
+            <FolderKanban size={20} style={{ color: '#525252' }} />
           </div>
 
           {/* Title */}
@@ -2425,8 +2235,8 @@ export default function ProjectDetailPage() {
             <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
               <h1
                 style={{
-                  fontSize: 22,
-                  fontWeight: 700,
+                  fontSize: 20,
+                  fontWeight: 400,
                   color: THEME.text.primary,
                   margin: 0,
                   fontFamily: FONT,
@@ -2454,7 +2264,7 @@ export default function ProjectDetailPage() {
                   fontFamily: 'monospace',
                   backgroundColor: THEME.borderLight,
                   padding: '2px 8px',
-                  borderRadius: 4,
+                  borderRadius: 0,
                 }}
               >
                 {project.slug}
@@ -2490,67 +2300,26 @@ export default function ProjectDetailPage() {
         </div>
 
         {/* Tabs */}
-        <div
-          style={{
-            display: 'flex',
-            gap: 0,
-            borderBottom: `1px solid ${THEME.border}`,
-            marginBottom: 24,
-          }}
-        >
-          {TABS.map((tab) => {
-            const Icon = tab.icon
-            const isActive = activeTab === tab.id
-            // Link-tabs (with href) navigate to a sub-page rather than
-            // toggling activeTab — used for the project-scoped library
-            // pages (Field Mappings / Audit Configs / Clients) that live
-            // at /orch/projects/<id>/<href>.
-            const tabStyle = {
-              display: 'flex',
-              alignItems: 'center',
-              gap: 6,
-              padding: '10px 20px',
-              fontSize: 13,
-              fontWeight: isActive && !tab.href ? 600 : 400,
-              color: isActive && !tab.href ? THEME.accent : THEME.text.secondary,
-              backgroundColor: 'transparent',
-              border: 'none',
-              borderBottom: isActive && !tab.href ? `2px solid ${THEME.accent}` : '2px solid transparent',
-              cursor: 'pointer',
-              fontFamily: FONT,
-              transition: 'color 0.15s, border-color 0.15s',
-              marginBottom: -1,
-              textDecoration: 'none',
-            } as const
-            if (tab.href) {
-              return (
-                <Link
-                  key={tab.id}
-                  href={`/projects/${project.id}/${tab.href}`}
-                  style={tabStyle}
-                >
-                  <Icon className="w-3.5 h-3.5" />
+        <div className="overflow-x-auto" style={{ marginBottom: 24 }}>
+          <Tabs
+            selectedIndex={Math.max(0, TABS.findIndex((t) => t.id === activeTab))}
+            onChange={({ selectedIndex }) => {
+              const tab = TABS[selectedIndex]
+              if (!tab) return
+              // Link-tabs (with href) navigate to a sub-page rather than
+              // toggling activeTab.
+              if (tab.href) router.push(`/projects/${project.id}/${tab.href}`)
+              else setActiveTab(tab.id as TabId)
+            }}
+          >
+            <TabList aria-label="Project sections" contained={false}>
+              {TABS.map((tab) => (
+                <Tab key={tab.id} renderIcon={tab.icon}>
                   {tab.label}
-                </Link>
-              )
-            }
-            return (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id as TabId)}
-                style={tabStyle}
-                onMouseEnter={(e) => {
-                  if (!isActive) (e.currentTarget as HTMLElement).style.color = THEME.text.primary
-                }}
-                onMouseLeave={(e) => {
-                  if (!isActive) (e.currentTarget as HTMLElement).style.color = THEME.text.secondary
-                }}
-              >
-                <Icon size={15} />
-                {tab.label}
-              </button>
-            )
-          })}
+                </Tab>
+              ))}
+            </TabList>
+          </Tabs>
         </div>
 
         {/* Tab Content */}

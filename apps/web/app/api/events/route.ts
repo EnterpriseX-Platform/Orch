@@ -1,9 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { getTenantContext, featureGuard, tenantWhere } from '@/lib/tenant'
 
 // GET /api/events - List event logs
 export async function GET(request: NextRequest) {
   try {
+    const ctx = await getTenantContext(request)
+    const blocked = featureGuard(ctx, 'eventLogs')
+    if (blocked) return blocked
     const { searchParams } = request.nextUrl
     const page = parseInt(searchParams.get('page') || '1')
     const limit = parseInt(searchParams.get('limit') || '50')
@@ -36,6 +40,12 @@ export async function GET(request: NextRequest) {
 
     if (requestId) {
       where.requestId = requestId
+    }
+
+    if (ctx.tenantId) {
+      const flows = await prisma.flowIntegration.findMany({ where: tenantWhere(ctx), select: { id: true } })
+      const ids = flows.map((f) => f.id)
+      where.flowId = flowId ? (ids.includes(flowId) ? flowId : { in: [] }) : { in: ids }
     }
 
     const [events, total] = await Promise.all([
@@ -72,6 +82,18 @@ export async function POST(request: NextRequest) {
         error: 'Validation error', 
         details: 'eventType and requestId are required' 
       }, { status: 400 })
+    }
+
+    // Idempotency: the broker retries delivery on timeout (up to 8x), and a
+    // request that timed out on its side may already have been stored here.
+    // Its event keeps the same requestId + eventType + timestamp on every
+    // retry, so a second copy is acknowledged without inserting again.
+    if (body.timestamp) {
+      const dup = await prisma.eventLog.findFirst({
+        where: { requestId: body.requestId, eventType: body.eventType, timestamp: new Date(body.timestamp) },
+        select: { id: true },
+      })
+      if (dup) return NextResponse.json({ ...dup, duplicate: true }, { status: 200 })
     }
 
     const eventLog = await prisma.eventLog.create({

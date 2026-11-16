@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { getTenantContext, featureGuard, isForeign } from '@/lib/tenant'
 import { z } from 'zod'
 
 const nodeSchema = z.object({
@@ -42,6 +43,9 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const ctx = await getTenantContext(request)
+    const blocked = featureGuard(ctx, 'flows')
+    if (blocked) return blocked
     const { id } = await params
 
     const flow = await prisma.flowIntegration.findUnique({
@@ -70,7 +74,7 @@ export async function GET(
       },
     })
 
-    if (!flow) {
+    if (!flow || isForeign(ctx, flow)) {
       return NextResponse.json({ error: 'Flow not found' }, { status: 404 })
     }
 
@@ -87,6 +91,9 @@ export async function PUT(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const ctx = await getTenantContext(request)
+    const blocked = featureGuard(ctx, 'flows')
+    if (blocked) return blocked
     const { id } = await params
     const body = await request.json()
 
@@ -98,7 +105,7 @@ export async function PUT(
       where: { id },
     })
 
-    if (!existing) {
+    if (!existing || isForeign(ctx, existing)) {
       return NextResponse.json({ error: 'Flow not found' }, { status: 404 })
     }
 
@@ -148,6 +155,9 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const ctx = await getTenantContext(request)
+    const blocked = featureGuard(ctx, 'flows')
+    if (blocked) return blocked
     const { id } = await params
 
     // Check if flow exists
@@ -160,7 +170,7 @@ export async function DELETE(
       },
     })
 
-    if (!existing) {
+    if (!existing || isForeign(ctx, existing)) {
       return NextResponse.json({ error: 'Flow not found' }, { status: 404 })
     }
 

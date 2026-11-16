@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { getTenantContext, featureGuard, isForeign } from '@/lib/tenant'
 
 // GET /api/flows/trigger-config?path=/api/v1/payments&method=POST
 // Used by orch-broker to find a flow from path
@@ -88,6 +89,9 @@ export async function GET(request: NextRequest) {
 // Save trigger config for a flow
 export async function POST(request: NextRequest) {
   try {
+    const ctx = await getTenantContext(request)
+    const blocked = featureGuard(ctx, 'flows')
+    if (blocked) return blocked
     const body = await request.json()
     const { flowId, path, method, description } = body
     
@@ -106,6 +110,13 @@ export async function POST(request: NextRequest) {
       )
     }
     
+    if (ctx.tenantId) {
+      const target = await prisma.flowIntegration.findUnique({ where: { id: flowId }, select: { tenantId: true } })
+      if (!target || isForeign(ctx, target)) {
+        return NextResponse.json({ error: 'Flow not found' }, { status: 404 })
+      }
+    }
+
     // Check for duplicate path (active flows only)
     // Note: Prisma JSON filtering varies by database. Using a simpler approach here.
     const existingFlows = await prisma.flowIntegration.findMany({

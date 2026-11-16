@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { resolveAuditTenant } from '@/lib/tenant'
 
 // Simple in-memory rate limiter
 const rateLimitCounters = new Map<string, { count: number; resetAt: number }>()
@@ -102,7 +103,9 @@ async function findApiRegistration(
   // All candidates that share method + endpoint pattern.
   const candidates = apis.filter(a => {
     if (a.method !== method) return false
-    const endpointPath = a.endpoint.split('?')[0]
+    // Registrations may be saved with or without the gateway prefix
+    // (the form used to suggest "/api/v1/..."); the incoming path never has it.
+    const endpointPath = a.endpoint.split('?')[0].replace(/^\/api\/v1(?=\/|$)/, '') || '/'
     return pathMatches(endpointPath, path)
   })
 
@@ -591,6 +594,7 @@ async function forwardToBroker(
 
         await prisma.auditLog.create({
           data: {
+            tenantId: (await resolveAuditTenant({ apiId: api.id })) ?? undefined,
             action: actionEnum as any,
             entityType,
             entityId,

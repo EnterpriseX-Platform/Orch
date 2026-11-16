@@ -2,27 +2,22 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { cn } from '@/lib/utils'
 import { useQuery } from '@tanstack/react-query'
+import { useTenantStore, featureForPath } from '@/stores/tenantStore'
+import { SideNav, SideNavItems, SideNavLink, SideNavDivider, Tag } from '@carbon/react'
 import {
   LayoutDashboard,
   Database,
-  Globe,
   Workflow,
   FileText,
   ClipboardList,
   Settings,
-  SlidersHorizontal,
-  Layers,
   LucideIcon,
   Activity,
   FolderKanban,
-  Briefcase,
-  Key,
   BarChart3,
 } from 'lucide-react'
 
-const FONT = "'Prompt', sans-serif";
 
 interface NavItemType {
   name: string
@@ -50,62 +45,27 @@ interface SidebarProps {
   collapsed?: boolean
 }
 
-function NavItem({ item, pathname, collapsed, isActive }: {
-  item: NavItemType
-  pathname: string
-  collapsed: boolean
-  isActive: boolean
-}) {
-  return (
-    <Link
-      href={item.href}
-      style={isActive ? { fontFamily: FONT } : { fontFamily: FONT, color: 'var(--t-text-secondary)' }}
-      className={cn(
-        'group flex items-center gap-3 px-3 py-1.5 rounded-lg text-[13px] transition-all duration-200 relative',
-        isActive
-          ? 'bg-gradient-to-r from-[#3B82F6]/20 to-[#3B82F6]/10 text-[#60A5FA] font-semibold border border-[#3B82F6]/35 shadow-[0_0_12px_rgba(59,130,246,0.15)] ml-0'
-          : 'hover:text-[var(--t-text)] hover:bg-[var(--t-panel-hover)] border border-transparent ml-0',
-        collapsed && 'justify-center px-2'
-      )}
-      title={collapsed ? item.name : undefined}
-    >
-      <item.icon className={cn(
-        'w-4 h-4 flex-shrink-0',
-        isActive ? 'text-[#60A5FA]' : ''
-      )} style={isActive ? undefined : { color: 'var(--t-text-muted)' }} />
-      {!collapsed && (
-        <>
-          <span className={cn(
-            "flex-1 truncate font-medium",
-            isActive && "text-[#60A5FA]"
-          )}>{item.name}</span>
-          {item.count !== undefined && item.count > 0 && (
-            <span className={cn(
-              "px-1.5 py-0.5 text-[11px] rounded font-semibold",
-              isActive
-                ? "bg-[#3B82F6]/20 text-[#60A5FA]"
-                : ""
-            )} style={isActive ? undefined : { backgroundColor: 'var(--t-panel)', color: 'var(--t-text-muted)' }}>
-              {item.count}
-            </span>
-          )}
-        </>
-      )}
-    </Link>
-  )
-}
-
 export function Sidebar({ collapsed = false }: SidebarProps) {
   const pathname = usePathname() || ''
+  const tenantFeatures = useTenantStore((st) => st.features)
+  // Hide menu entries whose feature is switched off for the active tenant.
+  const visible = (item: NavItemType) => tenantFeatures[featureForPath(item.href) ?? ''] !== false
 
   // Fetch real counts from API
+  const tenantLoaded = useTenantStore((st) => st.loaded)
   const { data: counts } = useQuery<CountsData>({
-    queryKey: ['sidebar-counts'],
+    queryKey: ['sidebar-counts', tenantFeatures],
+    enabled: tenantLoaded,
     queryFn: async () => {
+      // Skip counts for features the tenant has switched off (they'd 403).
+      const count = (feature: string, url: string) =>
+        tenantFeatures[feature] === false
+          ? Promise.resolve({ total: 0 })
+          : fetch(url).then(r => r.ok ? r.json() : { total: 0 })
       const [projectsRes, datasetsRes, flowsRes] = await Promise.allSettled([
-        fetch('/orch/api/projects?limit=1').then(r => r.ok ? r.json() : { total: 0 }),
-        fetch('/orch/api/datasets?limit=1').then(r => r.ok ? r.json() : { total: 0 }),
-        fetch('/orch/api/flows?limit=1').then(r => r.ok ? r.json() : { total: 0 }),
+        count('projects', '/orch/api/projects?limit=1'),
+        count('datasets', '/orch/api/datasets?limit=1'),
+        count('flows', '/orch/api/flows?limit=1'),
       ])
 
       return {
@@ -128,7 +88,7 @@ export function Sidebar({ collapsed = false }: SidebarProps) {
     { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
     { name: 'Projects', href: '/projects', icon: FolderKanban, count: counts?.projects },
     { name: 'Data Catalogs', href: '/datasets', icon: Database, count: counts?.datasets },
-    // spec — physical tables managed by Orch with auto CRUD
+    // TOR 4.5.1 — physical tables managed by Orch with auto CRUD
     // + per-column encryption (engine-aware DDL).
     { name: 'Data Repository', href: '/data-repository', icon: Database },
     { name: 'Flows', href: '/flows', icon: Workflow, count: counts?.flows },
@@ -152,95 +112,53 @@ export function Sidebar({ collapsed = false }: SidebarProps) {
     { name: 'Analytics', href: '/reports', icon: BarChart3 },
   ]
 
+  const isActive = (href: string) =>
+    [href, '/orch' + href].some((h) => pathname === h || pathname.startsWith(h + '/'))
+
+  const renderItems = (items: NavItemType[]) =>
+    items.filter(visible).map((item) => (
+      <SideNavLink
+        key={item.name}
+        as={Link}
+        href={item.href}
+        renderIcon={item.icon}
+        isActive={isActive(item.href)}
+        aria-current={isActive(item.href) ? 'page' : undefined}
+      >
+        <span className="flex items-center gap-2 w-full">
+          <span className="flex-1 truncate">{item.name}</span>
+          {item.count !== undefined && item.count > 0 && (
+            <Tag size="sm" type="gray" className="!m-0">{item.count}</Tag>
+          )}
+        </span>
+      </SideNavLink>
+    ))
+
+  const group = (title: string) =>
+    collapsed ? <SideNavDivider /> : (
+      <li className="px-4 pt-4 pb-1 text-[11px] font-semibold uppercase tracking-[0.32px] text-[#6f6f6f]" aria-hidden>
+        {title}
+      </li>
+    )
+
+  // Carbon UI Shell side nav: fixed under the 48px header; collapses to a rail.
   return (
-    <aside
-      style={{ fontFamily: FONT, backgroundColor: 'var(--t-sidebar)', borderColor: 'var(--t-border-light)' }}
-      className={cn(
-        'fixed top-0 left-0 z-40 h-full border-r flex flex-col transition-all duration-200',
-        collapsed ? 'w-16' : 'w-52'
-      )}
+    <SideNav
+      aria-label="Main navigation"
+      expanded={!collapsed}
+      isRail={collapsed}
+      isFixedNav
+      isChildOfHeader={false}
+      className="!top-12"
     >
-      {/* Logo - Orch */}
-      <div className={cn(
-        'h-14 flex items-center gap-3',
-        collapsed ? 'justify-center px-2' : 'px-4'
-      )}>
-        <div className="w-8 h-8 bg-gradient-to-br from-[#3B82F6] to-[#60A5FA] rounded-lg flex items-center justify-center flex-shrink-0 shadow-sm shadow-blue-500/20">
-          <Layers className="w-4 h-4 text-white" />
-        </div>
-        {!collapsed && (
-          <div className="flex items-center gap-1">
-            <span style={{ color: 'var(--t-text)' }} className="font-bold text-base tracking-tight">Orch</span>
-            <span className="px-1.5 py-0.5 text-[10px] bg-[#3B82F6]/15 text-[#60A5FA] rounded font-semibold ml-1 border border-[#3B82F6]/30">βeta</span>
-          </div>
-        )}
-      </div>
-
-      {/* Navigation */}
-      <nav className="flex-1 py-2 px-2 overflow-y-auto">
-        {/* Main Section */}
-        <div className="space-y-0">
-          {!collapsed && (
-            <p className="px-3 pt-1 pb-1 text-[10px] font-semibold uppercase tracking-wider" style={{ color: 'var(--t-text-muted)' }}>
-              Main Menu
-            </p>
-          )}
-          {mainNav.map((item) => {
-            const isActive = pathname === '/orch' + item.href || pathname.startsWith(`/orch${item.href}/`)
-            return (
-              <NavItem
-                key={item.name}
-                item={item}
-                pathname={pathname}
-                collapsed={collapsed}
-                isActive={isActive}
-              />
-            )
-          })}
-        </div>
-
-        {/* Observability Section */}
-        <div className="mt-2 space-y-0">
-          {!collapsed && (
-            <p className="px-3 pt-1 pb-1 text-[10px] font-semibold uppercase tracking-wider" style={{ color: 'var(--t-text-muted)' }}>
-              Observability
-            </p>
-          )}
-          {observabilityNav.map((item) => {
-            const isActive = pathname === '/orch' + item.href || pathname.startsWith(`/orch${item.href}/`)
-            return (
-              <NavItem
-                key={item.name}
-                item={item}
-                pathname={pathname}
-                collapsed={collapsed}
-                isActive={isActive}
-              />
-            )
-          })}
-        </div>
-
-        {/* System Section */}
-        <div className="mt-2 space-y-0">
-          {!collapsed && (
-            <p className="px-3 pt-1 pb-1 text-[10px] font-semibold uppercase tracking-wider" style={{ color: 'var(--t-text-muted)' }}>
-              System
-            </p>
-          )}
-          {systemNav.map((item) => {
-            const isActive = pathname === '/orch' + item.href || pathname.startsWith(`/orch${item.href}/`)
-            return (
-              <NavItem
-                key={item.name}
-                item={item}
-                pathname={pathname}
-                collapsed={collapsed}
-                isActive={isActive}
-              />
-            )
-          })}
-        </div>
-      </nav>
-    </aside>
+      <SideNavItems>
+        {group('Workspace')}
+        {renderItems(mainNav)}
+        {group('Observability')}
+        {renderItems(observabilityNav)}
+        {group('System')}
+        {renderItems(systemNav)}
+      </SideNavItems>
+    </SideNav>
   )
 }

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { getTenantContext, featureGuard, tenantWhere, isForeign } from '@/lib/tenant'
 import { z } from 'zod'
 
 
@@ -46,6 +47,9 @@ const createApiSchema = z.object({
 
 // GET /api/registers - List all APIs
 export async function GET(request: NextRequest) {
+  const ctx = await getTenantContext(request)
+  const blocked = featureGuard(ctx, 'projects')
+  if (blocked) return blocked
   try {
     const { searchParams } = request.nextUrl
     const page = parseInt(searchParams.get('page') || '1')
@@ -58,7 +62,7 @@ export async function GET(request: NextRequest) {
     const skip = (page - 1) * limit
 
     // Build where clause
-    const where: any = {}
+    const where: any = ctx.tenantId ? { project: tenantWhere(ctx) } : {}
 
     if (status) {
       where.status = status
@@ -154,6 +158,9 @@ export async function GET(request: NextRequest) {
 
 // POST /api/registers - Register new API
 export async function POST(request: NextRequest) {
+  const ctx = await getTenantContext(request)
+  const blocked = featureGuard(ctx, 'projects')
+  if (blocked) return blocked
   try {
     const body = await request.json()
 
@@ -164,7 +171,7 @@ export async function POST(request: NextRequest) {
     const project = await prisma.project.findUnique({
       where: { id: validated.projectId },
     })
-    if (!project) {
+    if (!project || isForeign(ctx, project)) {
       return NextResponse.json({ error: 'Project not found' }, { status: 404 })
     }
 
@@ -173,7 +180,7 @@ export async function POST(request: NextRequest) {
       const catalog = await prisma.dataCatalog.findUnique({
         where: { id: validated.dataCatalogId },
       })
-      if (!catalog) {
+      if (!catalog || isForeign(ctx, catalog)) {
         return NextResponse.json({ error: 'Data catalog not found' }, { status: 404 })
       }
     }
@@ -183,7 +190,7 @@ export async function POST(request: NextRequest) {
       const flow = await prisma.flowIntegration.findUnique({
         where: { id: validated.flowId },
       })
-      if (!flow) {
+      if (!flow || isForeign(ctx, flow)) {
         return NextResponse.json({ error: 'Flow not found' }, { status: 404 })
       }
     }

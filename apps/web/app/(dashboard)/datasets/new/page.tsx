@@ -3,9 +3,9 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { datasetApi } from '@/lib/api'
-import { ArrowLeft, Database, Plus, AlertCircle, CheckCircle2, ChevronDown } from 'lucide-react'
+import { ArrowLeft, Plus } from 'lucide-react'
+import { Button, InlineNotification, Select, SelectItem, TextArea, TextInput } from '@carbon/react'
 import Link from 'next/link'
-import { cn } from '@/lib/utils'
 
 const categories = [
   { value: 'transactional', label: 'Transactional', color: 'blue' },
@@ -87,8 +87,6 @@ export default function NewDatasetPage() {
     }
   }
 
-  const selectedCategory = categories.find(c => c.value === formData.category)
-  const selectedStatus = statuses.find(s => s.value === formData.status)
 
   return (
     <div className="min-h-screen bg-[var(--t-bg)] p-6">
@@ -97,149 +95,102 @@ export default function NewDatasetPage() {
         <div className="flex items-center gap-4 mb-8">
           <Link 
             href="/datasets"
-            className="p-2 hover:bg-[var(--t-panel-hover)] rounded-lg transition-colors"
+            className="p-2 hover:bg-[var(--t-panel-hover)] transition-colors"
           >
             <ArrowLeft className="w-5 h-5 text-[var(--t-text-secondary)]" />
           </Link>
           <div>
-            <h1 className="text-3xl font-bold text-[var(--t-text)]">Add New Dataset</h1>
+            <h1 className="text-xl font-normal text-[var(--t-text)]">Add New Dataset</h1>
             <p className="text-base text-[var(--t-text-muted)] mt-1">Create a new data catalog entry</p>
           </div>
         </div>
 
-        {/* Success Message */}
         {success && (
-          <div className="mb-6 p-4 bg-[#10b981]/10 border border-[#10b981]/30 rounded-xl flex items-center gap-3">
-            <CheckCircle2 className="w-5 h-5 text-[#34d399]" />
-            <div>
-              <p className="font-medium text-[#34d399]">Dataset created successfully!</p>
-              <p className="text-base text-[#10b981]/70">Redirecting to dataset list...</p>
-            </div>
-          </div>
+          <InlineNotification
+            kind="success"
+            lowContrast
+            hideCloseButton
+            title="Dataset created successfully!"
+            subtitle="Redirecting to dataset list..."
+            className="mb-6"
+          />
         )}
 
-        {/* Error Message */}
         {error && (
-          <div className="mb-6 p-4 bg-[#ef4444]/10 border border-[#ef4444]/30 rounded-xl flex items-center gap-3">
-            <AlertCircle className="w-5 h-5 text-[#f87171]" />
-            <div>
-              <p className="font-medium text-[#f87171]">Error</p>
-              <p className="text-base text-[#f87171]/70">{error}</p>
-            </div>
-          </div>
+          <InlineNotification
+            kind="error"
+            lowContrast
+            hideCloseButton
+            title="Error"
+            subtitle={error}
+            className="mb-6"
+          />
         )}
 
-        {/* Form */}
-        <form onSubmit={handleSubmit} className="bg-[var(--t-panel)] border border-[var(--t-border)] rounded-xl p-6 space-y-6">
-          {/* Dataset Name */}
-          <div>
-            <label className="block text-base font-medium text-[var(--t-text-secondary)] mb-2">
-              Dataset Name <span className="text-[#ef4444]">*</span>
-            </label>
-            <input
-              type="text"
-              value={formData.name}
-              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              placeholder="e.g., Transactional 2024"
-              className="w-full px-4 py-2.5 bg-[var(--t-bg)] border border-[var(--t-border)] rounded-lg text-[var(--t-text)] placeholder:text-[var(--t-text-muted)]/60 focus:outline-none focus:border-[#3b82f6] transition-colors"
-              required
-            />
-          </div>
+        <form onSubmit={handleSubmit} className="bg-[var(--t-panel)] border border-[var(--t-border)] p-6 space-y-6">
+          <TextInput
+            id="dataset-name"
+            labelText="Dataset Name *"
+            value={formData.name}
+            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+            placeholder="e.g., Budget Expense 2024"
+            required
+          />
 
-          {/* Source */}
-          <div>
-            <label className="block text-base font-medium text-[var(--t-text-secondary)] mb-2">
-              Data Source <span className="text-[#ef4444]">*</span>
-            </label>
-            <input
-              type="text"
-              value={formData.source}
-              onChange={(e) => setFormData({ ...formData, source: e.target.value })}
-              placeholder="e.g., SAP ERP, Oracle Database"
-              className="w-full px-4 py-2.5 bg-[var(--t-bg)] border border-[var(--t-border)] rounded-lg text-[var(--t-text)] placeholder:text-[var(--t-text-muted)]/60 focus:outline-none focus:border-[#3b82f6] transition-colors"
-              required
-            />
-          </div>
+          <TextInput
+            id="dataset-source"
+            labelText="Data Source *"
+            value={formData.source}
+            onChange={(e) => setFormData({ ...formData, source: e.target.value })}
+            placeholder="e.g., SAP ERP, Oracle Database"
+            required
+          />
 
-          {/* Category & Status */}
           <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-base font-medium text-[var(--t-text-secondary)] mb-2">
-                Category <span className="text-[#ef4444]">*</span>
-              </label>
-              <div className="relative">
-                <select
-                  value={formData.category}
-                  onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                  className="w-full px-4 py-2.5 bg-[var(--t-bg)] border border-[var(--t-border)] rounded-lg text-[var(--t-text)] focus:outline-none focus:border-[#3b82f6] appearance-none cursor-pointer"
-                  required
-                >
-                  {categories.map((cat) => (
-                    <option key={cat.value} value={cat.value}>{cat.label}</option>
-                  ))}
-                </select>
-                <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--t-text-muted)] pointer-events-none" />
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-base font-medium text-[var(--t-text-secondary)] mb-2">
-                Status
-              </label>
-              <div className="relative">
-                <select
-                  value={formData.status}
-                  onChange={(e) => setFormData({ ...formData, status: e.target.value })}
-                  className="w-full px-4 py-2.5 bg-[var(--t-bg)] border border-[var(--t-border)] rounded-lg text-[var(--t-text)] focus:outline-none focus:border-[#3b82f6] appearance-none cursor-pointer"
-                >
-                  {statuses.map((s) => (
-                    <option key={s.value} value={s.value}>{s.label}</option>
-                  ))}
-                </select>
-                <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--t-text-muted)] pointer-events-none" />
-              </div>
-            </div>
+            <Select
+              id="dataset-category"
+              labelText="Category *"
+              value={formData.category}
+              onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+              required
+            >
+              {categories.map((cat) => (
+                <SelectItem key={cat.value} value={cat.value} text={cat.label} />
+              ))}
+            </Select>
+            <Select
+              id="dataset-status"
+              labelText="Status"
+              value={formData.status}
+              onChange={(e) => setFormData({ ...formData, status: e.target.value })}
+            >
+              {statuses.map((s) => (
+                <SelectItem key={s.value} value={s.value} text={s.label} />
+              ))}
+            </Select>
           </div>
 
-          {/* Description */}
-          <div>
-            <label className="block text-base font-medium text-[var(--t-text-secondary)] mb-2">
-              Description
-            </label>
-            <textarea
-              value={formData.description}
-              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-              placeholder="Describe the dataset content and purpose..."
-              rows={4}
-              className="w-full px-4 py-2.5 bg-[var(--t-bg)] border border-[var(--t-border)] rounded-lg text-[var(--t-text)] placeholder:text-[var(--t-text-muted)]/60 focus:outline-none focus:border-[#3b82f6] transition-colors resize-none"
-            />
-          </div>
+          <TextArea
+            id="dataset-description"
+            labelText="Description"
+            value={formData.description}
+            onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+            placeholder="Describe the dataset content and purpose..."
+            rows={4}
+          />
 
-          {/* Actions */}
           <div className="flex items-center justify-end gap-4 pt-4 border-t border-[var(--t-border)]">
-            <Link
-              href="/datasets"
-              className="px-4 py-2 text-[var(--t-text-secondary)] hover:text-[var(--t-text)] font-medium transition-colors"
-            >
+            <Button kind="ghost" onClick={() => router.push('/datasets')}>
               Cancel
-            </Link>
-            <button
+            </Button>
+            <Button
               type="submit"
+              kind="primary"
               disabled={isSubmitting || success}
-              className="flex items-center gap-2 px-6 py-2.5 bg-[#3b82f6] hover:bg-[#2563eb] text-white rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-[#3b82f6]/20"
+              renderIcon={isSubmitting ? undefined : Plus}
             >
-              {isSubmitting ? (
-                <>
-                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                  Creating...
-                </>
-              ) : (
-                <>
-                  <Plus className="w-4 h-4" />
-                  Add Dataset
-                </>
-              )}
-            </button>
+              {isSubmitting ? 'Creating...' : 'Add Dataset'}
+            </Button>
           </div>
         </form>
       </div>

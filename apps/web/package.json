@@ -6,9 +6,11 @@
     "dev": "next dev -p 3047",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "build:carbon-css": "node scripts/build-carbon-css.mjs"
   },
   "dependencies": {
+    "@carbon/react": "1.120.0",
     "@dnd-kit/core": "^6.3.1",
     "@dnd-kit/sortable": "^10.0.0",
     "@dnd-kit/utilities": "^3.2.2",
@@ -54,6 +56,7 @@
     "react-dom": "19.2.3",
     "react-hook-form": "^7.71.2",
     "recharts": "^3.7.0",
+    "sass": "^1.108.2",
     "sonner": "^2.0.7",
     "swagger-ui-react": "^5.32.0",
     "tabulator-tables": "^6.3.1",

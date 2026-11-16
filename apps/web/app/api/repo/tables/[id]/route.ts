@@ -7,6 +7,7 @@
  */
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { getTenantContext, featureGuard, isForeign } from '@/lib/tenant'
 import { z } from 'zod'
 import { dropPhysicalTable } from '@/lib/repo-physical'
 import { describe as routerDescribe, count as routerCount } from '@/lib/repo-router'
@@ -22,7 +23,12 @@ const patchSchema = z.object({
 })
 
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const ctx = await getTenantContext(_req)
+  const blocked = featureGuard(ctx, 'dataRepository')
+  if (blocked) return blocked
   const { id } = await params
+  const owner = await prisma.repoTable.findUnique({ where: { id }, select: { tenantId: true } })
+  if (isForeign(ctx, owner)) return NextResponse.json({ error: 'Not found' }, { status: 404 })
   const t = await prisma.repoTable.findUnique({
     where: { id },
     include: {
@@ -46,8 +52,13 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
 }
 
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const ctx = await getTenantContext(req)
+  const blocked = featureGuard(ctx, 'dataRepository')
+  if (blocked) return blocked
   try {
     const { id } = await params
+    const owner = await prisma.repoTable.findUnique({ where: { id }, select: { tenantId: true } })
+    if (isForeign(ctx, owner)) return NextResponse.json({ error: 'Not found' }, { status: 404 })
     const body = patchSchema.parse(await req.json())
     const updated = await prisma.repoTable.update({
       where: { id },
@@ -61,7 +72,12 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 }
 
 export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const ctx = await getTenantContext(_req)
+  const blocked = featureGuard(ctx, 'dataRepository')
+  if (blocked) return blocked
   const { id } = await params
+  const owner = await prisma.repoTable.findUnique({ where: { id }, select: { tenantId: true } })
+  if (isForeign(ctx, owner)) return NextResponse.json({ error: 'Not found' }, { status: 404 })
   const t = await prisma.repoTable.findUnique({ where: { id }, select: { name: true, connectionId: true } })
   if (!t) return NextResponse.json({ error: 'Not found' }, { status: 404 })
   // Only drop the physical table if Orch owns it. External

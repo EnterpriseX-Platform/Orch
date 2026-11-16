@@ -3,6 +3,7 @@
 // scoped to /api/repo/* operations.
 import { NextRequest } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { getTenantContext, tenantWhere, featureGuard } from '@/lib/tenant'
 import crypto from 'crypto'
 import { ok, fail } from '../_helpers'
 
@@ -12,9 +13,12 @@ function genKey() {
   return { key: raw, keyHash: crypto.createHash('sha256').update(raw).digest('hex'), keyPrefix: raw.slice(0, 8) }
 }
 
-export async function GET() {
+export async function GET(req: NextRequest) {
+  const ctx = await getTenantContext(req)
+  const blocked = featureGuard(ctx, 'dataRepository')
+  if (blocked) return blocked
   try {
-    const keys = await prisma.repoApiKey.findMany({ orderBy: { createdAt: 'desc' } })
+    const keys = await prisma.repoApiKey.findMany({ where: tenantWhere(ctx), orderBy: { createdAt: 'desc' } })
     const safe = keys.map((k) => ({
       id: k.id,
       name: k.name,
@@ -31,12 +35,16 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
+  const ctx = await getTenantContext(req)
+  const blocked = featureGuard(ctx, 'dataRepository')
+  if (blocked) return blocked
   try {
     const body = await req.json()
     if (!body?.name) return fail('Name required')
     const { key, keyHash, keyPrefix } = genKey()
     const created = await prisma.repoApiKey.create({
       data: {
+        tenantId: ctx.tenantId ?? undefined,
         name: body.name,
         keyHash,
         keyPrefix,

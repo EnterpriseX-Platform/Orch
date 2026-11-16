@@ -3,13 +3,18 @@
 // returns a {success, data} envelope.
 import { NextRequest } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { getTenantContext, tenantWhere, featureGuard } from '@/lib/tenant'
 import { ensurePhysicalTable } from '@/lib/repo-physical'
 import { count as routerCount } from '@/lib/repo-router'
 import { ok, fail } from '../_helpers'
 
-export async function GET() {
+export async function GET(req: NextRequest) {
+  const ctx = await getTenantContext(req)
+  const blocked = featureGuard(ctx, 'dataRepository')
+  if (blocked) return blocked
   try {
     const tables = await prisma.repoTable.findMany({
+      where: tenantWhere(ctx),
       orderBy: [{ folderId: 'asc' }, { sortOrder: 'asc' }, { name: 'asc' }],
       include: {
         folder: { select: { id: true, name: true } },
@@ -48,6 +53,9 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
+  const ctx = await getTenantContext(req)
+  const blocked = featureGuard(ctx, 'dataRepository')
+  if (blocked) return blocked
   try {
     const body = await req.json()
     const { name, description, connectionId, folderId, externalTableName, columns } = body || {}
@@ -59,6 +67,7 @@ export async function POST(req: NextRequest) {
     }
     const created = await prisma.repoTable.create({
       data: {
+        tenantId: ctx.tenantId ?? undefined,
         name,
         description: description ?? null,
         connectionId: connectionId || null,

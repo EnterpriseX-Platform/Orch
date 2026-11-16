@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
+import { InlineNotification, Tag, Table, TableHead, TableRow, TableHeader, TableBody, TableCell } from '@carbon/react';
 import { Cpu, Activity, Clock, AlertCircle, CheckCircle } from 'lucide-react';
 import { useAuthStore } from '@/stores/authStore';
 
@@ -76,10 +76,7 @@ export function WorkerStatusPanel() {
 
   if (error) {
     return (
-      <div className="flex items-center gap-2 text-red-500">
-        <AlertCircle className="w-4 h-4" />
-        <span className="text-sm">{error}</span>
-      </div>
+      <InlineNotification kind="error" title={error} hideCloseButton lowContrast />
     );
   }
 
@@ -95,11 +92,9 @@ export function WorkerStatusPanel() {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <Card>
           <CardContent className="p-4 flex items-center gap-3">
-            <div className="p-2 bg-blue-100 rounded-lg">
-              <Cpu className="w-4 h-4 text-blue-600" />
-            </div>
+            <Cpu className="w-4 h-4 text-[#525252]" />
             <div>
-              <div className="text-2xl font-bold">{stats.total}</div>
+              <div className="text-2xl font-light">{stats.total}</div>
               <div className="text-xs text-muted-foreground">Total Workers</div>
             </div>
           </CardContent>
@@ -107,11 +102,9 @@ export function WorkerStatusPanel() {
 
         <Card>
           <CardContent className="p-4 flex items-center gap-3">
-            <div className="p-2 bg-green-100 rounded-lg">
-              <CheckCircle className="w-4 h-4 text-green-600" />
-            </div>
+            <CheckCircle className="w-4 h-4 text-[#525252]" />
             <div>
-              <div className="text-2xl font-bold text-green-600">{stats.running}</div>
+              <div className="text-2xl font-light">{stats.running}</div>
               <div className="text-xs text-muted-foreground">Running</div>
             </div>
           </CardContent>
@@ -119,11 +112,9 @@ export function WorkerStatusPanel() {
 
         <Card>
           <CardContent className="p-4 flex items-center gap-3">
-            <div className="p-2 bg-red-100 rounded-lg">
-              <AlertCircle className="w-4 h-4 text-red-600" />
-            </div>
+            <AlertCircle className="w-4 h-4 text-[#525252]" />
             <div>
-              <div className="text-2xl font-bold text-red-600">{stats.error}</div>
+              <div className="text-2xl font-light">{stats.error}</div>
               <div className="text-xs text-muted-foreground">Errors</div>
             </div>
           </CardContent>
@@ -131,11 +122,9 @@ export function WorkerStatusPanel() {
 
         <Card>
           <CardContent className="p-4 flex items-center gap-3">
-            <div className="p-2 bg-gray-100 rounded-lg">
-              <Clock className="w-4 h-4 text-gray-600" />
-            </div>
+            <Clock className="w-4 h-4 text-[#525252]" />
             <div>
-              <div className="text-2xl font-bold">{stats.stopped}</div>
+              <div className="text-2xl font-light">{stats.stopped}</div>
               <div className="text-xs text-muted-foreground">Stopped</div>
             </div>
           </CardContent>
@@ -152,49 +141,49 @@ export function WorkerStatusPanel() {
         </CardHeader>
         <CardContent>
           <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b">
-                  <th className="text-left p-2 font-medium">Worker Name</th>
-                  <th className="text-left p-2 font-medium">Queue</th>
-                  <th className="text-left p-2 font-medium">Status</th>
-                  <th className="text-left p-2 font-medium">Started At</th>
-                  <th className="text-right p-2 font-medium">Processed</th>
-                  <th className="text-right p-2 font-medium">Failed</th>
-                </tr>
-              </thead>
-              <tbody>
+            <Table size="md">
+              <TableHead>
+                <TableRow>
+                  <TableHeader>Worker Name</TableHeader>
+                  <TableHeader>Queue</TableHeader>
+                  <TableHeader>Status</TableHeader>
+                  <TableHeader>Started At</TableHeader>
+                  <TableHeader className="text-right">Processed</TableHeader>
+                  <TableHeader className="text-right">Failed</TableHeader>
+                </TableRow>
+              </TableHead>
+              <TableBody>
                 {workers.map((worker) => {
                   return (
-                    <tr key={worker.id} className="border-b last:border-0">
-                      <td className="p-2">
+                    <TableRow key={worker.id}>
+                      <TableCell>
                         <div className="flex flex-col">
                           <span className="font-medium text-sm">{worker.name}</span>
                           <span className="text-xs text-muted-foreground">ID: {worker.id}</span>
                         </div>
-                      </td>
-                      <td className="p-2">
-                        <Badge variant="outline" className="text-xs">{worker.queue}</Badge>
-                      </td>
-                      <td className="p-2">
+                      </TableCell>
+                      <TableCell>
+                        <Tag type="outline" size="sm">{worker.queue}</Tag>
+                      </TableCell>
+                      <TableCell>
                         <WorkerStatusBadge status={worker.status} />
-                      </td>
-                      <td className="p-2 text-muted-foreground text-xs">
+                      </TableCell>
+                      <TableCell className="text-muted-foreground text-xs">
                         {new Date(worker.started_at).toLocaleTimeString('th-TH')}
-                      </td>
-                      <td className="p-2 text-right font-mono text-xs">
+                      </TableCell>
+                      <TableCell className="text-right font-mono text-xs">
                         {worker.processed.toLocaleString()}
-                      </td>
-                      <td className="p-2 text-right font-mono text-xs">
-                        <span className={worker.failed > 0 ? 'text-red-500' : ''}>
+                      </TableCell>
+                      <TableCell className="text-right font-mono text-xs">
+                        <span className={worker.failed > 0 ? 'text-[#da1e28]' : ''}>
                           {worker.failed.toLocaleString()}
                         </span>
-                      </td>
-                    </tr>
+                      </TableCell>
+                    </TableRow>
                   );
                 })}
-              </tbody>
-            </table>
+              </TableBody>
+            </Table>
           </div>
         </CardContent>
       </Card>
@@ -203,18 +192,16 @@ export function WorkerStatusPanel() {
 }
 
 function WorkerStatusBadge({ status }: { status: string }) {
-  const statusConfig: Record<string, { color: string; bg: string }> = {
-    'running': { color: 'text-green-700', bg: 'bg-green-100' },
-    'stopped': { color: 'text-gray-700', bg: 'bg-gray-100' },
-    'paused': { color: 'text-yellow-700', bg: 'bg-yellow-100' },
-    'error': { color: 'text-red-700', bg: 'bg-red-100' },
+  const statusType: Record<string, 'green' | 'gray' | 'warm-gray' | 'red'> = {
+    running: 'green',
+    stopped: 'gray',
+    paused: 'warm-gray',
+    error: 'red',
   };
 
-  const config = statusConfig[status.toLowerCase()] || { color: 'text-gray-700', bg: 'bg-gray-100' };
-
   return (
-    <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${config.bg} ${config.color}`}>
+    <Tag type={statusType[status.toLowerCase()] ?? 'gray'} size="sm">
       {status.charAt(0).toUpperCase() + status.slice(1)}
-    </span>
+    </Tag>
   );
 }

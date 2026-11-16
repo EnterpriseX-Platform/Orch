@@ -1,13 +1,16 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
-import { Bell, Plus, Search, ChevronDown, Settings, HelpCircle, User, LogOut, Menu, ChevronRight, Sun, Moon } from 'lucide-react'
+import { TenantSwitcher } from './TenantSwitcher'
+import { useTenantStore } from '@/stores/tenantStore'
+import { useAuthStore } from '@/stores/authStore'
+import { Header as CarbonHeader, HeaderMenuButton, HeaderName, HeaderGlobalBar, HeaderGlobalAction, SkipToContent, Theme } from '@carbon/react'
+import { Bell, Search, Settings, HelpCircle, User, LogOut } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
 import { useRouter, usePathname } from 'next/navigation'
 import Link from 'next/link'
-import { useThemeStore } from '@/stores/themeStore'
 
-const FONT = "'Prompt', sans-serif";
+const FONT = '"IBM Plex Sans Thai", "IBM Plex Sans", "Sarabun", system-ui, sans-serif';
 
 interface UserProfile {
   id: string
@@ -32,7 +35,7 @@ const breadcrumbMap: Record<string, string> = {
   'data-repository': 'Data Repository',
   'flows': 'Flows',
   'builder': 'Flow Builder',
-  'logs': 'API Logs',
+  'logs': 'Event Logs',
   'audit': 'Audit Trail',
   'reports': 'Analytics',
   'monitor': 'System Monitor',
@@ -118,7 +121,7 @@ function useBreadcrumbLabels(segments: string[]) {
   return resolvedLabels
 }
 
-function Breadcrumb() {
+export function Breadcrumb() {
   const pathname = usePathname() || ''
   const segments = pathname.replace('/orch/', '').split('/').filter(Boolean)
 
@@ -129,11 +132,10 @@ function Breadcrumb() {
   const resolvedLabels = useBreadcrumbLabels(segments)
 
   return (
-    <nav style={{ fontFamily: FONT }} className="flex items-center gap-1.5 text-[13px] min-w-0">
+    <nav style={{ fontFamily: FONT }} className="flex items-center gap-1 text-[12px] leading-4 min-w-0 mb-1">
       <Link
         href="/dashboard"
-        style={{ color: 'var(--t-text-muted)' }}
-        className="hover:!text-[#60A5FA] transition-colors whitespace-nowrap"
+        className="text-[#0f62fe] hover:underline whitespace-nowrap"
       >
         Home
       </Link>
@@ -144,14 +146,13 @@ function Breadcrumb() {
 
         return (
           <div key={segment + index} className="flex items-center gap-1.5 min-w-0">
-            <ChevronRight className="w-3.5 h-3.5 flex-shrink-0" style={{ color: 'var(--t-border)' }} />
+            <span aria-hidden className="px-0.5" style={{ color: 'var(--t-text-muted)' }}>/</span>
             {isLast ? (
-              <span style={{ color: 'var(--t-text)' }} className="font-medium truncate max-w-[200px]" title={label}>{label}</span>
+              <span style={{ color: 'var(--t-text)' }} className="truncate max-w-[240px]" title={label}>{label}</span>
             ) : (
               <Link
                 href={href}
-                style={{ color: 'var(--t-text-muted)' }}
-                className="hover:!text-[#60A5FA] transition-colors truncate max-w-[180px]"
+                className="text-[#0f62fe] hover:underline truncate max-w-[180px]"
                 title={label}
               >
                 {label}
@@ -168,14 +169,14 @@ export function Header({ sidebarCollapsed = false, onToggleSidebar }: HeaderProp
   const router = useRouter()
   const [showUserMenu, setShowUserMenu] = useState(false)
   const [showNotifications, setShowNotifications] = useState(false)
-  const { mode, toggle: toggleTheme } = useThemeStore()
   const userMenuRef = useRef<HTMLDivElement>(null)
   const notificationsRef = useRef<HTMLDivElement>(null)
 
   const { data: user } = useQuery<UserProfile>({
     queryKey: ['user-profile'],
     queryFn: async () => {
-      const res = await fetch('/orch/api/auth/me')
+      const token = useAuthStore.getState().accessToken
+      const res = await fetch('/orch/api/auth/me', { headers: token ? { Authorization: `Bearer ${token}` } : {} })
       if (!res.ok) throw new Error('Failed to fetch user')
       return res.json()
     },
@@ -197,164 +198,115 @@ export function Header({ sidebarCollapsed = false, onToggleSidebar }: HeaderProp
 
   const handleLogout = async () => {
     await fetch('/orch/api/auth/logout', { method: 'POST' })
+    useTenantStore.setState({ loaded: false, tenants: [], current: null, features: {} })
     router.push('/login')
   }
 
+  const initial = (user?.fullName || user?.username || 'A').charAt(0).toUpperCase()
+
   return (
-    <header
-      style={{ fontFamily: FONT, backgroundColor: 'var(--t-header)', borderColor: 'var(--t-border-light)' }}
-      className="h-14 border-b flex items-center px-4 sticky top-0 z-20 transition-colors"
-    >
-      {/* Left: Toggle + Breadcrumb */}
-      <div className="flex items-center gap-4">
-        {/* Sidebar Toggle */}
-        <button
-          onClick={onToggleSidebar}
-          style={{ color: 'var(--t-text-muted)' }}
-          className="h-8 w-8 flex items-center justify-center hover:text-[#60A5FA] rounded-lg transition-colors"
-          title={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-        >
-          <Menu className="w-4 h-4" />
-        </button>
+    <Theme theme="g100">
+    <CarbonHeader aria-label="Orch Platform">
+      <SkipToContent href="#main-content" />
+      <HeaderMenuButton
+        aria-label={sidebarCollapsed ? 'Open menu' : 'Close menu'}
+        isActive={!sidebarCollapsed}
+        isCollapsible
+        onClick={onToggleSidebar}
+      />
+      <HeaderName as={Link} href="/dashboard" prefix="Orch">
+        Platform
+      </HeaderName>
+      <div className="w-px my-3 bg-[#393939]" />
+      <TenantSwitcher variant="dark" />
 
-        {/* Breadcrumb */}
-        <Breadcrumb />
-      </div>
-
-      {/* Right Actions */}
-      <div className="flex items-center gap-2 ml-auto">
-        {/* Search */}
-        <div className="hidden sm:block w-48 md:w-64">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: 'var(--t-text-muted)' }} />
+      {/* Right: search, notifications, user */}
+      <HeaderGlobalBar>
+        <div className="hidden md:flex items-center px-2">
+          <div className="relative w-56 xl:w-72">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#8d8d8d]" />
             <input
               type="text"
               placeholder="Search..."
-              style={{
-                backgroundColor: 'var(--t-input)',
-                borderColor: 'var(--t-border)',
-                color: 'var(--t-text)',
-              }}
-              className="w-full h-8 pl-9 pr-4 border rounded-lg text-[13px] placeholder:text-[var(--t-text-muted)] focus:outline-none focus:border-[#3B82F6] focus:ring-2 focus:ring-[#3B82F6]/20 transition-all"
+              className="w-full h-8 pl-9 pr-3 bg-[#262626] text-[13px] text-white placeholder:text-[#8d8d8d] border-0 border-b border-b-[#6f6f6f] focus:outline-none focus:border-b-white"
             />
           </div>
         </div>
 
-        {/* New Button */}
-        <button
-          style={{ backgroundColor: 'var(--t-panel)', borderColor: 'var(--t-border)', color: 'var(--t-text-secondary)' }}
-          className="h-8 px-3 border hover:border-[#3B82F6] hover:text-[#60A5FA] text-[13px] font-medium rounded-lg flex items-center gap-2 transition-all"
-        >
-          <Plus className="w-4 h-4" />
-          <span className="hidden sm:inline">New</span>
-        </button>
-
-        {/* Theme Toggle */}
-        <button
-          onClick={toggleTheme}
-          style={{ color: 'var(--t-text-muted)' }}
-          className="h-8 w-8 flex items-center justify-center hover:text-[#60A5FA] rounded-lg transition-colors"
-          title={mode === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
-        >
-          {mode === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
-        </button>
-
         {/* Notifications */}
         <div className="relative" ref={notificationsRef}>
-          <button
+          <HeaderGlobalAction
+            aria-label="Notifications"
+            isActive={showNotifications}
             onClick={() => setShowNotifications(!showNotifications)}
-            style={{ color: 'var(--t-text-muted)' }}
-            className="relative h-8 w-8 flex items-center justify-center hover:text-[#60A5FA] rounded-lg transition-colors"
+            className="relative"
           >
-            <Bell className="w-4 h-4" />
-            <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full ring-2 ring-[var(--t-header)]"></span>
-          </button>
-
-          {/* Notifications Dropdown */}
+            <Bell className="w-5 h-5" />
+            <span className="absolute top-3 right-3 w-2 h-2 bg-[#da1e28] rounded-full" />
+          </HeaderGlobalAction>
           {showNotifications && (
-            <div style={{ backgroundColor: 'var(--t-panel)', borderColor: 'var(--t-border)' }} className="absolute right-0 top-full mt-2 w-72 border rounded-lg shadow-xl py-2" >
-              <div className="px-3 py-2 border-b flex items-center justify-between" style={{ borderColor: 'var(--t-border)' }}>
-                <span className="font-medium text-[13px]" style={{ color: 'var(--t-text)' }}>Notifications</span>
-                <button className="text-[11px] text-[#60A5FA] hover:text-[#3B82F6]">Mark all read</button>
+            <div className="absolute right-0 top-12 w-80 border-x border-b" style={{ backgroundColor: 'var(--t-panel)', borderColor: 'var(--t-border)' }}>
+              <div className="px-4 h-10 border-b flex items-center justify-between" style={{ borderColor: 'var(--t-border)' }}>
+                <span className="font-semibold text-[13px]" style={{ color: 'var(--t-text)' }}>Notifications</span>
+                <button className="text-[12px] text-[#0f62fe] hover:underline">Mark all read</button>
               </div>
-              <div className="max-h-60 overflow-auto">
-                <div className="px-3 py-2.5 hover:bg-[var(--t-panel-hover)] cursor-pointer border-b last:border-0" style={{ borderColor: 'var(--t-border)' }}>
-                  <div className="flex gap-2">
-                    <div className="w-1.5 h-1.5 bg-[#60A5FA] rounded-full mt-1.5 flex-shrink-0"></div>
+              <div className="max-h-72 overflow-auto">
+                {[
+                  { color: '#da1e28', text: 'Pipeline "Data Sync" deployment failed', time: '2 minutes ago' },
+                  { color: '#24a148', text: 'Flow "ETL Process" executed successfully', time: '15 minutes ago' },
+                ].map((n) => (
+                  <div key={n.text} className="px-4 py-3 border-b last:border-0 hover:bg-[var(--t-panel-hover)] cursor-pointer flex gap-3" style={{ borderColor: 'var(--t-border)' }}>
+                    <span className="w-2 h-2 rounded-full mt-1.5 flex-shrink-0" style={{ backgroundColor: n.color }} />
                     <div>
-                      <p className="text-[12px]" style={{ color: 'var(--t-text)' }}>Pipeline &quot;Data Sync&quot; deployment failed</p>
-                      <p className="text-[11px] mt-1" style={{ color: 'var(--t-text-muted)' }}>2 minutes ago</p>
+                      <p className="text-[13px]" style={{ color: 'var(--t-text)' }}>{n.text}</p>
+                      <p className="text-[12px] mt-0.5" style={{ color: 'var(--t-text-muted)' }}>{n.time}</p>
                     </div>
                   </div>
-                </div>
-                <div className="px-3 py-2.5 hover:bg-[var(--t-panel-hover)] cursor-pointer border-b last:border-0" style={{ borderColor: 'var(--t-border)' }}>
-                  <div className="flex gap-2">
-                    <div className="w-1.5 h-1.5 bg-[#10B981] rounded-full mt-1.5 flex-shrink-0"></div>
-                    <div>
-                      <p className="text-[12px]" style={{ color: 'var(--t-text)' }}>Flow &quot;ETL Process&quot; executed successfully</p>
-                      <p className="text-[11px] mt-1" style={{ color: 'var(--t-text-muted)' }}>15 minutes ago</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-              <div className="px-3 py-2 border-t" style={{ borderColor: 'var(--t-border)' }}>
-                <button className="text-[12px] text-[#60A5FA] hover:text-[#3B82F6]">View all notifications</button>
+                ))}
               </div>
             </div>
           )}
         </div>
 
-        {/* User Menu */}
+        {/* User */}
         <div className="relative" ref={userMenuRef}>
-          <button
+          <HeaderGlobalAction
+            aria-label="User menu"
+            isActive={showUserMenu}
             onClick={() => setShowUserMenu(!showUserMenu)}
-            style={{ color: 'var(--t-text-muted)' }}
-            className="flex items-center gap-2 h-8 px-2 hover:text-[#60A5FA] rounded-lg transition-colors"
+            tooltipAlignment="end"
           >
-            <div style={{ backgroundColor: 'var(--t-panel)', borderColor: 'var(--t-border)' }} className="w-7 h-7 rounded-full border flex items-center justify-center text-[#60A5FA] text-xs font-medium">
-              {user?.fullName?.charAt(0) || user?.username?.charAt(0) || 'A'}
-            </div>
-            <ChevronDown className={`w-4 h-4 transition-transform ${showUserMenu ? 'rotate-180' : ''}`} />
-          </button>
-
-          {/* User Dropdown */}
+            <span className="w-7 h-7 rounded-full bg-[#0f62fe] text-white text-[12px] font-semibold flex items-center justify-center">
+              {initial}
+            </span>
+          </HeaderGlobalAction>
           {showUserMenu && (
-            <div style={{ backgroundColor: 'var(--t-panel)', borderColor: 'var(--t-border)' }} className="absolute right-0 top-full mt-2 w-52 border rounded-lg shadow-xl py-2">
-              <div className="px-3 py-2.5 border-b" style={{ borderColor: 'var(--t-border)' }}>
-                <p className="font-medium text-[13px]" style={{ color: 'var(--t-text)' }}>{user?.fullName || user?.username || 'Admin User'}</p>
-                <p className="text-[11px] mt-0.5" style={{ color: 'var(--t-text-muted)' }}>{user?.email || 'admin@orch'}</p>
+            <div className="absolute right-0 top-12 w-60 border-x border-b" style={{ backgroundColor: 'var(--t-panel)', borderColor: 'var(--t-border)' }}>
+              <div className="px-4 py-3 border-b" style={{ borderColor: 'var(--t-border)' }}>
+                <p className="font-semibold text-[14px]" style={{ color: 'var(--t-text)' }}>{user?.fullName || user?.username || 'Admin User'}</p>
+                <p className="text-[12px] mt-0.5" style={{ color: 'var(--t-text-muted)' }}>{user?.email || 'admin@orch.io'}</p>
               </div>
-              <div className="py-1">
-                <button style={{ color: 'var(--t-text-secondary)' }} className="w-full px-3 py-2 text-left text-[13px] hover:text-[var(--t-text)] hover:bg-[var(--t-panel-hover)] flex items-center gap-2 transition-colors">
-                  <User className="w-4 h-4" />
-                  Profile
+              {[
+                { icon: User, label: 'Profile', onClick: undefined },
+                { icon: Settings, label: 'Settings', onClick: () => router.push('/settings') },
+                { icon: HelpCircle, label: 'Help & Support', onClick: undefined },
+              ].map((m) => (
+                <button key={m.label} onClick={m.onClick}
+                  className="w-full h-10 px-4 text-left text-[13px] flex items-center gap-3 hover:bg-[var(--t-panel-hover)]"
+                  style={{ color: 'var(--t-text)' }}>
+                  <m.icon className="w-4 h-4" style={{ color: 'var(--t-text-secondary)' }} /> {m.label}
                 </button>
-                <button
-                  onClick={() => router.push('/settings')}
-                  style={{ color: 'var(--t-text-secondary)' }}
-                  className="w-full px-3 py-2 text-left text-[13px] hover:text-[var(--t-text)] hover:bg-[var(--t-panel-hover)] flex items-center gap-2 transition-colors"
-                >
-                  <Settings className="w-4 h-4" />
-                  Settings
-                </button>
-                <button style={{ color: 'var(--t-text-secondary)' }} className="w-full px-3 py-2 text-left text-[13px] hover:text-[var(--t-text)] hover:bg-[var(--t-panel-hover)] flex items-center gap-2 transition-colors">
-                  <HelpCircle className="w-4 h-4" />
-                  Help & Support
-                </button>
-              </div>
-              <div className="border-t py-1 mt-1" style={{ borderColor: 'var(--t-border)' }}>
-                <button
-                  onClick={handleLogout}
-                  className="w-full px-3 py-2 text-left text-[13px] text-red-400 hover:text-red-300 hover:bg-red-500/10 flex items-center gap-2 transition-colors"
-                >
-                  <LogOut className="w-4 h-4" />
-                  Sign out
-                </button>
-              </div>
+              ))}
+              <button onClick={handleLogout}
+                className="w-full h-10 px-4 text-left text-[13px] flex items-center gap-3 border-t text-[#da1e28] hover:bg-[#fff1f1]"
+                style={{ borderColor: 'var(--t-border)' }}>
+                <LogOut className="w-4 h-4" /> Sign out
+              </button>
             </div>
           )}
         </div>
-      </div>
-    </header>
+      </HeaderGlobalBar>
+    </CarbonHeader>
+    </Theme>
   )
 }

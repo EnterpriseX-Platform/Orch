@@ -13,7 +13,8 @@
  *   - Raw JSON  : oldValues + newValues + changes side-by-side
  */
 import { useState, type ReactNode } from 'react'
-import { X, FileJson, Info, GitCompare } from 'lucide-react'
+import { FileJson, Info, GitCompare } from 'lucide-react'
+import { ComposedModal, ModalHeader, ModalBody, Tabs, TabList, Tab, Tag } from '@carbon/react'
 
 export interface AuditDetailData {
   id: string
@@ -48,70 +49,44 @@ export function AuditDetailModal({
   const [tab, setTab] = useState<TabId>('summary')
   if (!log) return null
 
-  const tabs: Array<{ id: TabId; label: string; icon: React.ComponentType<{ className?: string }> }> = [
+  const tabs: Array<{ id: TabId; label: string; icon: React.ComponentType<Record<string, unknown>> }> = [
     { id: 'summary', label: 'Summary', icon: Info },
     { id: 'changes', label: 'Changes', icon: GitCompare },
     { id: 'raw',     label: 'Raw JSON', icon: FileJson },
   ]
 
+  const tabIndex = tabs.findIndex((t) => t.id === tab)
+
   return (
-    <div
-      className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4"
-      onClick={onClose}
-    >
-      <div
-        className="bg-[var(--t-panel)] border border-[var(--t-border)] rounded-xl w-full max-w-5xl max-h-[90vh] flex flex-col overflow-hidden"
-        onClick={(e) => e.stopPropagation()}
-      >
-        {/* Header */}
-        <div className="flex items-center justify-between px-5 py-3 border-b border-[var(--t-border)]">
-          <div className="flex items-center gap-3 min-w-0">
-            <span className="px-2 py-0.5 rounded text-[11px] font-semibold bg-[#3B82F6]/20 text-[#60A5FA]">
-              {log.action}
-            </span>
-            <span className="text-[11px] text-[var(--t-text-muted)]">on</span>
-            <span className="text-xs font-semibold text-[var(--t-text)]">{log.entityType}</span>
-            {log.entityId && (
-              <code className="text-xs font-mono text-[var(--t-text-secondary)] truncate">
-                · {log.entityId}
-              </code>
-            )}
-            <span className="text-xs text-[var(--t-text-muted)] shrink-0">
-              · {formatDateTime(log.timestamp)}
-            </span>
-          </div>
-          <button
-            onClick={onClose}
-            className="p-1.5 rounded-md hover:bg-[var(--t-panel-hover)] text-[var(--t-text-muted)] shrink-0"
-          >
-            <X className="w-4 h-4" />
-          </button>
+    <ComposedModal open onClose={onClose} size="lg">
+      <ModalHeader closeModal={onClose}>
+        <div className="flex items-center gap-3 min-w-0 pr-8">
+          <Tag type="blue" size="sm">{log.action}</Tag>
+          <span className="text-[11px] text-[var(--t-text-muted)]">on</span>
+          <span className="text-xs font-semibold text-[var(--t-text)]">{log.entityType}</span>
+          {log.entityId && (
+            <code className="text-xs font-mono text-[var(--t-text-secondary)] truncate">
+              · {log.entityId}
+            </code>
+          )}
+          <span className="text-xs text-[var(--t-text-muted)] shrink-0">
+            · {formatDateTime(log.timestamp)}
+          </span>
         </div>
-
-        {/* Tabs */}
-        <div className="px-5 pt-2 border-b border-[var(--t-border)] flex gap-1">
-          {tabs.map((t) => {
-            const Icon = t.icon
-            const active = tab === t.id
-            return (
-              <button
-                key={t.id}
-                onClick={() => setTab(t.id)}
-                className={`flex items-center gap-1.5 px-3 py-2 text-xs font-medium border-b-2 transition-colors ${
-                  active
-                    ? 'border-[var(--t-accent)] text-[var(--t-accent)]'
-                    : 'border-transparent text-[var(--t-text-muted)] hover:text-[var(--t-text)]'
-                }`}
-              >
-                <Icon className="w-3.5 h-3.5" />
-                {t.label}
-              </button>
-            )
-          })}
-        </div>
-
+      </ModalHeader>
+      <ModalBody>
+        <Tabs
+          selectedIndex={tabIndex}
+          onChange={({ selectedIndex }) => setTab(tabs[selectedIndex].id)}
+        >
+          <TabList aria-label="Audit detail tabs">
+            {tabs.map((t) => (
+              <Tab key={t.id} renderIcon={t.icon}>{t.label}</Tab>
+            ))}
+          </TabList>
+        </Tabs>
         {/* Body */}
-        <div className="flex-1 overflow-auto p-5 text-sm">
+        <div className="pt-4 text-sm">
           {tab === 'summary' && (
             <div className="grid grid-cols-2 gap-4">
               <Field label="Action">
@@ -150,10 +125,10 @@ export function AuditDetailModal({
 
           {tab === 'changes' && (
             <div>
-              <div className="grid grid-cols-3 gap-3 mb-2 text-[10px] font-semibold uppercase tracking-wider text-[var(--t-text-muted)]">
+              <div className="grid grid-cols-3 gap-3 mb-2 text-[12px] text-[#525252]">
                 <div>Field</div>
-                <div className="text-red-400">Old Value</div>
-                <div className="text-emerald-400">New Value</div>
+                <div className="text-[#da1e28]">Old Value</div>
+                <div className="text-[#24a148]">New Value</div>
               </div>
               <div className="space-y-1">{renderDiff(log)}</div>
             </div>
@@ -169,15 +144,15 @@ export function AuditDetailModal({
             </div>
           )}
         </div>
-      </div>
-    </div>
+      </ModalBody>
+    </ComposedModal>
   )
 }
 
 function Field({ label, children, full }: { label: string; children: React.ReactNode; full?: boolean }) {
   return (
     <div className={full ? 'col-span-2' : ''}>
-      <p className="text-[10px] font-semibold text-[var(--t-text-muted)] uppercase tracking-wider mb-0.5">{label}</p>
+      <p className="text-[12px] text-[#525252] mb-0.5">{label}</p>
       {children}
     </div>
   )
@@ -186,8 +161,8 @@ function Field({ label, children, full }: { label: string; children: React.React
 function Block({ label, content }: { label: string; content: string }) {
   return (
     <div>
-      <p className="text-[10px] font-semibold text-[var(--t-text-muted)] uppercase tracking-wider mb-1">{label}</p>
-      <pre className="px-3 py-2 rounded bg-[var(--t-bg)] border border-[var(--t-border)] text-[var(--t-text-secondary)] text-xs font-mono whitespace-pre-wrap break-all max-h-[50vh] overflow-auto">
+      <p className="text-[12px] text-[#525252] mb-1">{label}</p>
+      <pre className="px-3 py-2 bg-[#f4f4f4] text-[#161616] text-xs font-mono whitespace-pre-wrap break-all max-h-[50vh] overflow-auto">
         {content || '(empty)'}
       </pre>
     </div>

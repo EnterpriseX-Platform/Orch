@@ -1,16 +1,14 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect, useRef } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { apiClient } from '@/lib/api'
 import {
   Users,
   Plus,
-  Search,
   Trash2,
   Edit2,
   User as UserIcon,
-  Check,
   RefreshCw,
   UserCheck,
   Crown,
@@ -19,7 +17,6 @@ import {
   Server,
   Database,
   Save,
-  X,
   Shield,
   Settings,
   Activity,
@@ -33,14 +30,27 @@ import {
   Wifi,
 } from 'lucide-react'
 import { toast } from 'sonner'
+import {
+  Button,
+  Checkbox,
+  Modal,
+  Search as CdsSearch,
+  Tab,
+  TabList,
+  Tabs,
+  Tag,
+  TextInput,
+} from '@carbon/react'
 import { WorkersTab } from './WorkersTab'
+import { TenantsPanel } from '@/components/settings/TenantsPanel'
+import { Building2 } from 'lucide-react'
 import { SystemConfigPanel } from '@/components/settings/SystemConfigPanel'
 import { RetentionPanel } from '@/components/settings/RetentionPanel'
 import { EncryptionPanel } from '@/components/settings/EncryptionPanel'
 import { EncryptionKeyPanel } from '@/components/settings/EncryptionKeyPanel'
 import { confirmDialog } from '@/components/common/ConfirmDialog'
 
-const FONT = "'Prompt', sans-serif"
+const FONT = '"IBM Plex Sans Thai", "IBM Plex Sans", "Sarabun", system-ui, sans-serif'
 
 const THEME = {
   bg: 'var(--t-bg)',
@@ -53,11 +63,11 @@ const THEME = {
   accentLight: 'var(--t-accent-light)',
 }
 
-const ROLE_COLORS: Record<string, { bg: string; color: string; border: string }> = {
-  admin: { bg: '#EF444418', color: '#EF4444', border: '#EF444435' },
-  user: { bg: '#3B82F618', color: '#3B82F6', border: '#3B82F635' },
-  viewer: { bg: '#8B92A518', color: '#8B92A5', border: '#8B92A535' },
-  operator: { bg: '#10B98118', color: '#10B981', border: '#10B98135' },
+const ROLE_TAG_TYPES: Record<string, 'red' | 'blue' | 'gray' | 'green'> = {
+  admin: 'red',
+  user: 'blue',
+  viewer: 'gray',
+  operator: 'green',
 }
 
 const ROLE_LABELS: Record<string, string> = {
@@ -147,6 +157,7 @@ const defaultOidc: OidcConfig = {
 
 const tabs = [
   { id: 'users', label: 'Users', icon: Users },
+  { id: 'tenants', label: 'Tenants', icon: Building2 },
   // "Environment" now renders the same SystemConfigPanel that was
   // previously at /orch/system-config — one source of truth for runtime
   // config with validation, history, project-scoped overrides, search.
@@ -174,24 +185,16 @@ function SystemStatusCard({
   children: React.ReactNode
 }) {
   return (
-    <div className="bg-[var(--t-panel)] rounded-lg p-4 border border-[var(--t-border)]">
+    <div className="bg-[var(--t-panel)] rounded-none p-4 border border-[var(--t-border)]">
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
           <Icon className="w-4 h-4" style={{ color: THEME.text.muted }} />
           <span style={{ fontSize: 13 }} className="font-semibold text-[var(--t-text)]">{title}</span>
         </div>
         {status && (
-          <span
-            className="px-2 py-0.5 rounded-full font-medium"
-            style={{
-              fontSize: 11,
-              background: statusColor === 'green' ? '#10B98118' : '#EF444418',
-              color: statusColor === 'green' ? '#10B981' : '#EF4444',
-              border: `1px solid ${statusColor === 'green' ? '#10B98135' : '#EF444435'}`
-            }}
-          >
+          <Tag size="sm" type={statusColor === 'green' ? 'green' : 'red'}>
             {status}
-          </span>
+          </Tag>
         )}
       </div>
       {children}
@@ -220,6 +223,11 @@ function ResponsiveGrid({ children, className = '' }: { children: React.ReactNod
 export default function SettingsPage() {
   const queryClient = useQueryClient()
   const [activeTab, setActiveTab] = useState('users')
+  // Deep link: /settings?tab=tenants (used by the tenant switcher)
+  useEffect(() => {
+    const t = new URLSearchParams(window.location.search).get('tab')
+    if (t && tabs.some((x) => x.id === t)) setActiveTab(t)
+  }, [])
   
   // Users state
   const [searchQuery, setSearchQuery] = useState('')
@@ -377,37 +385,26 @@ export default function SettingsPage() {
     <div style={{ fontFamily: FONT }} className="w-full max-w-full">
       {/* Header */}
       <div className="mb-5">
-        <h1 style={{ fontSize: 22 }} className="font-bold text-[var(--t-text)]">System Settings</h1>
+        <h1 style={{ fontSize: 20 }} className="font-normal text-[var(--t-text)]">System Settings</h1>
         <p style={{ fontSize: 12 }} className="text-[var(--t-text-muted)] mt-1">
           Manage users, environment variables, OIDC, and system configuration
         </p>
       </div>
 
       {/* Tabs - Responsive */}
-      <div className="flex items-center gap-1 mb-4" style={{ borderBottom: `1px solid var(--t-border)` }}>
-        {tabs.map(tab => {
-          const Icon = tab.icon
-          const isActive = activeTab === tab.id
-          return (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              className="flex items-center gap-2 cursor-pointer transition-colors whitespace-nowrap"
-              style={{
-                padding: '8px 14px',
-                fontSize: 13,
-                fontWeight: 500,
-                color: isActive ? '#3B82F6' : 'var(--t-text-secondary)',
-                borderBottom: `2px solid ${isActive ? '#3B82F6' : 'transparent'}`,
-                marginBottom: -1,
-              }}
-            >
-              <Icon className="w-4 h-4" />
-              <span className="hidden sm:inline">{tab.label}</span>
-              <span className="sm:hidden">{tab.label.split(' ')[0]}</span>
-            </button>
-          )
-        })}
+      <div className="mb-4 min-w-0">
+        <Tabs
+          selectedIndex={Math.max(0, tabs.findIndex((t) => t.id === activeTab))}
+          onChange={({ selectedIndex }) => setActiveTab(tabs[selectedIndex].id)}
+        >
+          <TabList aria-label="System settings sections" contained={false}>
+            {tabs.map(tab => (
+              <Tab key={tab.id} renderIcon={tab.icon}>
+                {tab.label}
+              </Tab>
+            ))}
+          </TabList>
+        </Tabs>
       </div>
 
       {/* Content */}
@@ -417,68 +414,36 @@ export default function SettingsPage() {
           <div>
             {/* Top row: Add User button */}
             <div className="flex items-center justify-end mb-4">
-              <button
-                onClick={() => setIsCreateOpen(true)}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 6,
-                  padding: '6px 14px',
-                  background: THEME.accent,
-                  color: '#FFFFFF',
-                  fontSize: 13,
-                  fontWeight: 600,
-                  borderRadius: 8,
-                  transition: 'all 0.15s ease',
-                }}
-                className="hover:bg-[#2563EB]"
-              >
-                <Plus className="w-4 h-4" />
+              <Button kind="primary" size="sm" onClick={() => setIsCreateOpen(true)} renderIcon={Plus}>
                 Add User
-              </button>
+              </Button>
             </div>
 
             {/* Filter Tabs */}
             <div className="flex items-center gap-2 mb-4">
               {filterTabs.map(tab => (
-                <button
+                <Button
                   key={tab.id}
+                  kind={activeFilter === tab.id ? 'secondary' : 'ghost'}
+                  size="sm"
+                  isSelected={activeFilter === tab.id}
                   onClick={() => setActiveFilter(tab.id)}
-                  style={{
-                    padding: '4px 10px',
-                    fontSize: 12,
-                    fontWeight: 500,
-                    borderRadius: 6,
-                    border: activeFilter === tab.id ? 'none' : `1px solid ${THEME.border}`,
-                    background: activeFilter === tab.id ? THEME.accent : THEME.panel,
-                    color: activeFilter === tab.id ? '#FFFFFF' : THEME.text.muted,
-                    transition: 'all 0.15s ease',
-                  }}
                 >
                   {tab.label}
-                </button>
+                </Button>
               ))}
             </div>
 
             {/* Search */}
             <div className="flex items-center gap-3 mb-4">
-              <div className="flex-1 max-w-md relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: THEME.text.muted }} />
-                <input
-                  type="text"
+              <div className="flex-1 max-w-md">
+                <CdsSearch
+                  id="settings-user-search"
+                  size="md"
+                  labelText="Search users"
                   placeholder="Search users by name or email..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  style={{
-                    width: '100%',
-                    padding: '6px 12px 6px 36px',
-                    background: 'var(--t-input)',
-                    border: `1px solid ${THEME.border}`,
-                    borderRadius: 8,
-                    fontSize: 13,
-                    color: THEME.text.primary,
-                    outline: 'none',
-                  }}
                 />
               </div>
             </div>
@@ -499,25 +464,13 @@ export default function SettingsPage() {
                       padding: '10px 12px',
                       background: THEME.panel,
                       border: `1px solid ${THEME.border}`,
-                      borderRadius: 10,
+                      borderRadius: 0,
                       transition: 'all 0.15s ease',
                     }}
-                    className="hover:border-[#3B82F6] group"
+                    className="hover:bg-[#e8e8e8] group"
                   >
                     {/* Avatar Icon Box */}
-                    <div style={{
-                      width: 36,
-                      height: 28,
-                      background: THEME.bg,
-                      border: `1px solid ${THEME.border}`,
-                      borderRadius: 6,
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      flexShrink: 0,
-                    }}>
-                      <UserIcon className="w-4 h-4" style={{ color: user.isActive ? '#60A5FA' : 'var(--t-text-muted)' }} />
-                    </div>
+                    <UserIcon className="w-4 h-4 shrink-0" style={{ color: '#525252' }} />
 
                     {/* Main Info */}
                     <div style={{ flex: 1, minWidth: 0 }}>
@@ -529,27 +482,16 @@ export default function SettingsPage() {
                           overflow: 'hidden',
                           textOverflow: 'ellipsis',
                           whiteSpace: 'nowrap',
-                        }} className="group-hover:text-[#3B82F6] transition-colors">
+                        }} className="group-hover:text-[#0f62fe] transition-colors">
                           {user.firstName} {user.lastName}
                         </h3>
                         {user.roles.map(role => (
-                          <span
-                            key={role}
-                            style={{
-                              padding: '1px 5px',
-                              fontSize: 10,
-                              fontWeight: 600,
-                              borderRadius: 6,
-                              background: ROLE_COLORS[role]?.bg || ROLE_COLORS.user.bg,
-                              color: ROLE_COLORS[role]?.color || ROLE_COLORS.user.color,
-                              border: `1px solid ${ROLE_COLORS[role]?.border || ROLE_COLORS.user.border}`,
-                            }}
-                          >
+                          <Tag key={role} size="sm" type={ROLE_TAG_TYPES[role] || ROLE_TAG_TYPES.user}>
                             {ROLE_LABELS[role] || role}
-                          </span>
+                          </Tag>
                         ))}
                       </div>
-                      <p style={{ fontSize: 11, color: THEME.text.muted }}>
+                      <p style={{ fontSize: 12, color: '#525252' }}>
                         {user.username} · {user.email}
                       </p>
                     </div>
@@ -559,47 +501,36 @@ export default function SettingsPage() {
                       {user.department && (
                         <div style={{ textAlign: 'center' }}>
                           <p style={{ fontSize: 13, fontWeight: 600, color: THEME.text.primary }}>{user.department}</p>
-                          <p style={{ fontSize: 11, color: THEME.text.muted }}>Dept</p>
+                          <p style={{ fontSize: 12, color: '#525252' }}>Dept</p>
                         </div>
                       )}
                       <div style={{ textAlign: 'center' }}>
                         <p style={{ fontSize: 13, fontWeight: 600, color: THEME.text.primary }}>{user.roles.length}</p>
-                        <p style={{ fontSize: 11, color: THEME.text.muted }}>Roles</p>
+                        <p style={{ fontSize: 12, color: '#525252' }}>Roles</p>
                       </div>
                     </div>
 
                     {/* Status Badge */}
-                    <div style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 4,
-                      padding: '2px 8px',
-                      fontSize: 11,
-                      fontWeight: 500,
-                      borderRadius: 6,
-                      background: user.isActive ? '#10B98115' : 'var(--t-panel-hover)',
-                      border: `1px solid ${user.isActive ? '#10B98130' : 'color-mix(in srgb, var(--t-text-muted) 19%, transparent)'}`,
-                      color: user.isActive ? '#10B981' : 'var(--t-text-muted)',
-                    }}>
-                      <span style={{
-                        width: 5,
-                        height: 5,
-                        borderRadius: '50%',
-                        background: user.isActive ? '#10B981' : 'var(--t-text-muted)',
-                      }} />
+                    <Tag size="sm" type={user.isActive ? 'green' : 'gray'}>
                       {user.isActive ? 'Active' : 'Inactive'}
-                    </div>
+                    </Tag>
 
                     {/* Actions */}
                     <div className="flex items-center gap-1">
-                      <button
+                      <Button
+                        kind="ghost"
+                        size="sm"
+                        hasIconOnly
+                        renderIcon={Edit2}
+                        iconDescription="Edit user"
                         onClick={() => setEditingUser(user)}
-                        className="p-1.5 rounded-md transition-colors hover:bg-[var(--t-panel-hover)]"
-                        style={{ color: 'var(--t-text-muted)' }}
-                      >
-                        <Edit2 className="w-3.5 h-3.5" />
-                      </button>
-                      <button
+                      />
+                      <Button
+                        kind="danger--ghost"
+                        size="sm"
+                        hasIconOnly
+                        renderIcon={Trash2}
+                        iconDescription="Delete user"
                         onClick={async () => {
                           if (await confirmDialog({
                             title: 'Delete user?',
@@ -607,11 +538,7 @@ export default function SettingsPage() {
                             variant: 'danger',
                           })) deleteMutation.mutate(user.id)
                         }}
-                        className="p-1.5 rounded-md transition-colors hover:bg-[#EF444418]"
-                        style={{ color: '#EF4444' }}
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
+                      />
                     </div>
                   </div>
                 ))}
@@ -631,14 +558,14 @@ export default function SettingsPage() {
              reload-cache). Old form is kept only as back-compat for
              the /api/env-config endpoint. */}
         {activeTab === 'env' && (
-          <div className="bg-[var(--t-panel)] border border-[var(--t-border)] rounded-lg p-4 md:p-5">
+          <div className="bg-[var(--t-panel)] border border-[var(--t-border)] rounded-none p-4 md:p-5">
             <SystemConfigPanel embedded />
           </div>
         )}
 
         {/* Retention Tab — cleanup policy for audit/log/event tables */}
         {activeTab === 'retention' && (
-          <div className="bg-[var(--t-panel)] border border-[var(--t-border)] rounded-lg p-4 md:p-5">
+          <div className="bg-[var(--t-panel)] border border-[var(--t-border)] rounded-none p-4 md:p-5">
             <RetentionPanel />
           </div>
         )}
@@ -649,7 +576,7 @@ export default function SettingsPage() {
           <div className="space-y-4">
             {/* App-level AES-GCM key manager (Data Repository column encryption). */}
             <EncryptionKeyPanel />
-            <div className="bg-[var(--t-panel)] border border-[var(--t-border)] rounded-lg p-4 md:p-5">
+            <div className="bg-[var(--t-panel)] border border-[var(--t-border)] rounded-none p-4 md:p-5">
               <EncryptionPanel />
             </div>
           </div>
@@ -657,84 +584,76 @@ export default function SettingsPage() {
 
         {/* OIDC Tab */}
         {activeTab === 'oidc' && (
-          <div className="bg-[var(--t-panel)] border border-[var(--t-border)] rounded-lg p-4 md:p-5">
+          <div className="bg-[var(--t-panel)] border border-[var(--t-border)] rounded-none p-4 md:p-5">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
               <h2 className="text-base font-semibold text-[var(--t-text)]">OIDC / SSO Authentication</h2>
               {hasOidcChanges && (
-                <button
-                  onClick={handleSaveOidc}
-                  className="flex items-center justify-center gap-2 px-4 py-2 bg-[#3B82F6] text-white text-sm font-semibold rounded-md hover:bg-[#2563EB] transition-colors w-full sm:w-auto"
-                >
-                  <Save className="w-4 h-4" />
+                <Button kind="primary" size="sm" onClick={handleSaveOidc} renderIcon={Save}>
                   Save Changes
-                </button>
+                </Button>
               )}
             </div>
 
-            <label className={`
-              flex items-center gap-3 p-4 rounded-lg border cursor-pointer mb-5
-              ${oidc.enabled ? 'bg-[var(--t-panel-hover)] border-[#3B82F6]' : 'bg-[var(--t-bg)] border-[var(--t-border)]'}
+            <div className={`
+              p-4 rounded-none border mb-5
+              ${oidc.enabled ? 'bg-[var(--t-panel-hover)] border-[#0f62fe]' : 'bg-[var(--t-bg)] border-[var(--t-border)]'}
             `}>
-              <input
-                type="checkbox"
+              <Checkbox
+                id="oidc-enabled"
                 checked={oidc.enabled}
                 onChange={(e) => { setOidc({ ...oidc, enabled: e.target.checked }); setHasOidcChanges(true) }}
-                className="w-5 h-5 rounded"
+                labelText="Enable OIDC Authentication"
+                helperText="Allow users to login via external identity provider"
               />
-              <div>
-                <div className="text-base font-semibold text-[var(--t-text)]">Enable OIDC Authentication</div>
-                <div className="text-sm text-[var(--t-text-muted)]">Allow users to login via external identity provider</div>
-              </div>
-            </label>
+            </div>
 
             {oidc.enabled && (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-[var(--t-text-secondary)] mb-1.5">Provider Name</label>
-                  <input
+                  <TextInput
+                    id="oidc-provider"
+                    labelText="Provider Name"
                     value={oidc.provider}
                     onChange={(e) => { setOidc({ ...oidc, provider: e.target.value }); setHasOidcChanges(true) }}
                     placeholder="e.g., Keycloak"
-                    className="w-full px-3 py-2 text-base bg-[var(--t-input)] text-[var(--t-text)] border border-[var(--t-border)] rounded-md outline-none focus:border-[#3B82F6] placeholder:text-[var(--t-text-muted)]"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-[var(--t-text-secondary)] mb-1.5">Client ID</label>
-                  <input
+                  <TextInput
+                    id="oidc-clientId"
+                    labelText="Client ID"
                     value={oidc.clientId}
                     onChange={(e) => { setOidc({ ...oidc, clientId: e.target.value }); setHasOidcChanges(true) }}
                     placeholder="your-client-id"
-                    className="w-full px-3 py-2 text-base bg-[var(--t-input)] text-[var(--t-text)] border border-[var(--t-border)] rounded-md outline-none focus:border-[#3B82F6] placeholder:text-[var(--t-text-muted)]"
                   />
                 </div>
 
                 <div className="md:col-span-2">
-                  <label className="block text-sm font-medium text-[var(--t-text-secondary)] mb-1.5">Client Secret</label>
-                  <input
-                    type="password"
+                  <TextInput
+                    id="oidc-clientSecret"
+                    labelText="Client Secret" type="password"
                     value={oidc.clientSecret}
                     onChange={(e) => { setOidc({ ...oidc, clientSecret: e.target.value }); setHasOidcChanges(true) }}
                     placeholder="••••••••"
-                    className="w-full px-3 py-2 text-base bg-[var(--t-input)] text-[var(--t-text)] border border-[var(--t-border)] rounded-md outline-none focus:border-[#3B82F6] placeholder:text-[var(--t-text-muted)]"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-[var(--t-text-secondary)] mb-1.5">Issuer URL</label>
-                  <input
+                  <TextInput
+                    id="oidc-issuerUrl"
+                    labelText="Issuer URL"
                     value={oidc.issuerUrl}
                     onChange={(e) => { setOidc({ ...oidc, issuerUrl: e.target.value }); setHasOidcChanges(true) }}
                     placeholder="https://auth.example.com"
-                    className="w-full px-3 py-2 text-base bg-[var(--t-input)] text-[var(--t-text)] border border-[var(--t-border)] rounded-md outline-none focus:border-[#3B82F6] placeholder:text-[var(--t-text-muted)]"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-[var(--t-text-secondary)] mb-1.5">Redirect URI</label>
-                  <input
+                  <TextInput
+                    id="oidc-redirectUri"
+                    labelText="Redirect URI"
                     value={oidc.redirectUri}
                     onChange={(e) => { setOidc({ ...oidc, redirectUri: e.target.value }); setHasOidcChanges(true) }}
                     placeholder="https://app.com/callback"
-                    className="w-full px-3 py-2 text-base bg-[var(--t-input)] text-[var(--t-text)] border border-[var(--t-border)] rounded-md outline-none focus:border-[#3B82F6] placeholder:text-[var(--t-text-muted)]"
                   />
                 </div>
               </div>
@@ -821,9 +740,11 @@ export default function SettingsPage() {
           </div>
         )}
 
+        {activeTab === 'tenants' && <TenantsPanel />}
+
         {/* Workers Tab */}
         {activeTab === 'workers' && (
-          <div className="bg-[var(--t-panel)] border border-[var(--t-border)] rounded-lg p-4 md:p-5">
+          <div className="bg-[var(--t-panel)] border border-[var(--t-border)] rounded-none p-4 md:p-5">
             <WorkersTab />
           </div>
         )}
@@ -868,6 +789,7 @@ function UserModal({ user, onClose, onSubmit, isLoading }: UserModalProps) {
     isActive: user?.isActive ?? true,
   })
 
+  const formRef = useRef<HTMLFormElement>(null)
   const availableRoles = ['admin', 'user', 'viewer', 'operator']
 
   const toggleRole = (role: string) => {
@@ -887,138 +809,92 @@ function UserModal({ user, onClose, onSubmit, isLoading }: UserModalProps) {
   }
 
   return (
-    <div 
-      className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
-      onClick={onClose}
+    <Modal
+      open
+      size="sm"
+      modalHeading={user ? 'Edit User' : 'Create New User'}
+      primaryButtonText={isLoading ? 'Saving...' : (user ? 'Update' : 'Create')}
+      secondaryButtonText="Cancel"
+      primaryButtonDisabled={isLoading}
+      onRequestClose={onClose}
+      onRequestSubmit={() => formRef.current?.requestSubmit()}
     >
-      <div 
-        className="bg-[var(--t-panel)] border border-[var(--t-border)] rounded-lg p-6 w-full max-w-md max-h-[90vh] overflow-y-auto"
-        onClick={e => e.stopPropagation()}
-      >
-        <h2 className="text-lg font-semibold text-[var(--t-text)] mb-5">
-          {user ? 'Edit User' : 'Create New User'}
-        </h2>
-        
-        <form onSubmit={handleSubmit}>
+        <form ref={formRef} onSubmit={handleSubmit}>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
-            <div>
-              <label className="block text-sm font-medium text-[var(--t-text-secondary)] mb-1">Username *</label>
-              <input
-                value={formData.username}
-                onChange={(e) => setFormData({ ...formData, username: e.target.value })}
-                required
-                className="w-full px-3 py-2 text-base bg-[var(--t-input)] text-[var(--t-text)] border border-[var(--t-border)] rounded-md outline-none focus:border-[#3B82F6] placeholder:text-[var(--t-text-muted)]"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-[var(--t-text-secondary)] mb-1">Email *</label>
-              <input
-                type="email"
-                value={formData.email}
-                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                required
-                className="w-full px-3 py-2 text-base bg-[var(--t-input)] text-[var(--t-text)] border border-[var(--t-border)] rounded-md outline-none focus:border-[#3B82F6] placeholder:text-[var(--t-text-muted)]"
-              />
-            </div>
+            <TextInput
+              id="user-username"
+              labelText="Username *"
+              value={formData.username}
+              onChange={(e) => setFormData({ ...formData, username: e.target.value })}
+              required
+            />
+            <TextInput
+              id="user-email"
+              labelText="Email *"
+              type="email"
+              value={formData.email}
+              onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+              required
+            />
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
-            <div>
-              <label className="block text-sm font-medium text-[var(--t-text-secondary)] mb-1">First Name</label>
-              <input
-                value={formData.firstName}
-                onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
-                className="w-full px-3 py-2 text-base bg-[var(--t-input)] text-[var(--t-text)] border border-[var(--t-border)] rounded-md outline-none focus:border-[#3B82F6] placeholder:text-[var(--t-text-muted)]"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-[var(--t-text-secondary)] mb-1">Last Name</label>
-              <input
-                value={formData.lastName}
-                onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
-                className="w-full px-3 py-2 text-base bg-[var(--t-input)] text-[var(--t-text)] border border-[var(--t-border)] rounded-md outline-none focus:border-[#3B82F6] placeholder:text-[var(--t-text-muted)]"
-              />
-            </div>
+            <TextInput
+              id="user-first-name"
+              labelText="First Name"
+              value={formData.firstName}
+              onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
+            />
+            <TextInput
+              id="user-last-name"
+              labelText="Last Name"
+              value={formData.lastName}
+              onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
+            />
           </div>
 
           <div className="mb-3">
-            <label className="block text-sm font-medium text-[var(--t-text-secondary)] mb-1">Department</label>
-            <input
+            <TextInput
+              id="user-department"
+              labelText="Department"
               value={formData.department}
               onChange={(e) => setFormData({ ...formData, department: e.target.value })}
-              className="w-full px-3 py-2 text-base bg-[var(--t-input)] text-[var(--t-text)] border border-[var(--t-border)] rounded-md outline-none focus:border-[#3B82F6] placeholder:text-[var(--t-text-muted)]"
             />
           </div>
 
           <div className="mb-4">
-            <label className="block text-sm font-medium text-[var(--t-text-secondary)] mb-1">
-              Password {user ? '(leave blank to keep current)' : '*'}
-            </label>
-            <input
+            <TextInput
+              id="user-password"
+              labelText={`Password ${user ? '(leave blank to keep current)' : '*'}`}
               type="password"
               value={formData.password}
               onChange={(e) => setFormData({ ...formData, password: e.target.value })}
               required={!user}
-              className="w-full px-3 py-2 text-base bg-[var(--t-input)] text-[var(--t-text)] border border-[var(--t-border)] rounded-md outline-none focus:border-[#3B82F6] placeholder:text-[var(--t-text-muted)]"
             />
           </div>
 
-          <div className="mb-4">
-            <label className="block text-sm font-medium text-[var(--t-text-secondary)] mb-2">Roles</label>
-            <div className="flex flex-wrap gap-2">
+          <fieldset className="mb-4">
+            <legend className="cds--label">Roles</legend>
+            <div className="flex flex-wrap gap-x-4">
               {availableRoles.map((role) => (
-                <button
+                <Checkbox
                   key={role}
-                  type="button"
-                  onClick={() => toggleRole(role)}
-                  className={`
-                    px-3 py-1.5 text-sm rounded-md border transition-colors
-                    ${formData.roles.includes(role)
-                      ? 'bg-opacity-10'
-                      : 'bg-[var(--t-input)] text-[var(--t-text-secondary)] border-[var(--t-border)]'
-                    }
-                  `}
-                  style={{
-                    background: formData.roles.includes(role) ? ROLE_COLORS[role]?.bg : undefined,
-                    color: formData.roles.includes(role) ? ROLE_COLORS[role]?.color : undefined,
-                    borderColor: formData.roles.includes(role) ? ROLE_COLORS[role]?.border : undefined,
-                  }}
-                >
-                  {formData.roles.includes(role) && <Check className="w-3 h-3 inline mr-1" />}
-                  {ROLE_LABELS[role]}
-                </button>
+                  id={`user-role-${role}`}
+                  labelText={ROLE_LABELS[role]}
+                  checked={formData.roles.includes(role)}
+                  onChange={() => toggleRole(role)}
+                />
               ))}
             </div>
-          </div>
+          </fieldset>
 
-          <label className="flex items-center gap-2 text-base text-[var(--t-text)] mb-5">
-            <input
-              type="checkbox"
-              checked={formData.isActive}
-              onChange={(e) => setFormData({ ...formData, isActive: e.target.checked })}
-              className="rounded"
-            />
-            Active
-          </label>
-
-          <div className="flex justify-end gap-2">
-            <button
-              type="button"
-              onClick={onClose}
-              className="px-4 py-2 text-sm bg-[var(--t-bg)] text-[var(--t-text-secondary)] border border-[var(--t-border)] rounded-md hover:bg-[var(--t-panel-hover)] transition-colors"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={isLoading}
-              className="px-4 py-2 text-sm bg-[#3B82F6] text-white rounded-md hover:bg-[#2563EB] transition-colors disabled:opacity-50"
-            >
-              {isLoading ? 'Saving...' : (user ? 'Update' : 'Create')}
-            </button>
-          </div>
+          <Checkbox
+            id="user-active"
+            labelText="Active"
+            checked={formData.isActive}
+            onChange={(e) => setFormData({ ...formData, isActive: e.target.checked })}
+          />
         </form>
-      </div>
-    </div>
+    </Modal>
   )
 }

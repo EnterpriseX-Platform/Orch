@@ -16,6 +16,8 @@ COPY packages/sdk/package.json ./packages/sdk/
 COPY apps/web/package.json ./apps/web/
 
 # Install dependencies using pnpm (workspace-aware)
+# Carbon packages run IBM telemetry on install; opt out on build servers.
+ENV IBM_TELEMETRY_DISABLED=true
 RUN pnpm install --frozen-lockfile
 
 # Copy source code

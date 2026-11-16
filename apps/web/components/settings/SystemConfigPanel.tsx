@@ -5,7 +5,6 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import {
   Settings,
-  Search,
   Save,
   RefreshCw,
   Lock,
@@ -13,11 +12,21 @@ import {
   EyeOff,
   Plus,
   History,
-  X,
 } from 'lucide-react'
+import {
+  Button,
+  Checkbox,
+  Modal,
+  Search,
+  Select,
+  SelectItem,
+  Tag,
+  TextArea,
+  TextInput,
+} from '@carbon/react'
 import { useAuthStore } from '@/stores/authStore'
 
-const FONT = "'Prompt', sans-serif"
+const FONT = '"IBM Plex Sans Thai", "IBM Plex Sans", "Sarabun", system-ui, sans-serif'
 
 const CATEGORIES = [
   { value: 'GENERAL',       label: 'General' },
@@ -249,40 +258,39 @@ export function SystemConfigPanel({
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
         {!embedded && (
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <Settings size={24} color="var(--t-accent)" />
-            <h1 style={{ fontSize: 22, fontWeight: 600, margin: 0 }}>System Configuration</h1>
+            <Settings size={20} color="#525252" />
+            <h1 style={{ fontSize: 20, fontWeight: 400, margin: 0 }}>System Configuration</h1>
           </div>
         )}
         {embedded && <div />}
         <div style={{ display: 'flex', gap: 8 }}>
           {projectScope && (
-            <button
+            <Button
+              kind={showAdd ? 'secondary' : 'ghost'}
+              size="sm"
               onClick={() => setShowAdd((v) => !v)}
-              style={{
-                ...btnGhost,
-                background: showAdd ? 'var(--t-accent-light)' : btnGhost.background,
-                color: showAdd ? 'var(--t-accent)' : btnGhost.color,
-              }}
+              renderIcon={Plus}
             >
-              <Plus size={14} /> {showAdd ? 'Cancel' : 'Add Key'}
-            </button>
+              {showAdd ? 'Cancel' : 'Add Key'}
+            </Button>
           )}
-          <button
+          <Button
+            kind="ghost"
+            size="sm"
             onClick={() => reloadMutation.mutate()}
-            style={btnGhost}
             title="Clear cache so new values take effect immediately"
+            renderIcon={RefreshCw}
           >
-            <RefreshCw size={14} /> Reload Cache
-          </button>
+            Reload Cache
+          </Button>
           {!projectScope && (
-            <button onClick={() => seedMutation.mutate()} style={btnGhost}>
-              <Plus size={14} /> Seed Defaults
-            </button>
+            <Button kind="ghost" size="sm" onClick={() => seedMutation.mutate()} renderIcon={Plus}>
+              Seed Defaults
+            </Button>
           )}
-          <button onClick={() => setShowSecrets((v) => !v)} style={btnGhost}>
-            {showSecrets ? <EyeOff size={14} /> : <Eye size={14} />}
+          <Button kind="ghost" size="sm" onClick={() => setShowSecrets((v) => !v)} renderIcon={showSecrets ? EyeOff : Eye}>
             {showSecrets ? 'Hide' : 'Show'} Secrets
-          </button>
+          </Button>
         </div>
       </div>
 
@@ -295,64 +303,72 @@ export function SystemConfigPanel({
             gap: 8,
             alignItems: 'center',
             padding: 12,
-            background: 'var(--t-panel)',
-            border: '1px solid var(--t-border)',
-            borderRadius: 8,
+            background: '#f4f4f4',
+            borderRadius: 0,
             marginBottom: 16,
           }}
         >
-          <input
+          <TextInput
+            id="sysconfig-new-key"
+            labelText="Key"
+            hideLabel
+            size="sm"
             value={newKey}
             onChange={(e) => setNewKey(e.target.value)}
             placeholder="key (e.g. backendUrl, jwt.secret)"
-            style={input}
           />
-          <input
+          <TextInput
+            id="sysconfig-new-value"
+            labelText="Value"
+            hideLabel
+            size="sm"
             value={newValue}
             onChange={(e) => setNewValue(e.target.value)}
             placeholder="value"
             type={newSecret ? 'password' : 'text'}
-            style={input}
           />
-          <label style={{ display: 'flex', gap: 6, alignItems: 'center', fontSize: 12, color: 'var(--t-text-muted)' }}>
-            <input type="checkbox" checked={newSecret} onChange={(e) => setNewSecret(e.target.checked)} /> Secret
-          </label>
-          <button
+          <Checkbox
+            id="sysconfig-new-secret"
+            labelText="Secret"
+            checked={newSecret}
+            onChange={(e) => setNewSecret(e.target.checked)}
+          />
+          <Button
+            kind="primary"
+            size="sm"
             onClick={() => createMutation.mutate()}
             disabled={!newKey.trim() || createMutation.isPending}
-            style={{
-              ...btnGhost,
-              background: 'var(--t-accent)',
-              color: '#fff',
-              opacity: !newKey.trim() || createMutation.isPending ? 0.5 : 1,
-            }}
+            renderIcon={Plus}
           >
-            <Plus size={14} /> {createMutation.isPending ? 'Adding…' : 'Add'}
-          </button>
+            {createMutation.isPending ? 'Adding…' : 'Add'}
+          </Button>
         </div>
       )}
 
       <div style={{ display: 'flex', gap: 10, marginBottom: 16 }}>
-        <div style={{ position: 'relative', flex: 1, maxWidth: 360 }}>
+        <div style={{ flex: 1, maxWidth: 360 }}>
           <Search
-            size={14}
-            style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: 'var(--t-text-muted)' }}
-          />
-          <input
+            id="sysconfig-search"
+            size="sm"
+            labelText="Search key / label / description"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search key / label / description"
-            style={{ ...input, paddingLeft: 32 }}
           />
         </div>
-        <select value={category} onChange={(e) => setCategory(e.target.value)} style={input}>
-          <option value="">All categories</option>
+        <Select
+          id="sysconfig-category"
+          labelText="Category"
+          hideLabel
+          size="sm"
+          value={category}
+          onChange={(e) => setCategory(e.target.value)}
+        >
+          <SelectItem value="" text="All categories" />
           {CATEGORIES.map((c) => (
-            <option key={c.value} value={c.value}>
-              {c.label}
-            </option>
+            <SelectItem key={c.value} value={c.value} text={c.label} />
           ))}
-        </select>
+        </Select>
       </div>
 
       <div style={panel}>
@@ -365,7 +381,7 @@ export function SystemConfigPanel({
         ) : (
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
             <thead>
-              <tr style={{ borderBottom: '1px solid var(--t-border)' }}>
+              <tr>
                 <th style={th}>Key / Label</th>
                 <th style={th}>Category</th>
                 <th style={th}>Type</th>
@@ -380,65 +396,81 @@ export function SystemConfigPanel({
                 return (
                   <tr key={row.id} style={{ borderBottom: '1px solid var(--t-border-light)' }}>
                     <td style={td}>
-                      <div style={{ fontWeight: 600, fontSize: 13 }}>{row.key}</div>
-                      {row.label && <div style={{ fontSize: 11, color: 'var(--t-text-secondary)' }}>{row.label}</div>}
-                      {row.description && <div style={{ fontSize: 11, color: 'var(--t-text-muted)', marginTop: 2 }}>{row.description}</div>}
+                      <div style={{ fontWeight: 600, fontSize: 14 }}>{row.key}</div>
+                      {row.label && <div style={{ fontSize: 12, color: '#525252' }}>{row.label}</div>}
+                      {row.description && <div style={{ fontSize: 12, color: '#6f6f6f', marginTop: 2 }}>{row.description}</div>}
                       <div style={{ display: 'flex', gap: 4, marginTop: 4 }}>
-                        {row.isRequired && <span style={badge('#F5974618')}>required</span>}
-                        {row.isSecret && <span style={badge('#EF444418')}><Lock size={9} /> secret</span>}
-                        {row.isReadOnly && <span style={badge('#8B92A518')}>read-only</span>}
-                        {row.group && <span style={badge('#3B82F618')}>{row.group}</span>}
+                        {row.isRequired && <Tag size="sm" type="warm-gray">required</Tag>}
+                        {row.isSecret && <Tag size="sm" type="red" renderIcon={Lock}>secret</Tag>}
+                        {row.isReadOnly && <Tag size="sm" type="gray">read-only</Tag>}
+                        {row.group && <Tag size="sm" type="blue">{row.group}</Tag>}
                       </div>
                     </td>
                     <td style={td}>
-                      <span style={{ fontSize: 11, color: 'var(--t-text-secondary)' }}>{row.category}</span>
+                      <span style={{ fontSize: 12, color: '#525252' }}>{row.category}</span>
                     </td>
                     <td style={td}>
-                      <span style={{ fontSize: 11, color: 'var(--t-text-muted)' }}>{row.valueType}</span>
+                      <span style={{ fontSize: 12, color: '#6f6f6f' }}>{row.valueType}</span>
                     </td>
                     <td style={td}>
                       {row.valueType === 'BOOLEAN' ? (
-                        <select
+                        <Select
+                          id={`sysconfig-val-${row.id}`}
+                          labelText={row.key}
+                          hideLabel
+                          size="sm"
                           value={current}
                           disabled={row.isReadOnly}
                           onChange={(e) => setEditing((p) => ({ ...p, [row.key]: e.target.value }))}
-                          style={input}
                         >
-                          <option value="true">true</option>
-                          <option value="false">false</option>
-                        </select>
+                          <SelectItem value="true" text="true" />
+                          <SelectItem value="false" text="false" />
+                        </Select>
                       ) : row.valueType === 'JSON' ? (
-                        <textarea
+                        <TextArea
+                          id={`sysconfig-val-${row.id}`}
+                          labelText={row.key}
+                          hideLabel
                           value={current}
                           disabled={row.isReadOnly}
                           onChange={(e) => setEditing((p) => ({ ...p, [row.key]: e.target.value }))}
                           rows={3}
-                          style={{ ...input, fontFamily: 'ui-monospace, monospace', fontSize: 11 }}
+                          style={{ fontFamily: 'ui-monospace, monospace', fontSize: 11 }}
                         />
                       ) : (
-                        <input
+                        <TextInput
+                          id={`sysconfig-val-${row.id}`}
+                          labelText={row.key}
+                          hideLabel
+                          size="sm"
                           type={row.isSecret && !showSecrets ? 'password' : 'text'}
                           value={current}
                           disabled={row.isReadOnly}
                           onChange={(e) => setEditing((p) => ({ ...p, [row.key]: e.target.value }))}
-                          style={input}
                         />
                       )}
                     </td>
                     <td style={td}>
                       <div style={{ display: 'flex', gap: 4 }}>
                         {dirty && (
-                          <button
+                          <Button
+                            kind="primary"
+                            size="sm"
                             onClick={() => saveMutation.mutate(row)}
-                            style={btnPrimary}
                             disabled={saveMutation.isPending}
+                            renderIcon={Save}
                           >
-                            <Save size={12} /> Save
-                          </button>
+                            Save
+                          </Button>
                         )}
-                        <button onClick={() => setHistoryKey(row.key)} style={btnGhost} title="History">
-                          <History size={12} />
-                        </button>
+                        <Button
+                          kind="ghost"
+                          size="sm"
+                          hasIconOnly
+                          renderIcon={History}
+                          iconDescription="History"
+                          onClick={() => setHistoryKey(row.key)}
+                        />
                       </div>
                     </td>
                   </tr>
@@ -449,15 +481,12 @@ export function SystemConfigPanel({
         )}
       </div>
 
-      {historyKey && (
-        <div style={modalOverlay} onClick={() => setHistoryKey(null)}>
-          <div style={modal} onClick={(e) => e.stopPropagation()}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
-              <h2 style={{ fontSize: 16, fontWeight: 600, margin: 0 }}>History: {historyKey}</h2>
-              <button onClick={() => setHistoryKey(null)} style={btnGhost}>
-                <X size={14} />
-              </button>
-            </div>
+      <Modal
+        open={!!historyKey}
+        passiveModal
+        onRequestClose={() => setHistoryKey(null)}
+        modalHeading={`History: ${historyKey ?? ''}`}
+      >
             <div style={{ maxHeight: 400, overflowY: 'auto' }}>
               {(history || []).map((h) => (
                 <div key={h.id} style={{ padding: 10, borderBottom: '1px solid var(--t-border-light)', fontSize: 12 }}>
@@ -467,17 +496,15 @@ export function SystemConfigPanel({
                   </div>
                   {h.reason && <div style={{ fontStyle: 'italic', fontSize: 11 }}>— {h.reason}</div>}
                   <div style={{ marginTop: 4, fontFamily: 'ui-monospace, monospace', fontSize: 11 }}>
-                    <span style={{ color: '#EF4444' }}>- {valueToDisplay(h.oldValue)}</span>
+                    <span style={{ color: '#da1e28' }}>- {valueToDisplay(h.oldValue)}</span>
                     <br />
-                    <span style={{ color: '#10B981' }}>+ {valueToDisplay(h.newValue)}</span>
+                    <span style={{ color: '#24a148' }}>+ {valueToDisplay(h.newValue)}</span>
                   </div>
                 </div>
               ))}
               {!history?.length && <div style={{ padding: 20, textAlign: 'center', color: 'var(--t-text-muted)' }}>No history yet</div>}
             </div>
-          </div>
-        </div>
-      )}
+      </Modal>
     </div>
   )
 }
@@ -486,70 +513,16 @@ export function SystemConfigPanel({
 const panel: React.CSSProperties = {
   background: 'var(--t-panel)',
   border: '1px solid var(--t-border)',
-  borderRadius: 8,
+  borderRadius: 0,
   overflow: 'hidden',
-}
-const input: React.CSSProperties = {
-  background: 'var(--t-bg)',
-  border: '1px solid var(--t-border)',
-  borderRadius: 6,
-  padding: '6px 10px',
-  color: 'var(--t-text)',
-  fontSize: 12,
-  fontFamily: FONT,
-  width: '100%',
 }
 const th: React.CSSProperties = {
   textAlign: 'left',
-  padding: '10px 12px',
-  fontSize: 11,
-  textTransform: 'uppercase',
-  color: 'var(--t-text-muted)',
+  padding: '0 12px',
+  height: 40,
+  fontSize: 12,
+  color: '#161616',
   fontWeight: 600,
+  background: '#e0e0e0',
 }
 const td: React.CSSProperties = { padding: '10px 12px', fontSize: 12, verticalAlign: 'top' }
-const btnGhost: React.CSSProperties = {
-  background: 'transparent',
-  border: '1px solid var(--t-border)',
-  borderRadius: 6,
-  padding: '6px 10px',
-  color: 'var(--t-text)',
-  fontSize: 12,
-  cursor: 'pointer',
-  display: 'inline-flex',
-  alignItems: 'center',
-  gap: 4,
-  fontFamily: FONT,
-}
-const btnPrimary: React.CSSProperties = {
-  ...btnGhost,
-  background: 'var(--t-accent)',
-  borderColor: 'var(--t-accent)',
-  color: '#fff',
-}
-const modalOverlay: React.CSSProperties = {
-  position: 'fixed',
-  inset: 0,
-  background: 'rgba(0,0,0,0.5)',
-  zIndex: 1000,
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'center',
-}
-const modal: React.CSSProperties = {
-  background: 'var(--t-panel)',
-  border: '1px solid var(--t-border)',
-  borderRadius: 8,
-  padding: 20,
-  width: 600,
-  maxWidth: '90vw',
-}
-const badge = (bg: string): React.CSSProperties => ({
-  background: bg,
-  padding: '2px 6px',
-  borderRadius: 4,
-  fontSize: 10,
-  display: 'inline-flex',
-  alignItems: 'center',
-  gap: 3,
-})

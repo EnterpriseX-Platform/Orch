@@ -24,7 +24,7 @@ function FlowBuilderWithParams() {
 
 export default function FlowBuilderPage() {
   return (
-    <div className="-m-4 h-[calc(100vh-56px)] overflow-hidden">
+    <div className="-mx-8 -mb-8 mt-2 h-[calc(100vh-48px-44px)] overflow-hidden border-t border-[#e0e0e0]">
       <Suspense fallback={<Loading />}>
         <FlowBuilderWithParams />
       </Suspense>
