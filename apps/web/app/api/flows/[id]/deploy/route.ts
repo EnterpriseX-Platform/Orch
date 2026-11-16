@@ -7,6 +7,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getTenantContext, featureGuard, isForeign } from '@/lib/tenant'
 import { getBrokerUrl } from '@/lib/system-config'
+import { brokerAuthHeaders } from '@/lib/broker-auth'
 
 export async function POST(
   request: NextRequest,
@@ -46,7 +47,7 @@ export async function POST(
     // Deploy to orch-broker
     const brokerResponse = await fetch(`${ORCH_BROKER_URL}/deploy/flows/${id}`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { ...brokerAuthHeaders(),  'Content-Type': 'application/json' },
       body: JSON.stringify(deployPayload),
     })
 

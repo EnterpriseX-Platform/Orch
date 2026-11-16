@@ -103,7 +103,9 @@ async function findApiRegistration(
   // All candidates that share method + endpoint pattern.
   const candidates = apis.filter(a => {
     if (a.method !== method) return false
-    const endpointPath = a.endpoint.split('?')[0]
+    // Registrations may be saved with or without the gateway prefix
+    // (the form used to suggest "/api/v1/..."); the incoming path never has it.
+    const endpointPath = a.endpoint.split('?')[0].replace(/^\/api\/v1(?=\/|$)/, '') || '/'
     return pathMatches(endpointPath, path)
   })
 

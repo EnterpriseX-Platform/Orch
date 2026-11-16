@@ -2,6 +2,7 @@ import { NextRequest } from 'next/server';
 import { PrismaClient, Prisma } from '@prisma/client';
 import { getBrokerUrl } from '@/lib/system-config';
 import { getTenantContext, featureGuard, tenantApiIds } from '@/lib/tenant';
+import { brokerAuthHeaders } from '@/lib/broker-auth'
 
 const prisma = new PrismaClient();
 
@@ -40,6 +41,7 @@ export async function GET(req: NextRequest) {
     let brokerMetrics = null;
     try {
       const metricsRes = await fetch(`${BROKER_URL}/broker/metrics`, {
+        headers: brokerAuthHeaders(),
         signal: AbortSignal.timeout(5000)
       });
       if (metricsRes.ok) {

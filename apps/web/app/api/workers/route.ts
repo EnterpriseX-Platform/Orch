@@ -2,6 +2,7 @@ import { NextRequest } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { createId } from '@paralleldrive/cuid2';
 import { getBrokerUrl } from '@/lib/system-config';
+import { brokerAuthHeaders } from '@/lib/broker-auth'
 
 // Get workers list from Broker + config from Database
 export async function GET(req: NextRequest) {
@@ -10,7 +11,7 @@ export async function GET(req: NextRequest) {
     // Fetch from broker
     const brokerResponse = await fetch(`${BROKER_URL}/broker/admin/workers`, {
       signal: AbortSignal.timeout(10000),
-      headers: { 'Content-Type': 'application/json' },
+      headers: { ...brokerAuthHeaders(),  'Content-Type': 'application/json' },
     });
 
     if (!brokerResponse.ok) {
@@ -71,7 +72,7 @@ export async function POST(req: NextRequest) {
     // Create worker in broker
     const brokerResponse = await fetch(`${BROKER_URL}/broker/admin/workers`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { ...brokerAuthHeaders(),  'Content-Type': 'application/json' },
       body: JSON.stringify({ queue, name }),
       signal: AbortSignal.timeout(10000),
     });

@@ -84,6 +84,18 @@ export async function POST(request: NextRequest) {
       }, { status: 400 })
     }
 
+    // Idempotency: the broker retries delivery on timeout (up to 8x), and a
+    // request that timed out on its side may already have been stored here.
+    // Its event keeps the same requestId + eventType + timestamp on every
+    // retry, so a second copy is acknowledged without inserting again.
+    if (body.timestamp) {
+      const dup = await prisma.eventLog.findFirst({
+        where: { requestId: body.requestId, eventType: body.eventType, timestamp: new Date(body.timestamp) },
+        select: { id: true },
+      })
+      if (dup) return NextResponse.json({ ...dup, duplicate: true }, { status: 200 })
+    }
+
     const eventLog = await prisma.eventLog.create({
       data: {
         eventType: body.eventType,

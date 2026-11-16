@@ -451,12 +451,12 @@ export default function ProjectNewApiRegistrationPage() {
               <Label required>Endpoint</Label>
               <input
                 style={inputStyle}
-                placeholder="/api/v1/orders/summary"
+                placeholder="/orders/summary"
                 value={endpoint}
                 onChange={(e) => setEndpoint(e.target.value)}
               />
               <span style={{ fontSize: 12, color: THEME.text.muted }}>
-                Path to accept requests, e.g. /api/v1/...
+                Path after /orch/api/v1 — e.g. /orders/summary is called as /orch/api/v1/orders/summary
               </span>
             </FieldGroup>
 

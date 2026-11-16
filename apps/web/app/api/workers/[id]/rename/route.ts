@@ -1,5 +1,6 @@
 import { NextRequest } from 'next/server';
 import { getBrokerUrl } from '@/lib/system-config';
+import { brokerAuthHeaders } from '@/lib/broker-auth'
 
 // Rename worker
 export async function PATCH(
@@ -15,7 +16,7 @@ export async function PATCH(
     // Forward to broker
     const response = await fetch(`${BROKER_URL}/broker/admin/workers/${id}/rename`, {
       method: 'PATCH',
-      headers: {
+      headers: { ...brokerAuthHeaders(), 
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({ name }),

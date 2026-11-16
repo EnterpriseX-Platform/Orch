@@ -324,6 +324,7 @@ async fn main() {
                 .layer(middleware::from_fn(middlewares::security_headers::security_headers_middleware))
                 .layer(middleware::from_fn(middlewares::request_size_limit::request_size_limit_middleware))
                 .layer(middleware::from_fn(middlewares::ip_filter::ip_filter_middleware))
+                .layer(middleware::from_fn(middlewares::internal_auth::internal_auth_middleware))
                 .layer(middleware::from_fn(middlewares::logging::logging_middleware))
         )
         .with_state(state);
