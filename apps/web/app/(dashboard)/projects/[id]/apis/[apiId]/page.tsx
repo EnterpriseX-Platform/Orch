@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useId } from 'react'
 import { createPortal } from 'react-dom'
 import { useRouter, useParams } from 'next/navigation'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
@@ -63,6 +63,16 @@ import {
   Play,
 } from 'lucide-react'
 import Link from 'next/link'
+import {
+  Button,
+  TextInput,
+  TextArea,
+  Tag as CdsTag,
+  Toggle,
+  Checkbox,
+  RadioButtonGroup,
+  RadioButton,
+} from '@carbon/react'
 import { cn } from '@/lib/utils'
 import { toast } from 'sonner'
 import { TestRequestModal } from '@/components/api/TestRequestModal'
@@ -93,13 +103,17 @@ const METHOD_COLORS: Record<string, string> = {
   PATCH: '#8a3ffc',
 }
 
-// Carbon tag colour pair for a semantic hex colour (green / red / blue, else grey).
-function cdsTag(color: string): { background: string; color: string } {
+type CdsTagType = 'green' | 'red' | 'blue' | 'purple' | 'warm-gray' | 'gray'
+
+// Carbon Tag type for a semantic hex colour (green / red / blue / purple / orange, else grey).
+function cdsTagType(color: string): CdsTagType {
   const c = (color || '').toLowerCase()
-  if (['#24a148', '#198038', '#10b981', '#22c55e'].includes(c)) return { background: '#a7f0ba', color: '#0e6027' }
-  if (['#da1e28', '#ef4444', '#a2191f'].includes(c)) return { background: '#ffd7d9', color: '#a2191f' }
-  if (['#0f62fe', '#0043ce', '#3b82f6', '#0353e9'].includes(c)) return { background: '#d0e2ff', color: '#0043ce' }
-  return { background: '#e0e0e0', color: '#161616' }
+  if (['#24a148', '#198038', '#10b981', '#22c55e'].includes(c)) return 'green'
+  if (['#da1e28', '#ef4444', '#a2191f'].includes(c)) return 'red'
+  if (['#0f62fe', '#0043ce', '#3b82f6', '#0353e9'].includes(c)) return 'blue'
+  if (c === '#8a3ffc') return 'purple'
+  if (c === '#ba4e00') return 'warm-gray'
+  return 'gray'
 }
 
 const STATUS_STYLES: Record<string, { bg: string; color: string }> = {
@@ -330,19 +344,19 @@ function InputField({
   disabled?: boolean
   className?: string
 }) {
+  const id = useId()
   return (
-    <input
+    <TextInput
+      id={id}
+      labelText={placeholder || 'Input'}
+      hideLabel
+      size="sm"
       type={type}
       value={value}
       onChange={(e) => onChange(e.target.value)}
       placeholder={placeholder}
       disabled={disabled}
-      className={cn(
-        'w-full px-2.5 py-1.5 bg-[var(--t-input)] border border-[var(--t-border)]  text-sm text-[var(--t-text)]',
-        'placeholder:text-[var(--t-text-muted)] focus:outline-none focus:ring-2 focus:ring-[#0f62fe]/20 focus:border-[#0f62fe]',
-        'transition-colors disabled:opacity-50 disabled:cursor-not-allowed',
-        className
-      )}
+      className={className}
     />
   )
 }
@@ -469,43 +483,46 @@ function TextAreaField({
   placeholder?: string
   rows?: number
 }) {
+  const id = useId()
   return (
-    <textarea
+    <TextArea
+      id={id}
+      labelText={placeholder || 'Text'}
+      hideLabel
       value={value}
       onChange={(e) => onChange(e.target.value)}
       placeholder={placeholder}
       rows={rows}
-      className="w-full px-2.5 py-1.5 bg-[var(--t-input)] border border-[var(--t-border)] text-sm text-[var(--t-text)] placeholder:text-[var(--t-text-muted)] focus:outline-none focus:ring-2 focus:ring-[#0f62fe]/20 focus:border-[#0f62fe] transition-colors font-mono resize-y"
+      className="font-mono"
     />
   )
 }
 
 function Badge({ label, color }: { label: string; bg: string; color: string }) {
   return (
-    <span
-      className="cds-tag inline-flex items-center px-2 py-0.5 text-xs font-normal"
-      style={cdsTag(color)}
-    >
+    <CdsTag type={cdsTagType(color)} size="sm">
       {label}
-    </span>
+    </CdsTag>
   )
 }
 
 function MethodBadge({ method }: { method: string }) {
   const color = METHOD_COLORS[method] || '#64748B'
   return (
-    <span
-      className="cds-tag inline-flex items-center px-2 py-0.5 text-xs font-normal"
-      style={cdsTag(color)}
-    >
+    <CdsTag type={cdsTagType(color)} size="sm">
       {method}
-    </span>
+    </CdsTag>
   )
 }
 
 function StatusBadge({ status }: { status: string }) {
   const style = STATUS_STYLES[status] || STATUS_STYLES.DRAFT
   return <Badge label={STATUS_LABELS[status] || status} bg={style.bg} color={style.color} />
+}
+
+// Spinning Loader2 usable as a Carbon Button renderIcon.
+function SpinIcon(props: React.ComponentProps<typeof Loader2>) {
+  return <Loader2 {...props} className={cn(props.className, 'animate-spin')} />
 }
 
 function Spinner() {
@@ -741,19 +758,14 @@ function GeneralTab({ apiData, apiId, projectId, activeSection = 'basics' }: { a
                 <div>
                   <div className="text-sm font-medium text-[var(--t-text)]">Auto-Discover Formats</div>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => set('autoDiscoverFormats', !form.autoDiscoverFormats)}
-                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                    form.autoDiscoverFormats ? 'bg-[#0f62fe]' : 'bg-[var(--t-border)]'
-                  }`}
-                >
-                  <span
-                    className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                      form.autoDiscoverFormats ? 'translate-x-6' : 'translate-x-1'
-                    }`}
-                  />
-                </button>
+                <Toggle
+                  id="api-auto-discover-formats"
+                  labelText="Auto-Discover Formats"
+                  hideLabel
+                  size="sm"
+                  toggled={!!form.autoDiscoverFormats}
+                  onToggle={() => set('autoDiscoverFormats', !form.autoDiscoverFormats)}
+                />
               </div>
             </div>
           )}
@@ -916,13 +928,12 @@ function GeneralTab({ apiData, apiId, projectId, activeSection = 'basics' }: { a
             </FormField>
           </div>
           <div className="flex items-center gap-3">
-            <input
-              type="checkbox"
+            <Checkbox
+              id="api-deprecated"
+              labelText="Deprecated"
               checked={form.deprecated}
               onChange={(e) => set('deprecated', e.target.checked)}
-              className="w-4 h-4 border-[var(--t-border)] bg-[var(--t-input)] text-[#0f62fe] focus:ring-[#0f62fe]"
             />
-            <span className="text-sm text-[var(--t-text-secondary)]">Deprecated</span>
           </div>
         </div>
       </SectionCard>
@@ -1291,7 +1302,10 @@ function AuthTab({ apiId }: { apiId: string }) {
       <div className="flex items-center justify-between">
         <div>
           {authData && form.authScheme !== 'NONE' && (
-            <button
+            <Button
+              kind="danger--ghost"
+              size="md"
+              renderIcon={deleteMutation.isPending ? SpinIcon : Trash2}
               onClick={async () => {
                 if (await confirmDialog({
                   title: 'Delete Auth Config?',
@@ -1302,23 +1316,21 @@ function AuthTab({ apiId }: { apiId: string }) {
                 }
               }}
               disabled={deleteMutation.isPending}
-              className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-[#da1e28] bg-[#da1e2818] hover:bg-[#da1e2830] transition-colors disabled:opacity-50"
             >
-              {deleteMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
               Delete Auth Config
-            </button>
+            </Button>
           )}
         </div>
         {form.authScheme !== 'NONE' && (
-          <button
+          <Button
+            kind="primary"
+            size="md"
             onClick={handleSave}
             disabled={upsertMutation.isPending}
-            className="flex items-center gap-2 px-6 py-2.5 text-sm font-medium text-white transition-colors disabled:opacity-50"
-            style={{ background: THEME.accent }}
+            renderIcon={upsertMutation.isPending ? SpinIcon : Save}
           >
-            {upsertMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
             Save
-          </button>
+          </Button>
         )}
       </div>
     </div>
@@ -1395,14 +1407,14 @@ function HeadersTab({ apiId }: { apiId: string }) {
       <SectionCard>
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-sm font-semibold text-[var(--t-text)]">Header Mappings</h3>
-          <button
+          <Button
+            kind={showForm ? 'secondary' : 'primary'}
+            size="sm"
             onClick={() => setShowForm(!showForm)}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-white transition-colors"
-            style={{ background: THEME.accent }}
+            renderIcon={showForm ? X : Plus}
           >
-            {showForm ? <X className="w-3.5 h-3.5" /> : <Plus className="w-3.5 h-3.5" />}
             {showForm ? 'Cancel' : 'Add Header'}
-          </button>
+          </Button>
         </div>
 
         {/* Add form */}
@@ -1457,15 +1469,15 @@ function HeadersTab({ apiId }: { apiId: string }) {
               </FormField>
             </div>
             <div className="flex justify-end">
-              <button
+              <Button
+                kind="primary"
+                size="sm"
                 onClick={handleAdd}
                 disabled={createMutation.isPending}
-                className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white transition-colors disabled:opacity-50"
-                style={{ background: THEME.accent }}
+                renderIcon={createMutation.isPending ? SpinIcon : Plus}
               >
-                {createMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
                 Add
-              </button>
+              </Button>
             </div>
           </div>
         )}
@@ -1514,7 +1526,12 @@ function HeadersTab({ apiId }: { apiId: string }) {
                         <td className="py-2.5 px-3 text-sm text-[var(--t-text-muted)]">{h.condition || '-'}</td>
                         <td className="py-2.5 px-3 text-sm text-[var(--t-text-secondary)]">{h.order}</td>
                         <td className="py-2.5 px-3 text-right">
-                          <button
+                          <Button
+                            kind="danger--ghost"
+                            size="sm"
+                            hasIconOnly
+                            iconDescription="Delete"
+                            renderIcon={Trash2}
                             onClick={async () => {
                               if (await confirmDialog({
                                 title: 'Delete this Header Mapping?',
@@ -1524,10 +1541,7 @@ function HeadersTab({ apiId }: { apiId: string }) {
                               }
                             }}
                             disabled={deleteMutation.isPending}
-                            className="p-1.5 text-[var(--t-text-muted)] hover:text-[#da1e28] hover:bg-[#da1e2818] transition-colors"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
+                          />
                         </td>
                       </tr>
                     )
@@ -1651,13 +1665,9 @@ function InheritedFromLibrary({
             Inherited from library: {lib.name}
           </span>
         </div>
-        <button
-          type="button"
-          onClick={onClear}
-          className="text-[11px] text-[var(--t-text-muted)] hover:text-[var(--t-text)] underline-offset-2 hover:underline"
-        >
+        <Button kind="ghost" size="sm" type="button" onClick={onClear}>
           unlink
-        </button>
+        </Button>
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-1 text-xs">
         {rows.map(r => (
@@ -1811,21 +1821,23 @@ function FormatsTable({
                   onClick={(e) => e.stopPropagation()}
                 >
                   <div className="inline-flex items-center gap-1">
-                    <button
+                    <Button
+                      kind="ghost"
+                      size="sm"
+                      hasIconOnly
+                      iconDescription="Edit"
+                      renderIcon={Pencil}
                       onClick={() => onEdit(fmt)}
-                      className="p-1 hover:bg-[var(--t-panel-hover)]"
-                      title="Edit"
-                    >
-                      <Pencil className="w-3.5 h-3.5 text-[var(--t-text-muted)]" />
-                    </button>
-                    <button
+                    />
+                    <Button
+                      kind="danger--ghost"
+                      size="sm"
+                      hasIconOnly
+                      iconDescription="Delete"
+                      renderIcon={Trash2}
                       onClick={() => onDelete(fmt)}
                       disabled={isDeleting}
-                      className="p-1 hover:bg-[#e8e8e8] disabled:opacity-50"
-                      title="Delete"
-                    >
-                      <Trash2 className="w-3.5 h-3.5 text-red-400" />
-                    </button>
+                    />
                   </div>
                 </td>
               </tr>
@@ -1967,30 +1979,24 @@ function FormatForm({
       {/* ─── Matching Rule ─── */}
       <FormSection title="Matching Rule">
         <FormRow label="Mode">
-          <div className="space-y-1.5">
-            <label className="flex items-center gap-2 cursor-pointer">
-              <input
-                type="radio"
-                name="match-mode"
-                checked={!form.isDefault}
-                onChange={() => set('isDefault', false)}
-                className="w-3.5 h-3.5 text-[var(--t-accent)] focus:ring-[var(--t-accent)]"
-              />
-              <span className="text-sm text-[var(--t-text)]">Match by value</span>
-              <span className="text-[11px] text-[var(--t-text-muted)]">— trigger only when a specific value appears in the request</span>
-            </label>
-            <label className="flex items-center gap-2 cursor-pointer">
-              <input
-                type="radio"
-                name="match-mode"
-                checked={form.isDefault}
-                onChange={() => set('isDefault', true)}
-                className="w-3.5 h-3.5 text-[var(--t-accent)] focus:ring-[var(--t-accent)]"
-              />
-              <span className="text-sm text-[var(--t-text)]">Default fallback</span>
-              <span className="text-[11px] text-[var(--t-text-muted)]">— catch-all when no other format matches</span>
-            </label>
-          </div>
+          <RadioButtonGroup
+            name="match-mode"
+            legendText="Match mode"
+            orientation="vertical"
+            valueSelected={form.isDefault ? 'default' : 'match'}
+            onChange={(v) => set('isDefault', v === 'default')}
+          >
+            <RadioButton
+              id="match-mode-match"
+              value="match"
+              labelText={<>Match by value <span className="text-[11px] text-[var(--t-text-muted)]">— trigger only when a specific value appears in the request</span></>}
+            />
+            <RadioButton
+              id="match-mode-default"
+              value="default"
+              labelText={<>Default fallback <span className="text-[11px] text-[var(--t-text-muted)]">— catch-all when no other format matches</span></>}
+            />
+          </RadioButtonGroup>
         </FormRow>
 
         {!form.isDefault && (
@@ -2094,24 +2100,26 @@ function FormatForm({
                       set('matchRules', next)
                     }}
                   />
-                  <button
+                  <Button
+                    kind="ghost"
+                    size="sm"
                     type="button"
+                    hasIconOnly
+                    iconDescription="Remove rule"
+                    renderIcon={X}
                     onClick={() => set('matchRules', form.matchRules.filter((_, j) => j !== i))}
-                    className="px-2 text-[var(--t-text-muted)] hover:text-[#da1e28]"
-                    title="Remove rule"
-                  >
-                    <X className="w-3.5 h-3.5" />
-                  </button>
+                  />
                 </div>
               ))}
-              <button
+              <Button
+                kind="tertiary"
+                size="sm"
                 type="button"
+                renderIcon={Plus}
                 onClick={() => set('matchRules', [...form.matchRules, { source: 'BODY', field: '', value: '' }])}
-                className="inline-flex items-center gap-1.5 text-xs px-2.5 py-1.5 bg-[#0f62fe18] text-[#0f62fe] hover:bg-[#0f62fe28]"
               >
-                <Plus className="w-3.5 h-3.5" />
                 Add rule
-              </button>
+              </Button>
             </div>
           </FormRow>
         )}
@@ -2141,15 +2149,12 @@ function FormatForm({
       {/* ─── Audit Trail ─── */}
       <FormSection title="Audit Trail">
         <FormRow label="Logging">
-          <label className="flex items-center gap-2 cursor-pointer">
-            <input
-              type="checkbox"
-              checked={form.auditEnabled}
-              onChange={e => set('auditEnabled', e.target.checked)}
-              className="w-4 h-4 border-[var(--t-border)] bg-[var(--t-input)] text-[var(--t-accent)] focus:ring-[var(--t-accent)]"
-            />
-            <span className="text-sm text-[var(--t-text)]">Enable audit logging for this format</span>
-          </label>
+          <Checkbox
+            id="fmt-audit-enabled"
+            labelText="Enable audit logging for this format"
+            checked={form.auditEnabled}
+            onChange={e => set('auditEnabled', e.target.checked)}
+          />
         </FormRow>
 
         {form.auditEnabled && (
@@ -2324,7 +2329,12 @@ function FormatForm({
                 written to audit_logs.newValues. Comma-separated for
                 quick entry; rendered as chips when present. */}
             <AdvancedBlock title="Mask Paths" hint="JSONPath fields to redact before audit (PII, password, financial). Comma-separated.">
-              <input
+              <TextInput
+                id="fmt-mask-paths"
+                labelText="Mask Paths"
+                hideLabel
+                size="sm"
+                className="font-mono"
                 type="text"
                 value={form.maskPaths.join(', ')}
                 onChange={e =>
@@ -2337,7 +2347,6 @@ function FormatForm({
                   )
                 }
                 placeholder="$.password, $.creditCard, $.id_card"
-                className="w-full px-2.5 py-1.5 text-sm font-mono border border-[var(--t-border)] bg-[var(--t-input)] text-[var(--t-text)] focus:border-[var(--t-accent)] focus:outline-none"
               />
               {form.maskPaths.length > 0 && (
                 <div className="flex flex-wrap gap-1.5 mt-1">
@@ -2422,16 +2431,16 @@ function FormatForm({
                   rows={5}
                 />
               </FormField>
-              <button
+              <Button
+                kind="primary"
+                size="sm"
                 type="button"
                 onClick={onDetectFields}
                 disabled={isDetecting || !form.jsonSample.trim()}
-                className="flex items-center gap-2 px-3.5 py-1.5 text-sm font-medium text-white transition-colors disabled:opacity-50"
-                style={{ background: THEME.accent }}
+                renderIcon={isDetecting ? SpinIcon : Zap}
               >
-                {isDetecting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Zap className="w-4 h-4" />}
                 Auto-detect Fields
-              </button>
+              </Button>
 
               {form.extractedFields.length > 0 && (
                 <div className="border border-[var(--t-border)] overflow-hidden">
@@ -2459,19 +2468,21 @@ function FormatForm({
                         </div>
                         <span className="w-14 text-center text-xs text-[var(--t-text-secondary)] shrink-0">{field.fieldType}</span>
                         <span className="w-12 text-center shrink-0">
-                          <input
-                            type="checkbox"
+                          <Checkbox
+                            id={`fmt-extract-${field.id}`}
+                            labelText="Extract"
+                            hideLabel
                             checked={form.extractSelected.includes(field.id)}
                             onChange={() => toggleExtract(field.id)}
-                            className="w-3.5 h-3.5 border-[var(--t-border)] bg-[var(--t-input)] text-[#0f62fe] focus:ring-[#0f62fe]"
                           />
                         </span>
                         <span className="w-12 text-center shrink-0">
-                          <input
-                            type="checkbox"
+                          <Checkbox
+                            id={`fmt-audit-${field.id}`}
+                            labelText="Audit"
+                            hideLabel
                             checked={form.auditSelected.includes(field.id)}
                             onChange={() => toggleAudit(field.id)}
-                            className="w-3.5 h-3.5 border-[var(--t-border)] bg-[var(--t-input)] text-[#24a148] focus:ring-[#24a148]"
                           />
                         </span>
                       </div>
@@ -2488,9 +2499,14 @@ function FormatForm({
                       <span className="text-[var(--t-text)] font-mono text-xs flex-1 truncate">{mf.path}</span>
                       <span className="text-[var(--t-text-secondary)]">{mf.name}</span>
                       <span className="text-[var(--t-text-muted)] text-xs">{mf.type}</span>
-                      <button onClick={() => removeManualField(idx)} className="text-[#da1e28] hover:text-[#da1e28]">
-                        <X className="w-3.5 h-3.5" />
-                      </button>
+                      <Button
+                        kind="danger--ghost"
+                        size="sm"
+                        hasIconOnly
+                        iconDescription="Remove"
+                        renderIcon={X}
+                        onClick={() => removeManualField(idx)}
+                      />
                     </div>
                   ))}
                 </div>
@@ -2516,15 +2532,16 @@ function FormatForm({
                     ]} />
                   </FormField>
                 </div>
-                <button
+                <Button
+                  kind="tertiary"
+                  size="sm"
                   type="button"
+                  renderIcon={Plus}
                   onClick={addManualField}
                   disabled={!newManual.path || !newManual.name}
-                  className="flex items-center gap-1 px-3 py-1.5 mb-[1px] text-sm font-medium text-[#0f62fe] bg-[#0f62fe18] hover:bg-[#0f62fe30] transition-colors disabled:opacity-40"
                 >
-                  <Plus className="w-3.5 h-3.5" />
                   Add
-                </button>
+                </Button>
               </div>
             </AdvancedBlock>
         </div>
@@ -2754,14 +2771,9 @@ function CallSitesSection({ formatId, projectId }: { formatId?: string; projectI
           }}
         />
       ) : (
-        <button
-          type="button"
-          onClick={() => setShowAdd(true)}
-          className="flex items-center gap-1.5 text-xs px-3 py-1.5 bg-[#0f62fe18] text-[#0f62fe] hover:bg-[#0f62fe28] transition-colors"
-        >
-          <Plus className="w-3.5 h-3.5" />
+        <Button kind="tertiary" size="sm" type="button" renderIcon={Plus} onClick={() => setShowAdd(true)}>
           Add binding
-        </button>
+        </Button>
       )}
     </div>
   )
@@ -2895,7 +2907,11 @@ function AddBindingForm({
       <FormRow label="Client">
         <div className="grid grid-cols-2 gap-2">
           <div>
-            <input
+            <TextInput
+              id="binding-client-name"
+              labelText="Client name"
+              hideLabel
+              size="sm"
               type="text"
               list="clients-list"
               placeholder="Client name"
@@ -2906,7 +2922,6 @@ function AddBindingForm({
                 const m = clients.find((c: any) => c.name === e.target.value || c.appCode === e.target.value)
                 if (m && m.appCode) setClientCode(m.appCode)
               }}
-              className="w-full px-2.5 py-1.5 text-sm border border-[var(--t-border)] bg-[var(--t-input)] text-[var(--t-text)] focus:border-[var(--t-accent)] focus:outline-none"
             />
             <datalist id="clients-list">
               {clients.map((c: any) => (
@@ -2914,12 +2929,16 @@ function AddBindingForm({
               ))}
             </datalist>
           </div>
-          <input
+          <TextInput
+            id="binding-client-code"
+            labelText="App code (optional)"
+            hideLabel
+            size="sm"
+            className="font-mono"
             type="text"
             placeholder="App code (optional)"
             value={clientCode}
             onChange={e => setClientCode(e.target.value)}
-            className="w-full px-2.5 py-1.5 text-sm font-mono border border-[var(--t-border)] bg-[var(--t-input)] text-[var(--t-text)] focus:border-[var(--t-accent)] focus:outline-none"
           />
         </div>
         {!matchedClient && clientName.trim() && (
@@ -2930,7 +2949,11 @@ function AddBindingForm({
       {/* Screen */}
       <FormRow label="Screen">
         <div className="grid grid-cols-2 gap-2">
-          <input
+          <TextInput
+            id="binding-screen-code"
+            labelText="Screen code"
+            hideLabel
+            size="sm"
             type="text"
             list="screens-list"
             placeholder="Screen code"
@@ -2940,19 +2963,22 @@ function AddBindingForm({
               const m = screens.find((s: any) => s.code === e.target.value)
               if (m) setScreenName(m.name || '')
             }}
-            className="w-full px-2.5 py-1.5 text-sm font-mono border border-[var(--t-border)] bg-[var(--t-input)] text-[var(--t-text)] focus:border-[var(--t-accent)] focus:outline-none"
+            className="font-mono"
           />
           <datalist id="screens-list">
             {screens.map((s: any) => (
               <option key={s.id} value={s.code}>{s.name}</option>
             ))}
           </datalist>
-          <input
+          <TextInput
+            id="binding-screen-name"
+            labelText="Screen name"
+            hideLabel
+            size="sm"
             type="text"
             placeholder="Screen name"
             value={screenName}
             onChange={e => setScreenName(e.target.value)}
-            className="w-full px-2.5 py-1.5 text-sm border border-[var(--t-border)] bg-[var(--t-input)] text-[var(--t-text)] focus:border-[var(--t-accent)] focus:outline-none"
           />
         </div>
         {!matchedScreen && screenCode.trim() && clientName.trim() && (
@@ -2962,21 +2988,29 @@ function AddBindingForm({
 
       {/* Button */}
       <FormRow label="Button Label">
-        <input
+        <TextInput
+          id="binding-button-label"
+          labelText="Button Label"
+          hideLabel
+          size="sm"
           type="text"
           value={buttonLabel}
           onChange={e => setButtonLabel(e.target.value)}
-          className="w-full px-2.5 py-1.5 text-sm border border-[var(--t-border)] bg-[var(--t-input)] text-[var(--t-text)] focus:border-[var(--t-accent)] focus:outline-none"
         />
       </FormRow>
 
       <FormRow label="Tab">
-        <input
-          type="text"
-          value={tabName}
-          onChange={e => setTabName(e.target.value)}
-          className="w-full max-w-xs px-2.5 py-1.5 text-sm border border-[var(--t-border)] bg-[var(--t-input)] text-[var(--t-text)] focus:border-[var(--t-accent)] focus:outline-none"
-        />
+        <div className="max-w-xs">
+          <TextInput
+            id="binding-tab-name"
+            labelText="Tab"
+            hideLabel
+            size="sm"
+            type="text"
+            value={tabName}
+            onChange={e => setTabName(e.target.value)}
+          />
+        </div>
       </FormRow>
 
       <FormRow label="Action Type">
@@ -3022,19 +3056,25 @@ function AddBindingForm({
             />
             {detectionSource && detectionSource !== 'MANUAL' && (
               <>
-                <input
+                <TextInput
+                  id="binding-detection-field"
+                  labelText="Detection field"
+                  hideLabel
+                  size="sm"
                   type="text"
                   placeholder={detectionSource === 'REFERER' ? 'Regex pattern' : 'Field / param'}
                   value={detectionField}
                   onChange={e => setDetectionField(e.target.value)}
-                  className="w-full px-2.5 py-1.5 text-sm border border-[var(--t-border)] bg-[var(--t-input)] text-[var(--t-text)] focus:border-[var(--t-accent)] focus:outline-none"
                 />
-                <input
+                <TextInput
+                  id="binding-detection-value"
+                  labelText="Expected value"
+                  hideLabel
+                  size="sm"
                   type="text"
                   placeholder="Expected value"
                   value={detectionValue}
                   onChange={e => setDetectionValue(e.target.value)}
-                  className="w-full px-2.5 py-1.5 text-sm border border-[var(--t-border)] bg-[var(--t-input)] text-[var(--t-text)] focus:border-[var(--t-accent)] focus:outline-none"
                 />
               </>
             )}
@@ -3043,22 +3083,19 @@ function AddBindingForm({
       </FormRow>
 
       <div className="flex justify-end gap-2 pt-2 border-t border-[var(--t-border-light)]">
-        <button
-          type="button"
-          onClick={onCancel}
-          className="px-3 py-1.5 text-sm text-[var(--t-text-secondary)] hover:text-[var(--t-text)]"
-        >
+        <Button kind="ghost" size="sm" type="button" onClick={onCancel}>
           Cancel
-        </button>
-        <button
+        </Button>
+        <Button
+          kind="primary"
+          size="sm"
           type="button"
           onClick={submit}
           disabled={!canSubmit}
-          className="flex items-center gap-1.5 px-4 py-1.5 text-sm bg-[var(--t-accent)] text-white disabled:opacity-50 hover:bg-[#0353e9]"
+          renderIcon={submitting ? SpinIcon : undefined}
         >
-          {submitting && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
           Add binding
-        </button>
+        </Button>
       </div>
     </div>
   )
@@ -3306,13 +3343,9 @@ function MessageFormatsTab({ apiId, apiData }: { apiId: string; apiData?: ApiReg
           pages (title left, primary action right, no card wrapper) */}
       <div className="flex items-center justify-between">
         <h2 className="text-base font-semibold text-[var(--t-text)]">Message Formats</h2>
-        <button
-          onClick={openCreateModal}
-          className="flex items-center gap-2 px-4 py-2 text-sm font-semibold text-white bg-[var(--t-accent)] hover:bg-[#0353e9]"
-        >
-          <Plus className="w-4 h-4" />
+        <Button kind="primary" size="sm" renderIcon={Plus} onClick={openCreateModal}>
           New Format
-        </button>
+        </Button>
       </div>
 
       {/* Format table — same shape as audit-configs / api-keys: panel
@@ -3443,23 +3476,24 @@ function MessageFormatModal({
               <AutosaveIndicator status={autosaveStatus} error={autosaveError ?? null} savedAt={autosaveSavedAt ?? null} />
             )}
             {mode === 'create' && (
-              <button
+              <Button
+                kind="primary"
+                size="sm"
                 onClick={onSave}
                 disabled={isSaving || !form.name}
-                className="flex items-center gap-1.5 px-4 py-1.5 text-sm font-medium text-white transition-colors disabled:opacity-50"
-                style={{ background: 'var(--t-accent)' }}
+                renderIcon={isSaving ? SpinIcon : Plus}
               >
-                {isSaving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Plus className="w-3.5 h-3.5" />}
                 Create format
-              </button>
+              </Button>
             )}
-            <button
+            <Button
+              kind="ghost"
+              size="sm"
+              hasIconOnly
+              iconDescription={mode === 'edit' ? 'Close (changes are autosaved)' : 'Cancel'}
+              renderIcon={X}
               onClick={onClose}
-              className="p-1.5 hover:bg-[var(--t-panel-hover)] text-[var(--t-text-muted)]"
-              title={mode === 'edit' ? 'Close (changes are autosaved)' : 'Cancel'}
-            >
-              <X className="w-4 h-4" />
-            </button>
+            />
           </div>
         </div>
 
@@ -3591,14 +3625,15 @@ export default function ProjectApiDetailPage() {
                 admins can validate their routing config without Postman.
                 Theme-matched (uses --t-accent like the rest of the
                 page's primary actions) instead of the green pill. */}
-            <button
+            <Button
+              kind="primary"
+              size="sm"
+              renderIcon={Play}
               onClick={() => setTestOpen(true)}
-              className="flex items-center gap-1.5 px-3.5 py-2 text-xs font-medium text-white transition-colors hover:opacity-90"
-              style={{ background: 'var(--t-accent)' }}
               title="Send a real request through the broker"
             >
-              <Play className="w-3.5 h-3.5" /> Test request
-            </button>
+              Test request
+            </Button>
           </div>
         </div>
       </div>

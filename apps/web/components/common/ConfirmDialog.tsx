@@ -21,6 +21,7 @@
 import * as React from 'react'
 import { useEffect, useState } from 'react'
 import { AlertTriangle, Trash2 } from 'lucide-react'
+import { Modal } from '@carbon/react'
 import { cn } from '@/lib/utils'
 
 export type ConfirmOptions = {
@@ -94,66 +95,25 @@ export function ConfirmDialogHost() {
   const Icon = danger ? Trash2 : AlertTriangle
 
   return (
-    <div
-      role="dialog"
-      aria-modal="true"
-      className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-[rgba(22,22,22,0.5)] animate-in fade-in duration-150"
-      onClick={() => { pending.resolve(false); setPending(null) }}
+    <Modal
+      open
+      size="xs"
+      danger={danger}
+      modalHeading={options.title ?? 'Are you sure?'}
+      primaryButtonText={options.confirmLabel ?? (danger ? 'Delete' : 'Confirm')}
+      secondaryButtonText={options.cancelLabel ?? 'Cancel'}
+      onRequestClose={() => { pending.resolve(false); setPending(null) }}
+      onRequestSubmit={() => { pending.resolve(true); setPending(null) }}
+      className="z-[60]"
     >
-      <div
-        onClick={e => e.stopPropagation()}
-        className={cn(
-          'w-full max-w-sm rounded-none overflow-hidden',
-          'bg-[var(--t-panel)] border border-[var(--t-border)]',
-          'animate-in zoom-in-95 fade-in duration-150',
+      <div className="flex items-start gap-3">
+        <Icon className={cn('w-4 h-4 shrink-0 mt-0.5', danger ? 'text-[#da1e28]' : 'text-[#8a3800]')} />
+        {options.body && (
+          <div className="text-[13px] text-[var(--t-text-secondary)] leading-relaxed">
+            {options.body}
+          </div>
         )}
-      >
-        <div className="px-5 pt-5 pb-3 flex items-start gap-3">
-          <div
-            className={cn(
-              'shrink-0 w-9 h-9 rounded-full flex items-center justify-center',
-              danger
-                ? 'text-[#da1e28]'
-                : 'text-[#8a3800]',
-            )}
-          >
-            <Icon className="w-4 h-4" />
-          </div>
-          <div className="flex-1 min-w-0">
-            <h2 className="text-[20px] font-normal text-[var(--t-text)]">
-              {options.title ?? 'Are you sure?'}
-            </h2>
-            {options.body && (
-              <div className="mt-1 text-[13px] text-[var(--t-text-secondary)] leading-relaxed">
-                {options.body}
-              </div>
-            )}
-          </div>
-        </div>
-
-        <div className="px-5 py-3 flex justify-end gap-2 border-t border-[var(--t-border-light)] bg-[var(--t-bg)]">
-          <button
-            type="button"
-            onClick={() => { pending.resolve(false); setPending(null) }}
-            className="h-8 px-3 text-sm inline-flex items-center gap-2 bg-[#393939] text-white hover:bg-[#474747]"
-          >
-            {options.cancelLabel ?? 'Cancel'}
-          </button>
-          <button
-            type="button"
-            autoFocus
-            onClick={() => { pending.resolve(true); setPending(null) }}
-            className={cn(
-              'px-3 py-1.5 text-sm rounded-none font-medium text-white transition-colors',
-              danger
-                ? 'bg-[#da1e28] hover:bg-[#b81921]'
-                : 'bg-[var(--t-accent)] hover:bg-[#0353e9]',
-            )}
-          >
-            {options.confirmLabel ?? (danger ? 'Delete' : 'Confirm')}
-          </button>
-        </div>
       </div>
-    </div>
+    </Modal>
   )
 }

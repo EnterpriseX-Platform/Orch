@@ -6,7 +6,6 @@ import { useEffect, useMemo, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { eventLogsApi } from '@/lib/api'
 import {
-  Search,
   Clock,
   AlertTriangle,
   XCircle,
@@ -17,6 +16,7 @@ import {
   GitBranch,
   RefreshCw,
 } from 'lucide-react'
+import { Button, Search as CarbonSearch, Tag } from '@carbon/react'
 import { ExportMenu } from '@/components/common/ExportMenu'
 import { ActiveFiltersBar } from '@/components/common/ActiveFiltersBar'
 import { EventLogDetailModal } from '@/components/logs/EventLogDetailModal'
@@ -52,6 +52,13 @@ const THEME = {
 
 // Level palette — solid fill + white text so the severity reads at a
 // glance (mirrors the HTTP-status palette the api_logs screen used).
+const LEVEL_TAG: Record<string, 'blue' | 'warm-gray' | 'red' | 'purple' | 'gray'> = {
+  info: 'blue',
+  warn: 'warm-gray',
+  error: 'red',
+  debug: 'gray',
+}
+
 const LEVEL_HEX: Record<string, { bg: string; text: string; dot: string }> = {
   info:  { bg: '#0f62fe', text: '#FFFFFF', dot: '#0f62fe' },
   warn:  { bg: '#ba4e00', text: '#FFFFFF', dot: '#ba4e00' },
@@ -172,14 +179,13 @@ export default function LogsPage() {
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', justifyContent: 'flex-end', flex: '1 1 560px', minWidth: 0 }}>
           {/* Free-text search */}
-          <div style={{ position: 'relative', flex: '1 1 180px', minWidth: 160, maxWidth: 300 }}>
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: THEME.text.muted }} />
-            <input
-              type="text"
+          <div style={{ flex: '1 1 180px', minWidth: 160, maxWidth: 300 }}>
+            <CarbonSearch
+              size="sm"
+              labelText="Search"
               placeholder="Search event type, message, flow, request id…"
               value={searchText}
-              onChange={(e) => setSearchText(e.target.value)}
-              style={{ width: '100%', padding: '6px 12px 6px 34px', background: 'var(--t-input)', border: `1px solid ${THEME.border}`, borderRadius: 8, fontSize: 13, color: THEME.text.primary, outline: 'none' }}
+              onChange={(e: any) => setSearchText(e.target.value)}
             />
           </div>
           <EventLogFilters
@@ -200,26 +206,9 @@ export default function LogsPage() {
             onDateToChange={setDateTo}
             onClearAll={clearAllFilters}
           />
-          <button
-            onClick={() => refetch()}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 6,
-              padding: '6px 14px',
-              background: THEME.panel,
-              border: `1px solid ${THEME.border}`,
-              borderRadius: 8,
-              fontSize: 13,
-              color: THEME.text.secondary,
-              cursor: 'pointer',
-              transition: 'all 0.15s ease',
-            }}
-            className="hover:border-[#0f62fe] hover:text-[#0f62fe]"
-          >
-            <RefreshCw className="w-4 h-4" />
+          <Button kind="tertiary" size="sm" renderIcon={RefreshCw} onClick={() => refetch()}>
             Refresh
-          </button>
+          </Button>
           <ExportMenu
             disabled={!filteredLogs.length}
             getInput={() => ({
@@ -346,14 +335,13 @@ export default function LogsPage() {
             </div>
             <p style={{ fontSize: 14, fontWeight: 600, color: THEME.text.primary, marginBottom: 2 }}>No events found</p>
             <p style={{ fontSize: 12, color: THEME.text.muted }}>
-              No events have been recorded yet
+              No events recorded yet
             </p>
           </div>
         ) : (
           <div>
             {filteredLogs.map((log) => {
               const lk = levelKey(log.level)
-              const lvl = LEVEL_HEX[lk]
 
               return (
                 <div
@@ -372,14 +360,9 @@ export default function LogsPage() {
                 >
                   {/* Level */}
                   <div>
-                    <span style={{
-                      display: 'inline-flex', alignItems: 'center',
-                      padding: '2px 8px', borderRadius: 4,
-                      fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.5,
-                      background: lvl.bg, color: lvl.text,
-                    }}>
+                    <Tag size="sm" type={LEVEL_TAG[lk] || 'gray'} style={{ textTransform: 'uppercase' }}>
                       {lk}
-                    </span>
+                    </Tag>
                   </div>
 
                   {/* Event Type — friendly kind badge + the flow / operation name */}

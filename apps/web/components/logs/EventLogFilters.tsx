@@ -18,6 +18,7 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { Filter, ChevronDown, ChevronRight, X } from 'lucide-react'
+import { Button, Checkbox, Tag, TextInput } from '@carbon/react'
 import { eventKindLabel } from '@/lib/event-logs'
 
 const FONT = '"IBM Plex Sans Thai", "IBM Plex Sans", "Sarabun", system-ui, sans-serif'
@@ -107,19 +108,9 @@ function Section({
         )}
         <span>{title}</span>
         {count ? (
-          <span
-            style={{
-              marginLeft: 'auto',
-              padding: '0 6px',
-              borderRadius: 0,
-              fontSize: 12,
-              fontWeight: 400,
-              background: '#0f62fe',
-              color: '#FFFFFF',
-            }}
-          >
+          <Tag type="blue" size="sm" className="ml-auto">
             {count}
-          </span>
+          </Tag>
         ) : null}
       </button>
       {open && <div style={{ padding: '0 12px 10px 12px' }}>{children}</div>}
@@ -129,70 +120,24 @@ function Section({
 
 // A single checkbox row -------------------------------------------------
 function CheckRow({
+  id,
   label,
   checked,
   onToggle,
 }: {
+  id: string
   label: string
   checked: boolean
   onToggle: () => void
 }) {
   return (
-    <label
-      style={{
-        display: 'flex',
-        alignItems: 'center',
-        gap: 8,
-        padding: '5px 0',
-        cursor: 'pointer',
-        fontSize: 13,
-        color: checked ? 'var(--t-text)' : 'var(--t-text-secondary)',
-      }}
-    >
-      <span
-        style={{
-          width: 16,
-          height: 16,
-          borderRadius: 0,
-          flexShrink: 0,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          border: `1px solid ${checked ? '#161616' : '#161616'}`,
-          background: checked ? '#161616' : 'transparent',
-        }}
-      >
-        {checked && (
-          <svg width="10" height="10" viewBox="0 0 12 12" fill="none">
-            <path
-              d="M2.5 6.2 4.8 8.5 9.5 3.5"
-              stroke="#FFFFFF"
-              strokeWidth="1.8"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-          </svg>
-        )}
-      </span>
-      <input
-        type="checkbox"
-        checked={checked}
-        onChange={onToggle}
-        style={{ position: 'absolute', opacity: 0, width: 0, height: 0 }}
-      />
-      <span>{label}</span>
-    </label>
+    <Checkbox
+      id={id}
+      labelText={label}
+      checked={checked}
+      onChange={() => onToggle()}
+    />
   )
-}
-
-const inputStyle: React.CSSProperties = {
-  width: '100%',
-  padding: '6px 10px',
-  fontSize: 12,
-  color: 'var(--t-text)',
-  outline: 'none',
-  fontFamily: FONT,
-  colorScheme: 'light',
 }
 
 export function EventLogFilters({
@@ -259,47 +204,21 @@ export function EventLogFilters({
 
   return (
     <div ref={ref} style={{ position: 'relative' }}>
-      <button
-        type="button"
+      <Button
+        kind="tertiary"
+        size="sm"
         onClick={() => setOpen((o) => !o)}
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: 8,
-          height: 32,
-          padding: '0 12px',
-          background: open ? '#e8e8e8' : 'transparent',
-          border: '1px solid #0f62fe',
-          borderRadius: 0,
-          fontSize: 14,
-          color: '#0f62fe',
-          cursor: 'pointer',
-          transition: 'all 0.15s ease',
-          fontFamily: FONT,
-        }}
-        className="hover:bg-[#e8e8e8]"
+        renderIcon={ChevronDown}
+        isSelected={open}
       >
-        <Filter className="w-4 h-4" />
+        <Filter className="w-4 h-4 mr-2" />
         Filters
         {activeCount > 0 && (
-          <span
-            style={{
-              padding: '0 6px',
-              borderRadius: 0,
-              fontSize: 12,
-              fontWeight: 400,
-              background: '#0f62fe',
-              color: '#FFFFFF',
-            }}
-          >
+          <Tag type="blue" size="sm" className="ml-2">
             {activeCount}
-          </span>
+          </Tag>
         )}
-        <ChevronDown
-          className="w-3.5 h-3.5"
-          style={{ transform: open ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.15s' }}
-        />
-      </button>
+      </Button>
 
       {open && (
         <div
@@ -319,12 +238,14 @@ export function EventLogFilters({
         >
           {/* Option search */}
           <div style={{ padding: 10 }}>
-            <input
-              type="text"
+            <TextInput
+              id="event-filter-optionQuery"
+              labelText="optionQuery"
+              hideLabel
+              size="sm"
               placeholder="Filter options..."
               value={optionQuery}
               onChange={(e) => setOptionQuery(e.target.value)}
-              style={inputStyle}
             />
           </div>
 
@@ -337,6 +258,7 @@ export function EventLogFilters({
                 {eventTypeOpts.map((t) => (
                   <CheckRow
                     key={t}
+                    id={`evt-type-${t}`}
                     label={eventKindLabel(t)}
                     checked={eventTypeFilters.includes(t)}
                     onToggle={() => onEventTypeFiltersChange(toggle(eventTypeFilters, t))}
@@ -354,6 +276,7 @@ export function EventLogFilters({
               levelOpts.map((o) => (
                 <CheckRow
                   key={o.value}
+                  id={`event-filter-${o.value}`}
                   label={o.label}
                   checked={levelFilters.includes(o.value)}
                   onToggle={() => onLevelFiltersChange(toggle(levelFilters, o.value))}
@@ -364,23 +287,27 @@ export function EventLogFilters({
 
           {/* Username */}
           <Section title="Username" count={userFilter ? 1 : 0}>
-            <input
-              type="text"
-              placeholder="e.g. user1@example.com"
+            <TextInput
+              id="event-filter-userFilter"
+              labelText="userFilter"
+              hideLabel
+              size="sm"
+              placeholder="e.g. user@example.com"
               value={userFilter}
               onChange={(e) => onUserFilterChange(e.target.value)}
-              style={inputStyle}
             />
           </Section>
 
           {/* Client IP */}
           <Section title="Client IP" count={ipFilter ? 1 : 0}>
-            <input
-              type="text"
-              placeholder="e.g. 10.0.0.99"
+            <TextInput
+              id="event-filter-ipFilter"
+              labelText="ipFilter"
+              hideLabel
+              size="sm"
+              placeholder="e.g. 192.0.2.10"
               value={ipFilter}
               onChange={(e) => onIpFilterChange(e.target.value)}
-              style={inputStyle}
             />
           </Section>
 
@@ -391,22 +318,28 @@ export function EventLogFilters({
                 <label style={{ fontSize: 11, color: 'var(--t-text-muted)', display: 'block', marginBottom: 3 }}>
                   From
                 </label>
-                <input
+                <TextInput
+                  id="event-filter-dateFrom"
+                  labelText="dateFrom"
+                  hideLabel
+                  size="sm"
                   type="datetime-local"
                   value={dateFrom}
                   onChange={(e) => onDateFromChange(e.target.value)}
-                  style={inputStyle}
                 />
               </div>
               <div>
                 <label style={{ fontSize: 11, color: 'var(--t-text-muted)', display: 'block', marginBottom: 3 }}>
                   To
                 </label>
-                <input
+                <TextInput
+                  id="event-filter-dateTo"
+                  labelText="dateTo"
+                  hideLabel
+                  size="sm"
                   type="datetime-local"
                   value={dateTo}
                   onChange={(e) => onDateToChange(e.target.value)}
-                  style={inputStyle}
                 />
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
@@ -415,50 +348,27 @@ export function EventLogFilters({
                   { label: 'Last 7d', ms: 7 * 86400000 },
                   { label: 'Last 30d', ms: 30 * 86400000 },
                 ].map((p) => (
-                  <button
+                  <Button
                     key={p.label}
-                    type="button"
+                    kind="ghost"
+                    size="sm"
                     onClick={() => applyPreset(p.ms)}
-                    style={{
-                      padding: '4px 8px',
-                      fontSize: 12,
-                      fontWeight: 400,
-                      borderRadius: 0,
-                      background: 'transparent',
-                      border: 'none',
-                      color: '#0f62fe',
-                      cursor: 'pointer',
-                      fontFamily: FONT,
-                    }}
-                    className="hover:bg-[#e8e8e8]"
                   >
                     {p.label}
-                  </button>
+                  </Button>
                 ))}
                 {(dateFrom || dateTo) && (
-                  <button
-                    type="button"
+                  <Button
+                    kind="ghost"
+                    size="sm"
+                    renderIcon={X}
                     onClick={() => {
                       onDateFromChange('')
                       onDateToChange('')
-                    }}
-                    style={{
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      gap: 3,
-                      padding: '4px 8px',
-                      fontSize: 12,
-                      fontWeight: 400,
-                      borderRadius: 0,
-                      background: 'transparent',
-                      border: 'none',
-                      color: '#0f62fe',
-                      cursor: 'pointer',
-                      fontFamily: FONT,
-                    }}
+                                        }}
                   >
-                    <X className="w-3 h-3" /> Clear
-                  </button>
+                    Clear
+                  </Button>
                 )}
               </div>
             </div>
@@ -473,23 +383,9 @@ export function EventLogFilters({
               justifyContent: 'flex-end',
             }}
           >
-            <button
-              type="button"
-              onClick={onClearAll}
-              style={{
-                fontSize: 12,
-                color: 'var(--t-text-muted)',
-                background: 'transparent',
-                border: 'none',
-                cursor: 'pointer',
-                textDecoration: 'underline',
-                textUnderlineOffset: 2,
-                fontFamily: FONT,
-              }}
-              className="hover:text-[var(--t-text)]"
-            >
+            <Button kind="ghost" size="sm" onClick={onClearAll}>
               Clear all
-            </button>
+            </Button>
           </div>
         </div>
       )}

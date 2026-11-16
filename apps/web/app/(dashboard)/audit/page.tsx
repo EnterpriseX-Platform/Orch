@@ -7,7 +7,6 @@ import { useQuery } from '@tanstack/react-query'
 import { auditApi } from '@/lib/api'
 import { 
   ClipboardList, 
-  Search, 
   Download, 
   Plus, 
   Pencil, 
@@ -27,13 +26,14 @@ import {
   Activity
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { Button, Search as CarbonSearch, Tag, Toggle } from '@carbon/react'
 import { ExportMenu } from '@/components/common/ExportMenu'
 import { ActiveFiltersBar } from '@/components/common/ActiveFiltersBar'
 import { AuditDetailModal } from '@/components/audit/AuditDetailModal'
 import { AuditFilters } from '@/components/audit/AuditFilters'
 import { Pagination } from '@/components/common/Pagination'
 
-const FONT = "'Prompt', sans-serif"
+const FONT = '"IBM Plex Sans Thai", "IBM Plex Sans", "Sarabun", system-ui, sans-serif'
 
 // Dark Mode Theme
 const THEME = {
@@ -44,11 +44,11 @@ const THEME = {
   text: { primary: 'var(--t-text)', secondary: 'var(--t-text-secondary)', muted: 'var(--t-text-muted)' },
   accent: 'var(--t-accent)',
   colors: {
-    blue: '#3B82F6',
-    emerald: '#10B981',
-    purple: '#8B5CF6',
-    amber: '#F59E0B',
-    red: '#EF4444',
+    blue: '#0f62fe',
+    emerald: '#24a148',
+    purple: '#8a3ffc',
+    amber: '#ba4e00',
+    red: '#da1e28',
   }
 }
 
@@ -177,12 +177,26 @@ function isComplexValue(val: any): boolean {
   return val !== null && val !== undefined && typeof val === 'object'
 }
 
+// Map the action config's Tailwind colour family to a Carbon Tag type
+type CarbonTagType = 'green' | 'blue' | 'red' | 'purple' | 'cyan' | 'gray' | 'warm-gray'
+function actionTagType(bg: string): CarbonTagType {
+  const c = cn(bg)
+  if (c.includes('emerald')) return 'green'
+  if (c.includes('blue')) return 'blue'
+  if (c.includes('red')) return 'red'
+  if (c.includes('violet')) return 'purple'
+  if (c.includes('cyan')) return 'cyan'
+  if (c.includes('slate')) return 'gray'
+  if (c.includes('amber')) return 'warm-gray'
+  return 'gray'
+}
+
 // Array Change Item Component
 function ArrayChangeItem({ item, depth = 0 }: { item: any; depth?: number }) {
   const actionColors: Record<string, { bg: string; text: string; border: string }> = {
-    added: { bg: '#10B98115', text: '#10B981', border: '#10B98130' },
-    modified: { bg: '#F59E0B15', text: '#F59E0B', border: '#F59E0B30' },
-    removed: { bg: '#EF444415', text: '#EF4444', border: '#EF444430' },
+    added: { bg: '#24a14815', text: '#24a148', border: '#24a14830' },
+    modified: { bg: '#ba4e0015', text: '#ba4e00', border: '#ba4e0030' },
+    removed: { bg: '#da1e2815', text: '#da1e28', border: '#da1e2830' },
   }
   const colors = actionColors[item.action] || actionColors.modified
 
@@ -196,18 +210,13 @@ function ArrayChangeItem({ item, depth = 0 }: { item: any; depth?: number }) {
       marginLeft: depth * 16,
     }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
-        <span style={{
-          padding: '2px 8px',
-          borderRadius: 4,
-          fontSize: 11,
-          fontWeight: 600,
-          background: colors.bg,
-          color: colors.text,
-          border: `1px solid ${colors.border}`,
-          textTransform: 'uppercase',
-        }}>
+        <Tag
+          size="sm"
+          type={item.action === 'added' ? 'green' : item.action === 'removed' ? 'red' : 'warm-gray'}
+          style={{ textTransform: 'uppercase' }}
+        >
           {item.action}
-        </span>
+        </Tag>
         <span style={{ fontSize: 12, color: THEME.text.muted }}>
           {item.key !== undefined ? `Key: ${item.key}` : `Index: ${item.index ?? '?'}`}
           {item.keyField ? ` (${item.keyField})` : ''}
@@ -217,8 +226,8 @@ function ArrayChangeItem({ item, depth = 0 }: { item: any; depth?: number }) {
       {item.action === 'added' && item.newItem !== undefined && (
         <pre style={{
           fontSize: 12,
-          color: '#10B981',
-          background: '#10B98110',
+          color: '#24a148',
+          background: '#24a14810',
           padding: 8,
           borderRadius: 6,
           overflow: 'auto',
@@ -233,8 +242,8 @@ function ArrayChangeItem({ item, depth = 0 }: { item: any; depth?: number }) {
       {item.action === 'removed' && item.oldItem !== undefined && (
         <pre style={{
           fontSize: 12,
-          color: '#EF4444',
-          background: '#EF444410',
+          color: '#da1e28',
+          background: '#da1e2810',
           padding: 8,
           borderRadius: 6,
           overflow: 'auto',
@@ -261,7 +270,7 @@ function ArrayChangeItem({ item, depth = 0 }: { item: any; depth?: number }) {
                 {field}
               </div>
               <div style={{
-                color: changed ? '#F87171' : THEME.text.secondary,
+                color: changed ? '#da1e28' : THEME.text.secondary,
                 opacity: changed ? 1 : 0.5,
                 whiteSpace: isComplexValue(change.old) ? 'pre-wrap' : 'nowrap',
                 wordBreak: isComplexValue(change.old) ? 'break-word' : undefined,
@@ -273,7 +282,7 @@ function ArrayChangeItem({ item, depth = 0 }: { item: any; depth?: number }) {
                 {formatDiffValue(change.old)}
               </div>
               <div style={{
-                color: changed ? '#10B981' : THEME.text.secondary,
+                color: changed ? '#24a148' : THEME.text.secondary,
                 opacity: changed ? 1 : 0.5,
                 whiteSpace: isComplexValue(change.new) ? 'pre-wrap' : 'nowrap',
                 wordBreak: isComplexValue(change.new) ? 'break-word' : undefined,
@@ -295,8 +304,8 @@ function ArrayChangeItem({ item, depth = 0 }: { item: any; depth?: number }) {
           {item.oldItem !== undefined && (
             <pre style={{
               fontSize: 12,
-              color: '#EF4444',
-              background: '#EF444410',
+              color: '#da1e28',
+              background: '#da1e2810',
               padding: 6,
               borderRadius: 4,
               overflow: 'auto',
@@ -310,8 +319,8 @@ function ArrayChangeItem({ item, depth = 0 }: { item: any; depth?: number }) {
           {item.newItem !== undefined && (
             <pre style={{
               fontSize: 12,
-              color: '#10B981',
-              background: '#10B98110',
+              color: '#24a148',
+              background: '#24a14810',
               padding: 6,
               borderRadius: 4,
               overflow: 'auto',
@@ -382,7 +391,7 @@ function ChangeDiff({ oldValues, newValues, changes }: {
               {key}
             </div>
             <div style={{
-              color: changed ? '#F87171' : THEME.text.secondary,
+              color: changed ? '#da1e28' : THEME.text.secondary,
               opacity: changed ? 1 : 0.5,
               fontFamily: FONT,
               fontSize: 13,
@@ -396,7 +405,7 @@ function ChangeDiff({ oldValues, newValues, changes }: {
               {formatDiffValue(oldVal)}
             </div>
             <div style={{
-              color: changed ? '#10B981' : THEME.text.secondary,
+              color: changed ? '#24a148' : THEME.text.secondary,
               opacity: changed ? 1 : 0.5,
               fontFamily: FONT,
               fontSize: 13,
@@ -450,7 +459,7 @@ export default function AuditPage() {
   // - groupByTx:   when on, rows are folded into one card per txKey
   const [txKeyFilter, setTxKeyFilter] = useState('')
   const [groupByTx, setGroupByTx] = useState(false)
-  // spec — filter by DataCatalog id (set via clicking a dataset
+  // TOR 4.5.3 — filter by DataCatalog id (set via clicking a dataset
   // chip on a row). Empty = no filter.
   const [datasetFilter, setDatasetFilter] = useState('')
   // Secondary filter dimensions admins asked for: which entity type
@@ -626,14 +635,13 @@ export default function AuditPage() {
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', justifyContent: 'flex-end', flex: '1 1 560px', minWidth: 0 }}>
           {/* Toolbar moved up next to Refresh: search + Filters dropdown + group-by */}
-          <div style={{ position: 'relative', flex: '1 1 180px', minWidth: 160, maxWidth: 300 }}>
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: THEME.text.muted }} />
-            <input
-              type="text"
+          <div style={{ flex: '1 1 180px', minWidth: 160, maxWidth: 300 }}>
+            <CarbonSearch
+              size="sm"
+              labelText="Search"
               placeholder="Search user, entity, transactionKey…"
               value={searchText}
-              onChange={(e) => setSearchText(e.target.value)}
-              style={{ width: '100%', padding: '6px 12px 6px 34px', background: 'var(--t-input)', border: `1px solid ${THEME.border}`, borderRadius: 8, fontSize: 13, color: THEME.text.primary, outline: 'none' }}
+              onChange={(e: any) => setSearchText(e.target.value)}
             />
           </div>
           <AuditFilters
@@ -653,33 +661,21 @@ export default function AuditPage() {
             onDateToChange={setDateTo}
             onClearAll={clearAllFilters}
           />
-          <button
-            onClick={() => setGroupByTx(v => !v)}
-            title="Group rows by transactionKey"
-            style={{ padding: '6px 12px', fontSize: 12, fontWeight: 500, borderRadius: 8, background: groupByTx ? THEME.accent : 'var(--t-input)', color: groupByTx ? '#FFFFFF' : THEME.text.secondary, border: groupByTx ? 'none' : `1px solid ${THEME.border}`, whiteSpace: 'nowrap', cursor: 'pointer' }}
-          >
-            {groupByTx ? '⌥ Grouped' : '⌥ Group by Transaction'}
-          </button>
-          <button
-            onClick={() => refetch()}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 6,
-              padding: '6px 14px',
-              background: THEME.panel,
-              border: `1px solid ${THEME.border}`,
-              borderRadius: 8,
-              fontSize: 13,
-              color: THEME.text.secondary,
-              cursor: 'pointer',
-              transition: 'all 0.15s ease',
-            }}
-            className="hover:border-[#3B82F6] hover:text-[#3B82F6]"
-          >
-            <RefreshCw className="w-4 h-4" />
+          <div title="Group rows by transactionKey" style={{ whiteSpace: 'nowrap' }}>
+            <Toggle
+              id="audit-group-by-tx"
+              size="sm"
+              labelText="Group by Transaction"
+              hideLabel
+              labelA="Group by Transaction"
+              labelB="Grouped"
+              toggled={groupByTx}
+              onToggle={() => setGroupByTx(v => !v)}
+            />
+          </div>
+          <Button kind="tertiary" size="sm" renderIcon={RefreshCw} onClick={() => refetch()}>
             Refresh
-          </button>
+          </Button>
           <ExportMenu
             disabled={!filteredData.length}
             getInput={() => ({
@@ -922,37 +918,9 @@ export default function AuditPage() {
 
                     {/* Action */}
                     <div>
-                      <span style={{
-                        padding: '2px 8px',
-                        borderRadius: 6,
-                        fontSize: 12,
-                        fontWeight: 600,
-                        background: cn(config.bg).includes('emerald') ? '#05966912' :
-                                   cn(config.bg).includes('blue') ? '#3B82F612' :
-                                   cn(config.bg).includes('red') ? '#DC262612' :
-                                   cn(config.bg).includes('violet') ? '#7C3AED12' :
-                                   cn(config.bg).includes('cyan') ? '#06B6D412' :
-                                   cn(config.bg).includes('slate') ? '#64748B12' :
-                                   cn(config.bg).includes('amber') ? '#F59E0B12' : 'var(--t-panel-hover)',
-                        color: cn(config.text).includes('emerald') ? '#059669' :
-                               cn(config.text).includes('blue') ? '#3B82F6' :
-                               cn(config.text).includes('red') ? '#DC2626' :
-                               cn(config.text).includes('violet') ? '#7C3AED' :
-                               cn(config.text).includes('cyan') ? '#06B6D4' :
-                               cn(config.text).includes('slate') ? '#64748B' :
-                               cn(config.text).includes('amber') ? '#F59E0B' : '#64748B',
-                        border: `1px solid ${
-                          cn(config.border).includes('emerald') ? '#05966930' :
-                          cn(config.border).includes('blue') ? '#3B82F630' :
-                          cn(config.border).includes('red') ? '#DC262630' :
-                          cn(config.border).includes('violet') ? '#7C3AED30' :
-                          cn(config.border).includes('cyan') ? '#06B6D430' :
-                          cn(config.border).includes('slate') ? '#64748B30' :
-                          cn(config.border).includes('amber') ? '#F59E0B30' : 'var(--t-border)'
-                        }`,
-                      }}>
+                      <Tag size="sm" type={actionTagType(config.bg)}>
                         {log.action}
-                      </span>
+                      </Tag>
                     </div>
 
                     {/* User — single-line: small avatar + username.
@@ -970,7 +938,7 @@ export default function AuditPage() {
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
-                        color: '#60A5FA',
+                        color: '#0f62fe',
                         fontSize: 11,
                         fontWeight: 600,
                         flexShrink: 0,
@@ -986,16 +954,9 @@ export default function AuditPage() {
                         feedback; row click already opens the full
                         detail with the id). */}
                     <div>
-                      <span style={{
-                        padding: '2px 8px',
-                        background: 'var(--t-input)',
-                        border: `1px solid ${THEME.border}`,
-                        borderRadius: 6,
-                        fontSize: 12,
-                        color: THEME.text.secondary,
-                      }}>
+                      <Tag size="sm" type="gray">
                         {entityLabels[log.entityType] || log.entityType}
-                      </span>
+                      </Tag>
                     </div>
 
                     {/* Description — collapse middle-dot separators
@@ -1005,26 +966,22 @@ export default function AuditPage() {
                       <p style={{ fontSize: 13, color: THEME.text.primary, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                         {(log.description ? log.description.replace(/\s·\s·\s/g, ' · ').replace(/^\s*·\s*|\s*·\s*$/g, '').trim() : `${log.action} ${log.entityType}`)}
                       </p>
-                      {/* Dataset chips (spec). Click to filter
+                      {/* Dataset chips (TOR 4.5.1). Click to filter
                           all audits to that dataset. */}
                       {(log.changes?.dataCatalogs as any[] | undefined)?.length ? (
                         <div className="flex flex-wrap gap-1 mt-1" onClick={e => e.stopPropagation()}>
                           {(log.changes!.dataCatalogs as any[]).slice(0, 3).map((c: any) => (
-                            <button
+                            <Tag
                               key={c.id}
+                              as="button"
+                              size="sm"
+                              type={datasetFilter === c.id ? 'blue' : 'gray'}
                               onClick={() => setDatasetFilter(datasetFilter === c.id ? '' : c.id)}
                               title={`${c.name} · ${c.category}`}
-                              style={{
-                                fontSize: 10,
-                                padding: '1px 6px',
-                                borderRadius: 3,
-                                background: datasetFilter === c.id ? THEME.accent : 'var(--t-bg)',
-                                color: datasetFilter === c.id ? '#FFFFFF' : THEME.text.muted,
-                                border: `1px solid ${THEME.border}`,
-                              }}
+                              style={{ cursor: 'pointer' }}
                             >
                               {c.name}
-                            </button>
+                            </Tag>
                           ))}
                         </div>
                       ) : null}
@@ -1041,26 +998,16 @@ export default function AuditPage() {
                         if (!k) return <span style={{ fontSize: 12, color: THEME.text.muted }}>—</span>
                         const active = txKeyFilter === k
                         return (
-                          <button
+                          <Tag
+                            as="button"
+                            size="sm"
+                            type={active ? 'blue' : 'gray'}
                             onClick={() => setTxKeyFilter(active ? '' : k)}
                             title={active ? 'Clear filter' : `Filter to txKey: ${k}`}
-                            style={{
-                              fontFamily: FONT,
-                              fontSize: 11,
-                              padding: '3px 8px',
-                              borderRadius: 4,
-                              maxWidth: 150,
-                              overflow: 'hidden',
-                              textOverflow: 'ellipsis',
-                              whiteSpace: 'nowrap',
-                              background: active ? THEME.accent : 'var(--t-input)',
-                              color: active ? '#FFFFFF' : THEME.text.secondary,
-                              border: active ? 'none' : `1px solid ${THEME.border}`,
-                              cursor: 'pointer',
-                            }}
+                            style={{ maxWidth: 150, cursor: 'pointer' }}
                           >
                             {k}
-                          </button>
+                          </Tag>
                         )
                       })()}
                     </div>

@@ -1,0 +1,70 @@
+// IBM Carbon (official @carbon/react styles), g10 theme.
+// - css--reset off: Tailwind's preflight already normalises elements.
+// - css--font-face off: the app ships IBM Plex Sans Thai itself; Carbon would
+//   otherwise fetch IBM Plex from IBM's CDN.
+@use '@carbon/react/scss/config' with (
+  $css--reset: false,
+  $css--font-face: false,
+  $prefix: 'cds'
+);
+@use '@carbon/react/scss/themes';
+@use '@carbon/react/scss/theme' with (
+  $theme: themes.$g10
+);
+@use '@carbon/react';
+
+:root {
+  @include theme.theme();
+}
+
+// Carbon type stacks → the app's Thai-capable Plex.
+.cds--btn,
+.cds--text-input,
+.cds--select-input,
+.cds--text-area,
+.cds--modal,
+.cds--tabs,
+.cds--tag,
+.cds--data-table,
+.cds--header,
+.cds--side-nav,
+.cds--toggle,
+.cds--label,
+.cds--form__helper-text,
+.cds--search-input {
+  font-family: var(--font-sans);
+}
+
+// lucide-react icons are stroke icons; Carbon's shell fills icon SVGs.
+.cds--side-nav__icon svg,
+.cds--header__action svg,
+.cds--btn svg.lucide {
+  fill: none;
+}
+// Main (side-nav) icons: solid blue tile with a white line icon.
+.cds--side-nav__icon {
+  width: 20px;
+  height: 20px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: #0f62fe;
+  flex-shrink: 0;
+}
+.cds--side-nav__icon svg {
+  stroke: #ffffff;
+  width: 14px;
+  height: 14px;
+}
+// Every other lucide icon follows the text colour around it.
+.cds--header__action svg.lucide,
+.cds--btn svg.lucide,
+.cds--tag svg.lucide {
+  stroke: currentColor;
+}
+
+// Busy state: lucide loader icons passed as renderIcon spin like Carbon's.
+@keyframes orch-spin { to { transform: rotate(360deg); } }
+.cds--btn :is(.lucide-loader-2, .lucide-loader2, .lucide-loader-circle) {
+  animation: orch-spin 0.9s linear infinite;
+}

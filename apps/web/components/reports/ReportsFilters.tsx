@@ -11,6 +11,7 @@
  */
 import { useEffect, useRef, useState } from 'react'
 import { Filter, ChevronDown, X } from 'lucide-react'
+import { Button, Select, SelectItem, Tag, TextInput } from '@carbon/react'
 
 type Range = '1h' | '24h' | '7d' | '30d'
 
@@ -52,24 +53,17 @@ export function ReportsFilters({
     (system !== 'ALL' ? 1 : 0) + (userFilter.trim() ? 1 : 0) + (screenFilter.trim() ? 1 : 0)
 
   const labelCls = 'text-[12px] text-[#525252] mb-1.5'
-  const inputCls =
-    'w-full px-2 py-1 text-sm text-[var(--t-text)] outline-none'
 
   return (
-    <div ref={ref} className="relative" style={{ fontFamily: "'Prompt', sans-serif" }}>
-      <button
-        onClick={() => setOpen((o) => !o)}
-        className="flex items-center gap-2 h-8 px-3 text-sm border border-[#0f62fe] text-[#0f62fe] bg-transparent hover:bg-[#e8e8e8]"
-      >
-        <Filter className="w-3.5 h-3.5" />
+    <div ref={ref} className="relative" style={{ fontFamily: '"IBM Plex Sans Thai", "IBM Plex Sans", "Sarabun", system-ui, sans-serif' }}>
+      <Button kind="tertiary" size="sm" onClick={() => setOpen((o) => !o)}>
+        <Filter className="w-3.5 h-3.5 mr-2" />
         Filters
         {activeCount > 0 && (
-          <span className="ml-0.5 px-1.5 rounded-full bg-[#0f62fe] text-white text-[12px] leading-4">
-            {activeCount}
-          </span>
+          <Tag type="high-contrast" size="sm" className="ml-1.5 !my-0">{activeCount}</Tag>
         )}
-        <ChevronDown className="w-3 h-3" />
-      </button>
+        <ChevronDown className="w-3 h-3 ml-1.5" />
+      </Button>
 
       {open && (
         <div className="absolute right-0 mt-1 w-72 z-50 bg-white border border-[#e0e0e0] p-3 space-y-3">
@@ -80,17 +74,15 @@ export function ReportsFilters({
               {RANGES.map((r) => {
                 const active = range === r.value
                 return (
-                  <button
+                  <Button
                     key={r.value}
+                    kind={active ? 'secondary' : 'ghost'}
+                    size="sm"
                     onClick={() => onRangeChange(r.value)}
-                    className={`px-2 h-8 text-[12px] ${
-                      active
-                        ? 'bg-[#e0e0e0] text-[#161616] font-semibold'
-                        : 'text-[#525252] hover:bg-[#e8e8e8] hover:text-[#161616]'
-                    }`}
+                    className="!px-2 !min-w-0 justify-center"
                   >
                     {r.label}
-                  </button>
+                  </Button>
                 )
               })}
             </div>
@@ -98,46 +90,44 @@ export function ReportsFilters({
 
           {/* System */}
           {systems.length > 0 && (
-            <div>
-              <p className={labelCls}>System</p>
-              <select value={system} onChange={(e) => onSystemChange(e.target.value)} className={inputCls}>
-                <option value="ALL">All Systems</option>
-                {systems.map((s) => (
-                  <option key={s} value={s}>{s}</option>
-                ))}
-              </select>
-            </div>
+            <Select id="reports-filter-system" labelText="System" size="sm" value={system} onChange={(e) => onSystemChange(e.target.value)}>
+              <SelectItem value="ALL" text="All Systems" />
+              {systems.map((s) => (
+                <SelectItem key={s} value={s} text={s} />
+              ))}
+            </Select>
           )}
 
           {/* User */}
-          <div>
-            <p className={labelCls}>User</p>
-            <input
-              value={userFilter}
-              onChange={(e) => onUserFilterChange(e.target.value)}
-              placeholder="Filter by username…"
-              className={inputCls}
-            />
-          </div>
+          <TextInput
+            id="reports-filter-user"
+            labelText="User"
+            size="sm"
+            value={userFilter}
+            onChange={(e) => onUserFilterChange(e.target.value)}
+            placeholder="Filter by user name…"
+          />
 
           {/* Screen / feature */}
-          <div>
-            <p className={labelCls}>Screen / Feature</p>
-            <input
-              value={screenFilter}
-              onChange={(e) => onScreenFilterChange(e.target.value)}
-              placeholder="Filter by screen name…"
-              className={inputCls}
-            />
-          </div>
+          <TextInput
+            id="reports-filter-screen"
+            labelText="Screen / Feature"
+            size="sm"
+            value={screenFilter}
+            onChange={(e) => onScreenFilterChange(e.target.value)}
+            placeholder="Filter by screen name…"
+          />
 
           {activeCount > 0 && (
-            <button
+            <Button
+              kind="ghost"
+              size="sm"
+              renderIcon={X}
               onClick={() => { onSystemChange('ALL'); onUserFilterChange(''); onScreenFilterChange('') }}
-              className="w-full flex items-center justify-center gap-2 h-8 px-3 text-sm text-[#0f62fe] hover:bg-[#e8e8e8]"
+              className="w-full max-w-none"
             >
-              <X className="w-3 h-3" /> Clear filters
-            </button>
+              Clear filters
+            </Button>
           )}
         </div>
       )}

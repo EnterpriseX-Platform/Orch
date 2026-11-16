@@ -17,6 +17,7 @@ import { useMemo, useState } from 'react'
 import { useQuery, useMutation } from '@tanstack/react-query'
 import { Database, Lock, Unlock, Eye, Zap, Loader2, AlertTriangle, Check } from 'lucide-react'
 import { toast } from 'sonner'
+import { Button, Checkbox, Search, Tag } from '@carbon/react'
 import { confirmDialog } from '@/components/common/ConfirmDialog'
 
 type Row = {
@@ -121,42 +122,38 @@ export function EncryptionPanel() {
             <Lock className="w-4 h-4 text-[#525252]" /> At-rest Encryption
           </h2>
         </div>
-        <div className={
-          'cds-tag inline-flex items-center gap-1.5 px-2 py-0.5 text-xs ' +
-          (engine === 'postgres'
-            ? 'bg-[#d0e2ff] text-[#0043ce]'
-            : engine === 'oracle'
-              ? 'bg-[#ffd7d9] text-[#a2191f]'
-              : 'bg-[#e0e0e0] text-[#161616]')
-        }>
-          <Database className="w-3.5 h-3.5" />
+        <Tag
+          size="sm"
+          type={engine === 'postgres' ? 'blue' : engine === 'oracle' ? 'red' : 'gray'}
+          renderIcon={Database}
+        >
           Engine: {engine}
-        </div>
+        </Tag>
       </div>
 
       {/* Filter bar */}
       <div className="flex flex-wrap gap-2 items-center">
         {(['SUGGESTED', 'ALL', 'ENCRYPTED'] as const).map(f => (
-          <button
+          <Button
             key={f}
+            kind={filter === f ? 'secondary' : 'ghost'}
+            size="sm"
+            isSelected={filter === f}
             onClick={() => setFilter(f)}
-            className={
-              'h-8 px-3 text-sm ' +
-              (filter === f
-                ? 'bg-[#e0e0e0] text-[#161616]'
-                : 'bg-transparent text-[#525252] hover:bg-[#e8e8e8]')
-            }
           >
             {f === 'SUGGESTED' ? 'Sensitive (suggested)' : f === 'ENCRYPTED' ? 'Encrypted' : 'All columns'}
-          </button>
+          </Button>
         ))}
-        <input
-          type="text"
-          placeholder="Filter by table or column..."
-          value={search}
-          onChange={e => setSearch(e.target.value)}
-          className="flex-1 min-w-[200px] px-3 py-1.5 text-sm text-[var(--t-text)]"
-        />
+        <div className="flex-1 min-w-[200px]">
+          <Search
+            id="encryption-column-search"
+            size="sm"
+            labelText="Filter by table or column"
+            placeholder="Filter by table or column..."
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+          />
+        </div>
         <span className="text-xs text-[var(--t-text-muted)]">
           {selected.size} selected · {filtered.length} of {rows.length}
         </span>
@@ -193,20 +190,24 @@ export function EncryptionPanel() {
                     className="border-b border-[var(--t-border-light)] hover:bg-[var(--t-panel-hover)] cursor-pointer last:border-0"
                   >
                     <td className="px-4 py-2 align-middle">
-                      <input type="checkbox" checked={isSelected} onChange={() => toggle(key)} className="w-3.5 h-3.5" />
+                      <div onClick={e => e.stopPropagation()}>
+                        <Checkbox
+                          id={`enc-col-${key}`}
+                          labelText={key}
+                          hideLabel
+                          checked={isSelected}
+                          onChange={() => toggle(key)}
+                        />
+                      </div>
                     </td>
                     <td className="px-4 py-2 align-middle font-mono text-xs text-[var(--t-text)]">{r.table}</td>
                     <td className="px-4 py-2 align-middle font-mono text-xs text-[var(--t-text)]">{r.column}</td>
                     <td className="px-4 py-2 align-middle text-xs text-[var(--t-text-muted)]">{r.dataType}</td>
                     <td className="px-4 py-2 align-middle">
                       {r.encrypted ? (
-                        <span className="cds-tag inline-flex items-center gap-1 text-[12px] px-2 py-0.5 bg-[#a7f0ba] text-[#0e6027]">
-                          <Lock className="w-3 h-3" /> Encrypted
-                        </span>
+                        <Tag type="green" size="sm" renderIcon={Lock}>Encrypted</Tag>
                       ) : (
-                        <span className="cds-tag inline-flex items-center gap-1 text-[12px] px-2 py-0.5 bg-[#e0e0e0] text-[#161616]">
-                          <Unlock className="w-3 h-3" /> Plain
-                        </span>
+                        <Tag type="gray" size="sm" renderIcon={Unlock}>Plain</Tag>
                       )}
                     </td>
                     <td className="px-4 py-2 align-middle">
@@ -229,14 +230,18 @@ export function EncryptionPanel() {
       {/* Action bar */}
       {selected.size > 0 && (
         <div className="flex items-center justify-end gap-2">
-          <button
+          <Button
+            kind="tertiary"
+            size="sm"
             onClick={() => previewMutation.mutate('encrypt')}
             disabled={previewMutation.isPending}
-            className="inline-flex items-center gap-2 h-8 px-3 text-sm border border-[#0f62fe] text-[#0f62fe] bg-transparent hover:bg-[#0f62fe] hover:text-white"
+            renderIcon={Eye}
           >
-            <Eye className="w-3.5 h-3.5" /> Preview DDL
-          </button>
-          <button
+            Preview DDL
+          </Button>
+          <Button
+            kind="primary"
+            size="sm"
             onClick={async () => {
               const ok = await confirmDialog({
                 title: `Encrypt ${selected.size} column${selected.size === 1 ? '' : 's'}?`,
@@ -247,11 +252,10 @@ export function EncryptionPanel() {
               if (ok) applyMutation.mutate('encrypt')
             }}
             disabled={applyMutation.isPending}
-            className="inline-flex items-center gap-2 h-8 px-3 text-sm bg-[#0f62fe] text-white hover:bg-[#0353e9]"
+            renderIcon={applyMutation.isPending ? Spinner : Zap}
           >
-            {applyMutation.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Zap className="w-3.5 h-3.5" />}
             Apply Encryption
-          </button>
+          </Button>
         </div>
       )}
 
@@ -262,26 +266,29 @@ export function EncryptionPanel() {
             <div className="text-xs text-[#525252]">
               {previewMode === 'decrypt' ? 'Decrypt DDL Preview' : 'Encrypt DDL Preview'} ({engine})
             </div>
-            <button
-              onClick={() => setPreviewDdl(null)}
-              className="h-8 px-3 text-sm text-[#0f62fe] hover:bg-[#e8e8e8]"
-            >
+            <Button kind="ghost" size="sm" onClick={() => setPreviewDdl(null)}>
               Close
-            </button>
+            </Button>
           </div>
           <pre className="px-4 py-3 text-[12px] font-mono text-[var(--t-text)] overflow-auto max-h-80 whitespace-pre">
             {previewDdl.join('\n\n')}
           </pre>
           <div className="px-4 py-2 border-t border-[var(--t-border)] flex justify-end gap-2">
-            <button
+            <Button
+              kind="secondary"
+              size="sm"
               onClick={() => navigator.clipboard.writeText(previewDdl.join('\n\n')).then(() => toast.success('Copied'))}
-              className="inline-flex items-center h-8 px-3 text-sm bg-[#393939] text-white hover:bg-[#474747]"
+              renderIcon={Check}
             >
-              <Check className="w-3 h-3 inline mr-1" /> Copy SQL
-            </button>
+              Copy SQL
+            </Button>
           </div>
         </div>
       )}
     </div>
   )
+}
+
+function Spinner(props: { className?: string }) {
+  return <Loader2 size={16} {...props} className={`animate-spin ${props.className ?? ''}`} />
 }

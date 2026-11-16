@@ -17,6 +17,7 @@ import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import { Save, Play, AlertTriangle, ClipboardList, FileText, Activity, Clock } from 'lucide-react'
+import { Button, TextInput } from '@carbon/react'
 import { useAuthStore } from '@/stores/authStore'
 
 type RetentionKey =
@@ -133,28 +134,34 @@ export function RetentionPanel() {
         </div>
         <div className="flex gap-2">
           {dirty && (
-            <button
+            <Button
+              kind="primary"
+              size="sm"
               onClick={() => saveMutation.mutate()}
               disabled={saveMutation.isPending}
-              className="h-8 px-3 bg-[#0f62fe] text-white text-sm flex items-center gap-2 disabled:opacity-50 hover:bg-[#0353e9]"
+              renderIcon={Save}
             >
-              <Save className="w-3.5 h-3.5" /> Save {Object.keys(edits).length}
-            </button>
+              Save {Object.keys(edits).length}
+            </Button>
           )}
-          <button
+          <Button
+            kind="tertiary"
+            size="sm"
             onClick={() => pruneMutation.mutate({ dry: true })}
             disabled={pruneMutation.isPending}
-            className="h-8 px-3 text-sm flex items-center gap-2 border border-[#0f62fe] text-[#0f62fe] bg-transparent hover:bg-[#0f62fe] hover:text-white"
+            renderIcon={AlertTriangle}
           >
-            <AlertTriangle className="w-3.5 h-3.5" /> Preview
-          </button>
-          <button
+            Preview
+          </Button>
+          <Button
+            kind="danger"
+            size="sm"
             onClick={() => pruneMutation.mutate({ dry: false })}
             disabled={pruneMutation.isPending}
-            className="px-3 py-1.5 rounded-none bg-[#da1e28] text-white text-xs flex items-center gap-2 hover:bg-[#b81921]"
+            renderIcon={Play}
           >
-            <Play className="w-3.5 h-3.5" /> Run cleanup now
-          </button>
+            Run cleanup now
+          </Button>
         </div>
       </div>
 
@@ -169,12 +176,16 @@ export function RetentionPanel() {
                 <span className="text-sm font-semibold text-[var(--t-text)]">{label}</span>
               </div>
               <div className="flex items-center gap-2">
-                <input
+                <TextInput
+                  id={`retention-${key}`}
+                  labelText={label}
+                  hideLabel
+                  size="sm"
+                  className="flex-1"
                   type={key.endsWith('retentionDays') ? 'number' : 'text'}
                   min={key.endsWith('retentionDays') ? 0 : undefined}
                   value={currentValue(key)}
                   onChange={(e) => setEdits((p) => ({ ...p, [key]: e.target.value }))}
-                  className="flex-1 px-3 py-1.5 text-[var(--t-text)] text-sm"
                 />
                 {unit && <span className="text-xs text-[var(--t-text-muted)]">{unit}</span>}
               </div>

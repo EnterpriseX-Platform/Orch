@@ -8,6 +8,7 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Plus, Pencil, Trash2, Tag, Loader2 } from 'lucide-react'
+import { Button, Modal, Select, SelectItem, Tag as CTag, TextInput } from '@carbon/react'
 import { fieldMappingApi } from '@/lib/api'
 import { toast } from 'sonner'
 import { confirmDialog } from '@/components/common/ConfirmDialog'
@@ -59,12 +60,9 @@ export function FieldMappingsSection({ projectId }: { projectId: string }) {
   return (
     <div>
       <div className="flex items-center justify-end mb-3">
-        <button
-          onClick={() => setShowCreate(true)}
-          className="flex items-center gap-2 h-8 px-3 text-sm text-white bg-[#0f62fe] hover:bg-[#0353e9]"
-        >
-          <Plus className="w-3.5 h-3.5" /> New Mapping
-        </button>
+        <Button kind="primary" size="sm" renderIcon={Plus} onClick={() => setShowCreate(true)}>
+          New Mapping
+        </Button>
       </div>
 
       {isLoading ? (
@@ -91,14 +89,12 @@ export function FieldMappingsSection({ projectId }: { projectId: string }) {
                     <div className="font-medium text-[var(--t-text)]">{fm.name}</div>
                     {fm.description && <div className="text-xs text-[var(--t-text-muted)]">{fm.description}</div>}
                     {!fm.projectId && (
-                      <span className="cds-tag text-[12px] px-2 py-0.5 bg-[#fff1e6] text-[#8a3800] mt-1 inline-block">global</span>
+                      <CTag type="warm-gray" size="sm" className="mt-1">global</CTag>
                     )}
                   </td>
                   <td className="px-4 py-2.5">
                     {fm.refType ? (
-                      <span className="inline-flex items-center gap-1 text-xs px-2 py-0.5 cds-tag bg-[#d0e2ff] text-[#0043ce]">
-                        <Tag className="w-3 h-3" />{fm.refType}
-                      </span>
+                      <CTag type="blue" size="sm" renderIcon={Tag}>{fm.refType}</CTag>
                     ) : <span className="text-[var(--t-text-muted)] text-xs">—</span>}
                   </td>
                   <td className="px-4 py-2.5"><code className="text-xs font-mono text-[var(--t-text-secondary)]">{fm.refIdPath ?? '—'}</code></td>
@@ -109,10 +105,13 @@ export function FieldMappingsSection({ projectId }: { projectId: string }) {
                   </td>
                   <td className="px-4 py-2.5">
                     <div className="flex items-center gap-2">
-                      <button onClick={() => setEditing(fm)} className="p-1.5 hover:bg-[#e8e8e8]" title="Edit">
-                        <Pencil className="w-3.5 h-3.5 text-[var(--t-text-muted)]" />
-                      </button>
-                      <button
+                      <Button kind="ghost" size="sm" hasIconOnly renderIcon={Pencil} iconDescription="Edit" onClick={() => setEditing(fm)} />
+                      <Button
+                        kind="danger--ghost"
+                        size="sm"
+                        hasIconOnly
+                        renderIcon={Trash2}
+                        iconDescription="Delete"
                         onClick={async () => {
                           if (await confirmDialog({
                             title: `Delete "${fm.name}"?`,
@@ -120,11 +119,7 @@ export function FieldMappingsSection({ projectId }: { projectId: string }) {
                             variant: 'danger',
                           })) del.mutate(fm.id)
                         }}
-                        className="p-1.5 rounded-none hover:bg-[#e8e8e8]"
-                        title="Delete"
-                      >
-                        <Trash2 className="w-3.5 h-3.5 text-[#da1e28]" />
-                      </button>
+                      />
                     </div>
                   </td>
                 </tr>
@@ -156,9 +151,9 @@ function Empty({ onCreate }: { onCreate: () => void }) {
       <Tag className="w-8 h-8 text-[var(--t-text-muted)] mx-auto mb-2" />
       <p className="text-sm text-[var(--t-text)]">No field mappings yet</p>
       <p className="text-xs text-[var(--t-text-muted)] mt-1 mb-3">Create a reusable extraction template</p>
-      <button onClick={onCreate} className="text-sm h-8 px-3 bg-[#0f62fe] text-white inline-flex items-center gap-2 hover:bg-[#0353e9]">
+      <Button kind="primary" size="sm" onClick={onCreate}>
         Create one
-      </button>
+      </Button>
     </div>
   )
 }
@@ -184,77 +179,51 @@ function Editor({
   })
 
   return (
-    <div className="fixed inset-0 z-50 bg-[rgba(22,22,22,0.5)] flex items-center justify-center p-4" onClick={onClose}>
-      <div className="bg-[var(--t-panel)] border border-[var(--t-border)] rounded-none w-full max-w-2xl max-h-[90vh] overflow-auto" onClick={(e) => e.stopPropagation()}>
-        <div className="flex items-center justify-between px-5 py-3 border-b border-[var(--t-border)]">
-          <h2 className="text-[20px] font-normal text-[var(--t-text)]">{isEdit ? 'Edit Field Mapping' : 'New Field Mapping'}</h2>
-          <button onClick={onClose} className="text-[var(--t-text-muted)] hover:text-[var(--t-text)]">✕</button>
-        </div>
-
-        <div className="p-5 space-y-4">
-          <Field label="Name *">
-            <input value={form.name ?? ''} onChange={(e) => set('name', e.target.value)} className="input" placeholder="e.g. Standard Mapping" />
-          </Field>
-          <Field label="Description">
-            <input value={form.description ?? ''} onChange={(e) => set('description', e.target.value)} className="input" />
-          </Field>
+    <Modal
+      open
+      size="md"
+      modalHeading={isEdit ? 'Edit Field Mapping' : 'New Field Mapping'}
+      primaryButtonText={save.isPending ? 'Saving…' : 'Save'}
+      secondaryButtonText="Cancel"
+      primaryButtonDisabled={!form.name || save.isPending}
+      onRequestClose={onClose}
+      onRequestSubmit={() => save.mutate()}
+    >
+        <div className="space-y-4">
+          <TextInput id="fm-name" labelText="Name *" value={form.name ?? ''} onChange={(e) => set('name', e.target.value)} placeholder="e.g. Standard Mapping"  />
+          <TextInput id="fm-description" labelText="Description" value={form.description ?? ''} onChange={(e) => set('description', e.target.value)}  />
 
           <Section title="Entity (ref) tracking">
             <Grid>
-              <Field label="Ref Type" hint="e.g. WORK_PLAN, ITEM">
-                <input value={form.refType ?? ''} onChange={(e) => set('refType', e.target.value)} className="input" />
-              </Field>
-              <Field label="Ref ID Path">
-                <input value={form.refIdPath ?? ''} onChange={(e) => set('refIdPath', e.target.value)} className="input font-mono" placeholder="$.object.input.REF_ID" />
-              </Field>
-              <Field label="Ref No Path">
-                <input value={form.refNoPath ?? ''} onChange={(e) => set('refNoPath', e.target.value)} className="input font-mono" placeholder="$.object.input.REF_NO" />
-              </Field>
-              <Field label="Ref Name Path">
-                <input value={form.refNamePath ?? ''} onChange={(e) => set('refNamePath', e.target.value)} className="input font-mono" placeholder="$.object.name" />
-              </Field>
-              <Field label="PK XPath">
-                <input value={form.pkXPath ?? ''} onChange={(e) => set('pkXPath', e.target.value)} className="input font-mono" placeholder="$.uniqueId" />
-              </Field>
+              <TextInput id="fm-ref-type" labelText="Ref Type" helperText="e.g. WORK_PLAN, ITEM" value={form.refType ?? ''} onChange={(e) => set('refType', e.target.value)}  />
+              <TextInput id="fm-ref-id-path" labelText="Ref ID Path" className="font-mono" value={form.refIdPath ?? ''} onChange={(e) => set('refIdPath', e.target.value)} placeholder="$.object.input.REF_ID"  />
+              <TextInput id="fm-ref-no-path" labelText="Ref No Path" className="font-mono" value={form.refNoPath ?? ''} onChange={(e) => set('refNoPath', e.target.value)} placeholder="$.object.input.REF_NO"  />
+              <TextInput id="fm-ref-name-path" labelText="Ref Name Path" className="font-mono" value={form.refNamePath ?? ''} onChange={(e) => set('refNamePath', e.target.value)} placeholder="$.object.name"  />
+              <TextInput id="fm-pk-xpath" labelText="PK XPath" className="font-mono" value={form.pkXPath ?? ''} onChange={(e) => set('pkXPath', e.target.value)} placeholder="$.uniqueId"  />
             </Grid>
           </Section>
 
           <Section title="Username extraction">
             <Grid>
-              <Field label="Source">
-                <select value={form.usernameSource ?? ''} onChange={(e) => set('usernameSource', e.target.value || null)} className="input">
-                  {USERNAME_SOURCES.map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}
-                </select>
-              </Field>
+              <Select id="fm-username-source" labelText="Source" value={form.usernameSource ?? ''} onChange={(e) => set('usernameSource', e.target.value || null)}>
+                {USERNAME_SOURCES.map((s) => <SelectItem key={s.value} value={s.value} text={s.label} />)}
+              </Select>
               {form.usernameSource && form.usernameSource !== 'STATIC' && form.usernameSource !== 'SESSION' && (
-                <Field label="Field" hint={
+                <TextInput id="fm-field" labelText="Field" helperText={
                   form.usernameSource === 'JWT_CLAIM' ? 'Claim name' :
                   form.usernameSource === 'HEADER'    ? 'Header name' :
                   form.usernameSource === 'BODY_PATH' ? 'JSONPath' : ''
-                }>
-                  <input value={form.usernameField ?? ''} onChange={(e) => set('usernameField', e.target.value)} className="input" />
-                </Field>
+                } value={form.usernameField ?? ''} onChange={(e) => set('usernameField', e.target.value)}  />
               )}
               {form.usernameSource === 'STATIC' && (
-                <Field label="Fixed value">
-                  <input value={form.usernameStatic ?? ''} onChange={(e) => set('usernameStatic', e.target.value)} className="input" />
-                </Field>
+                <TextInput id="fm-fixed-value" labelText="Fixed value" value={form.usernameStatic ?? ''} onChange={(e) => set('usernameStatic', e.target.value)}  />
               )}
             </Grid>
           </Section>
 
           <Section title="Transaction grouping">
-            <Field
-              label="CLOB Path"
-              hint="JSONPath to a stringified CLOB inside the body (supports * wildcard). Leave blank to disable transaction grouping."
-            >
-              <input value={form.clobPath ?? ''} onChange={(e) => set('clobPath', e.target.value)} className="input font-mono" placeholder="$.object.*.request" />
-            </Field>
-            <Field
-              label="Transaction Key Fields"
-              hint="Field names INSIDE the parsed CLOB. Comma-separated. Their values are joined with '|' to form the transaction key."
-            >
-              <input
+            <TextInput id="fm-clob-path" labelText="CLOB Path" helperText="JSONPath to a stringified CLOB inside the body (supports * wildcard). Leave blank to disable transaction grouping." className="font-mono" value={form.clobPath ?? ''} onChange={(e) => set('clobPath', e.target.value)} placeholder="$.object.*.request"  />
+            <TextInput id="fm-transaction-key-fields" labelText="Transaction Key Fields" helperText="Field names INSIDE the parsed CLOB. Comma-separated. Their values are joined with '|' to form the transaction key." className="font-mono"
                 value={(form.transactionKeyFields ?? []).join(', ')}
                 onChange={(e) =>
                   set(
@@ -262,40 +231,12 @@ function Editor({
                     e.target.value.split(',').map((s) => s.trim()).filter(Boolean),
                   )
                 }
-                className="input font-mono"
-                placeholder="ORDER_YEAR, ORG_ID"
-              />
-            </Field>
+                placeholder="FISCAL_YEAR, AGC_ID"
+               />
           </Section>
         </div>
 
-        <div className="px-5 py-3 border-t border-[var(--t-border)] flex justify-end gap-2">
-          <button onClick={onClose} className="h-8 px-3 text-sm inline-flex items-center gap-2 bg-[#393939] text-white hover:bg-[#474747]">Cancel</button>
-          <button
-            onClick={() => save.mutate()}
-            disabled={!form.name || save.isPending}
-            className="h-8 px-3 text-sm bg-[#0f62fe] text-white disabled:opacity-50 inline-flex items-center gap-2 hover:bg-[#0353e9]"
-          >
-            {save.isPending ? <Loader2 className="w-4 h-4 animate-spin inline mr-1" /> : null}
-            Save
-          </button>
-        </div>
-      </div>
-
-      <style jsx>{`
-        .input {
-          width: 100%;
-          padding: 6px 10px;
-          background: var(--t-input);
-          border: 1px solid var(--t-border);
-          border-radius: 6px;
-          font-size: 13px;
-          color: var(--t-text);
-          outline: none;
-        }
-        .input:focus { border-color: var(--t-accent); }
-      `}</style>
-    </div>
+    </Modal>
   )
 }
 
@@ -314,7 +255,4 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 }
 function Grid({ children }: { children: React.ReactNode }) {
   return <div className="grid grid-cols-1 md:grid-cols-2 gap-3">{children}</div>
-}
-function Field({ label, hint, children }: { label: string; hint?: string; children: React.ReactNode }) {
-  return <div><label className="block text-xs text-[#525252] mb-1">{label}</label>{children}{hint && <p className="text-[12px] text-[var(--t-text-muted)] mt-0.5">{hint}</p>}</div>
 }

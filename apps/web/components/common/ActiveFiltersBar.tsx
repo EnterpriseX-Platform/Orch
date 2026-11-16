@@ -10,7 +10,8 @@
  * Designed to slot into the existing filter-bar Card: no background,
  * just a thin row of chips.
  */
-import { X, Filter } from 'lucide-react'
+import { Filter } from 'lucide-react'
+import { Button, DismissibleTag } from '@carbon/react'
 
 export interface ActiveFilter {
   label: string
@@ -37,31 +38,20 @@ export function ActiveFiltersBar({
       <span className="text-[12px] text-[#525252]">
         Active filters
       </span>
-      {active.map((f, i) => {
-        return (
-          <span
-            key={i}
-            className="cds-tag inline-flex items-center gap-1.5 px-2 py-0.5 text-[12px] bg-[#e0e0e0] text-[#161616]"
-          >
-            <span className="text-[#525252]">{f.label}:</span>
-            <span>{f.value}</span>
-            <button
-              onClick={f.clear}
-              className="hover:bg-[#c6c6c6] rounded-full"
-              title={`Clear ${f.label}`}
-            >
-              <X className="w-3 h-3" />
-            </button>
-          </span>
-        )
-      })}
+      {active.map((f, i) => (
+        <DismissibleTag
+          key={i}
+          size="sm"
+          type="gray"
+          text={`${f.label}: ${f.value}`}
+          title={`Clear ${f.label}`}
+          onClose={f.clear}
+        />
+      ))}
       {onClearAll && active.length > 1 && (
-        <button
-          onClick={onClearAll}
-          className="h-6 px-2 text-[12px] text-[#0f62fe] hover:bg-[#e8e8e8] ml-1"
-        >
+        <Button kind="ghost" size="sm" onClick={onClearAll} className="ml-1">
           Clear all
-        </button>
+        </Button>
       )}
     </div>
   )

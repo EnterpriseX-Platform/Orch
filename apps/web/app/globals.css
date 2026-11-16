@@ -253,10 +253,10 @@
 /* ==================== IBM Carbon g10 (MaintainX design system) ==================== */
 /* Carbon g10, compact density (same system as FILEHUB-X carbon.css):
    no radius, no shadow, one type scale. Exceptions: circles and status tags. */
-*:not(.rounded-full):not(.cds-tag):not([style*="border-radius: 50%"]):not([style*="border-radius: 9999"]) {
+*:not(.rounded-full):not(.cds-tag):not([class*="cds--"]):not([style*="border-radius: 50%"]):not([style*="border-radius: 9999"]) {
   border-radius: 0 !important;
 }
-*, *::before, *::after { box-shadow: none !important; }
+:where(*:not([class*="cds--"]), *:not([class*="cds--"])::before, *:not([class*="cds--"])::after) { box-shadow: none !important; }
 main h1 { font-size: 20px !important; line-height: 28px !important; font-weight: 400 !important; letter-spacing: 0; }
 main h2 { font-size: 16px !important; line-height: 22px !important; font-weight: 400 !important; }
 main h3 { font-size: 14px !important; line-height: 20px !important; font-weight: 600 !important; }
@@ -276,7 +276,7 @@ main button { white-space: nowrap; }
 :where(main, [role="dialog"], .fixed.inset-0) :is(
   input:not([type="checkbox"]):not([type="radio"]):not([type="color"]):not([type="range"]):not([type="file"]):not([type="hidden"]),
   select, textarea
-):not(.react-flow *) {
+):not(.react-flow *):not([class*="cds--"]) {
   background-color: #f4f4f4 !important;
   border: 0 !important;
   border-bottom: 1px solid #8d8d8d !important;
@@ -288,7 +288,7 @@ main button { white-space: nowrap; }
 :where(main, [role="dialog"], .fixed.inset-0) :is(
   input:not([type="checkbox"]):not([type="radio"]):not([type="color"]):not([type="range"]):not([type="file"]):not([type="hidden"]),
   select
-):not(.react-flow *) {
+):not(.react-flow *):not([class*="cds--"]) {
   min-height: 36px;
 }
 :where(main, [role="dialog"], .fixed.inset-0) :is(input, select, textarea):focus-visible,

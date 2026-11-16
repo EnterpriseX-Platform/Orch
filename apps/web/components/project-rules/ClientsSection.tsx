@@ -14,12 +14,13 @@
  * the parent Client + project so backfill is unnecessary for new
  * entries.
  */
-import { useState } from 'react'
+import { useId, useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import {
   Plus, Pencil, Trash2, Loader2, ChevronRight, ChevronDown,
   MonitorSmartphone, Smartphone,
 } from 'lucide-react'
+import { Button, Modal, Select, SelectItem, Tag, TextInput } from '@carbon/react'
 import { clientAppApi, screenApi, messageFormatApi } from '@/lib/api'
 import { toast } from 'sonner'
 import { confirmDialog } from '@/components/common/ConfirmDialog'
@@ -70,9 +71,9 @@ export function ClientsSection({ projectId }: { projectId: string }) {
         <p className="text-xs text-[var(--t-text-muted)]">
           Consumer apps for this project. Each client has its own screens and buttons that map to MessageFormats.
         </p>
-        <button onClick={() => setShowCreate(true)} className="flex items-center gap-2 h-8 px-3 text-sm text-white bg-[#0f62fe] hover:bg-[#0353e9]">
-          <Plus className="w-3.5 h-3.5" /> New Client
-        </button>
+        <Button kind="primary" size="sm" renderIcon={Plus} onClick={() => setShowCreate(true)}>
+          New Client
+        </Button>
       </div>
 
       {isLoading ? (
@@ -82,7 +83,7 @@ export function ClientsSection({ projectId }: { projectId: string }) {
           <Smartphone className="w-8 h-8 text-[var(--t-text-muted)] mx-auto mb-2" />
           <p className="text-sm text-[var(--t-text)]">No client apps yet</p>
           <p className="text-xs text-[var(--t-text-muted)] mt-1 mb-3">e.g. Web Client, Mobile App</p>
-          <button onClick={() => setShowCreate(true)} className="text-sm h-8 px-3 bg-[#0f62fe] text-white inline-flex items-center gap-2 hover:bg-[#0353e9]">Create one</button>
+          <Button kind="primary" size="sm" onClick={() => setShowCreate(true)}>Create one</Button>
         </div>
       ) : (
         <div className="space-y-2">
@@ -140,12 +141,8 @@ function ClientRow({
           {client.description && <span className="text-xs text-[var(--t-text-muted)] ml-2 truncate">{client.description}</span>}
         </div>
         <div className="flex items-center gap-1 shrink-0">
-          <button onClick={(e) => { e.stopPropagation(); onEdit() }} className="p-1.5 hover:bg-[#e8e8e8]">
-            <Pencil className="w-3.5 h-3.5 text-[var(--t-text-muted)]" />
-          </button>
-          <button onClick={(e) => { e.stopPropagation(); onDelete() }} className="p-1.5 rounded-none hover:bg-[#e8e8e8]">
-            <Trash2 className="w-3.5 h-3.5 text-[#da1e28]" />
-          </button>
+          <Button kind="ghost" size="sm" hasIconOnly renderIcon={Pencil} iconDescription="Edit" onClick={(e) => { e.stopPropagation(); onEdit() }} />
+          <Button kind="danger--ghost" size="sm" hasIconOnly renderIcon={Trash2} iconDescription="Delete" onClick={(e) => { e.stopPropagation(); onDelete() }} />
         </div>
       </div>
       {expanded && <ScreensPanel clientId={client.id} projectId={projectId} />}
@@ -194,9 +191,7 @@ function ScreensPanel({ clientId, projectId }: { clientId: string; projectId: st
                   <span className="text-xs text-[var(--t-text)] truncate">{s.name}</span>
                   <span className="text-[12px] text-[var(--t-text-muted)]">· {s.buttons?.length ?? 0} btn</span>
                 </div>
-                <button onClick={(e) => { e.stopPropagation(); del.mutate(s.id) }} className="p-1 hover:bg-[#e8e8e8] rounded-none">
-                  <Trash2 className="w-3 h-3 text-[#da1e28]" />
-                </button>
+                <Button kind="danger--ghost" size="sm" hasIconOnly renderIcon={Trash2} iconDescription="Delete screen" onClick={(e) => { e.stopPropagation(); del.mutate(s.id) }} />
               </div>
               {expandedScreen === s.id && <ButtonsList screen={s} onChange={() => qc.invalidateQueries({ queryKey: ['screens', { clientId }] })} />}
             </div>
@@ -207,9 +202,9 @@ function ScreensPanel({ clientId, projectId }: { clientId: string; projectId: st
       {showAdd ? (
         <ScreenAddForm onCancel={() => setShowAdd(false)} onSubmit={d => create.mutate(d)} pending={create.isPending} />
       ) : (
-        <button onClick={() => setShowAdd(true)} className="text-sm h-8 px-3 bg-[#0f62fe] text-white inline-flex items-center gap-2 hover:bg-[#0353e9]">
-          <Plus className="w-3.5 h-3.5" />Add screen
-        </button>
+        <Button kind="primary" size="sm" renderIcon={Plus} onClick={() => setShowAdd(true)}>
+          Add screen
+        </Button>
       )}
     </div>
   )
@@ -217,18 +212,19 @@ function ScreensPanel({ clientId, projectId }: { clientId: string; projectId: st
 
 function ScreenAddForm({ onCancel, onSubmit, pending }: { onCancel: () => void; onSubmit: (d: any) => void; pending: boolean }) {
   const [f, setF] = useState({ code: '', name: '', system: '' })
+  const uid = useId()
   return (
     <div className="rounded-none bg-[var(--t-panel)] border border-[var(--t-border)] p-3 space-y-2">
       <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
-        <input placeholder="Screen code *" value={f.code} onChange={e => setF({ ...f, code: e.target.value })} className="px-2 py-1.5 text-sm text-[var(--t-text)] font-mono" />
-        <input placeholder="Screen name (Thai)" value={f.name} onChange={e => setF({ ...f, name: e.target.value })} className="px-2 py-1.5 text-sm text-[var(--t-text)]" />
-        <input placeholder="System tag (optional)" value={f.system} onChange={e => setF({ ...f, system: e.target.value })} className="px-2 py-1.5 text-sm text-[var(--t-text)]" />
+        <TextInput id={`${uid}-code`} labelText="Screen code" hideLabel size="sm" placeholder="Screen code *" value={f.code} onChange={e => setF({ ...f, code: e.target.value })} className="font-mono" />
+        <TextInput id={`${uid}-name`} labelText="Screen name" hideLabel size="sm" placeholder="Screen name (Thai)" value={f.name} onChange={e => setF({ ...f, name: e.target.value })} />
+        <TextInput id={`${uid}-system`} labelText="System tag" hideLabel size="sm" placeholder="System tag (optional)" value={f.system} onChange={e => setF({ ...f, system: e.target.value })} />
       </div>
       <div className="flex justify-end gap-2">
-        <button onClick={onCancel} className="h-6 px-2 text-xs text-[#0f62fe] hover:bg-[#e8e8e8]">Cancel</button>
-        <button onClick={() => onSubmit({ ...f, system: f.system || null, name: f.name || f.code })} disabled={!f.code || pending} className="h-6 px-2 text-xs bg-[#0f62fe] text-white hover:bg-[#0353e9] disabled:opacity-50">
+        <Button kind="ghost" size="sm" onClick={onCancel}>Cancel</Button>
+        <Button kind="primary" size="sm" onClick={() => onSubmit({ ...f, system: f.system || null, name: f.name || f.code })} disabled={!f.code || pending}>
           {pending ? <Loader2 className="w-3 h-3 animate-spin inline mr-1" /> : null}Add
-        </button>
+        </Button>
       </div>
     </div>
   )
@@ -270,13 +266,11 @@ function ButtonsList({ screen, onChange }: { screen: any; onChange: () => void }
             {screen.buttons.map((b: any) => (
               <tr key={b.id} className="border-b border-[var(--t-border-light)]">
                 <td className="px-2 py-1">{b.buttonLabel}</td>
-                <td className="px-2 py-1">{b.actionType && <span className="cds-tag text-[12px] px-2 py-0.5 bg-[#d0e2ff] text-[#0043ce]">{b.actionType}</span>}</td>
+                <td className="px-2 py-1">{b.actionType && <Tag type="blue" size="sm">{b.actionType}</Tag>}</td>
                 <td className="px-2 py-1 font-mono">{b.messageFormat ? (b.messageFormat.code ?? b.messageFormat.name) : <span className="text-[var(--t-text-muted)]">unbound</span>}</td>
                 <td className="px-2 py-1 text-[12px] text-[var(--t-text-muted)]">{b.detectionSource ?? '—'}</td>
                 <td className="px-2 py-1 text-right">
-                  <button onClick={() => del.mutate(b.id)} className="p-0.5 hover:bg-[#e8e8e8] rounded-none">
-                    <Trash2 className="w-3 h-3 text-[#da1e28]" />
-                  </button>
+                  <Button kind="danger--ghost" size="sm" hasIconOnly renderIcon={Trash2} iconDescription="Delete button" onClick={() => del.mutate(b.id)} />
                 </td>
               </tr>
             ))}
@@ -286,9 +280,9 @@ function ButtonsList({ screen, onChange }: { screen: any; onChange: () => void }
       {showAdd ? (
         <ButtonAddForm formats={formatOptions} onCancel={() => setShowAdd(false)} onSubmit={d => create.mutate(d)} pending={create.isPending} />
       ) : (
-        <button onClick={() => setShowAdd(true)} className="text-xs h-6 px-2 bg-[#0f62fe] text-white hover:bg-[#0353e9] inline-flex items-center gap-1">
-          <Plus className="w-3 h-3" />Add button
-        </button>
+        <Button kind="primary" size="sm" renderIcon={Plus} onClick={() => setShowAdd(true)}>
+          Add button
+        </Button>
       )}
     </div>
   )
@@ -299,20 +293,23 @@ function ButtonAddForm({ formats, onCancel, onSubmit, pending }: { formats: any[
     buttonLabel: '', tabName: '', actionType: '', messageFormatId: '',
     detectionSource: '', detectionField: '', detectionValue: '',
   })
+  const uid = useId()
   return (
     <div className="rounded-none bg-[var(--t-panel)] border border-[var(--t-border)] p-2 space-y-1.5">
       <div className="grid grid-cols-1 md:grid-cols-3 gap-1.5">
-        <input placeholder="Button label *" value={f.buttonLabel} onChange={e => setF({ ...f, buttonLabel: e.target.value })} className="px-2 py-1 text-xs text-[var(--t-text)]" />
-        <input placeholder="Tab" value={f.tabName} onChange={e => setF({ ...f, tabName: e.target.value })} className="px-2 py-1 text-xs text-[var(--t-text)]" />
-        <input placeholder="Action (e.g. SIGNOFF)" value={f.actionType} onChange={e => setF({ ...f, actionType: e.target.value })} className="px-2 py-1 text-xs text-[var(--t-text)]" />
+        <TextInput id={`${uid}-label`} labelText="Button label" hideLabel size="sm" placeholder="Button label *" value={f.buttonLabel} onChange={e => setF({ ...f, buttonLabel: e.target.value })} />
+        <TextInput id={`${uid}-tab`} labelText="Tab" hideLabel size="sm" placeholder="Tab" value={f.tabName} onChange={e => setF({ ...f, tabName: e.target.value })} />
+        <TextInput id={`${uid}-action`} labelText="Action" hideLabel size="sm" placeholder="Action (e.g. SIGNOFF)" value={f.actionType} onChange={e => setF({ ...f, actionType: e.target.value })} />
       </div>
-      <select value={f.messageFormatId} onChange={e => setF({ ...f, messageFormatId: e.target.value })} className="w-full px-2 py-1 text-xs text-[var(--t-text)]">
-        <option value="">— bind MessageFormat (optional) —</option>
-        {formats.map((fmt: any) => <option key={fmt.id} value={fmt.id}>{fmt.code ?? fmt.name}{fmt.actionType ? ` · ${fmt.actionType}` : ''}</option>)}
-      </select>
+      <Select id={`${uid}-format`} labelText="MessageFormat" hideLabel size="sm" value={f.messageFormatId} onChange={e => setF({ ...f, messageFormatId: e.target.value })}>
+        <SelectItem value="" text="— bind MessageFormat (optional) —" />
+        {formats.map((fmt: any) => <SelectItem key={fmt.id} value={fmt.id} text={`${fmt.code ?? fmt.name}${fmt.actionType ? ` · ${fmt.actionType}` : ''}`} />)}
+      </Select>
       <div className="flex justify-end gap-2">
-        <button onClick={onCancel} className="h-6 px-2 text-xs text-[#0f62fe] hover:bg-[#e8e8e8]">Cancel</button>
-        <button
+        <Button kind="ghost" size="sm" onClick={onCancel}>Cancel</Button>
+        <Button
+          kind="primary"
+          size="sm"
           disabled={!f.buttonLabel || pending}
           onClick={() => onSubmit({
             ...f,
@@ -323,10 +320,9 @@ function ButtonAddForm({ formats, onCancel, onSubmit, pending }: { formats: any[
             detectionField: f.detectionField || null,
             detectionValue: f.detectionValue || null,
           })}
-          className="h-6 px-2 text-xs bg-[#0f62fe] text-white hover:bg-[#0353e9] disabled:opacity-50"
         >
           {pending ? <Loader2 className="w-3 h-3 animate-spin inline mr-1" /> : null}Add
-        </button>
+        </Button>
       </div>
     </div>
   )
@@ -343,40 +339,21 @@ function Editor({ item, projectId, onClose, onSaved }: { item: Cl | null; projec
     onError: (e: any) => toast.error(e?.message ?? 'Save failed'),
   })
   return (
-    <div className="fixed inset-0 z-50 bg-[rgba(22,22,22,0.5)] flex items-center justify-center p-4" onClick={onClose}>
-      <div className="bg-[var(--t-panel)] border border-[var(--t-border)] rounded-none w-full max-w-md" onClick={e => e.stopPropagation()}>
-        <div className="flex items-center justify-between px-5 py-3 border-b border-[var(--t-border)]">
-          <h2 className="text-[20px] font-normal text-[var(--t-text)]">{isEdit ? 'Edit Client' : 'New Client'}</h2>
-          <button onClick={onClose} className="text-[var(--t-text-muted)]">✕</button>
-        </div>
-        <div className="p-5 space-y-3">
-          <FieldRow label="Name *">
-            <input value={f.name ?? ''} onChange={e => setF(p => ({ ...p, name: e.target.value }))} className="w-full px-3 py-2 text-sm text-[var(--t-text)]" placeholder="e.g. Web Client" />
-          </FieldRow>
-          <FieldRow label="App Code" hint="Stable identifier — frontend can send via X-Client-App header">
-            <input value={f.appCode ?? ''} onChange={e => setF(p => ({ ...p, appCode: e.target.value }))} className="w-full px-3 py-2 text-sm text-[var(--t-text)] font-mono" placeholder="e.g. WEB_CLIENT" />
-          </FieldRow>
-          <FieldRow label="Description">
-            <input value={f.description ?? ''} onChange={e => setF(p => ({ ...p, description: e.target.value }))} className="w-full px-3 py-2 text-sm text-[var(--t-text)]" />
-          </FieldRow>
-        </div>
-        <div className="px-5 py-3 border-t border-[var(--t-border)] flex justify-end gap-2">
-          <button onClick={onClose} className="h-8 px-3 text-sm inline-flex items-center gap-2 bg-[#393939] text-white hover:bg-[#474747]">Cancel</button>
-          <button onClick={() => save.mutate()} disabled={!f.name || save.isPending} className="h-8 px-3 text-sm bg-[#0f62fe] text-white disabled:opacity-50 inline-flex items-center gap-2 hover:bg-[#0353e9]">
-            {save.isPending ? <Loader2 className="w-4 h-4 animate-spin inline mr-1" /> : null}Save
-          </button>
-        </div>
+    <Modal
+      open
+      size="sm"
+      modalHeading={isEdit ? 'Edit Client' : 'New Client'}
+      primaryButtonText={save.isPending ? 'Saving…' : 'Save'}
+      secondaryButtonText="Cancel"
+      primaryButtonDisabled={!f.name || save.isPending}
+      onRequestClose={onClose}
+      onRequestSubmit={() => save.mutate()}
+    >
+      <div className="space-y-3">
+        <TextInput id="client-name" labelText="Name *" value={f.name ?? ''} onChange={e => setF(p => ({ ...p, name: e.target.value }))} placeholder="e.g. Web Client" />
+        <TextInput id="client-app-code" labelText="App Code" helperText="Stable identifier — frontend can send via X-Client-App header" value={f.appCode ?? ''} onChange={e => setF(p => ({ ...p, appCode: e.target.value }))} className="font-mono" placeholder="e.g. WEB_CLIENT" />
+        <TextInput id="client-description" labelText="Description" value={f.description ?? ''} onChange={e => setF(p => ({ ...p, description: e.target.value }))} />
       </div>
-    </div>
-  )
-}
-
-function FieldRow({ label, hint, children }: { label: string; hint?: string; children: React.ReactNode }) {
-  return (
-    <div>
-      <label className="block text-xs text-[#525252] mb-1">{label}</label>
-      {children}
-      {hint && <p className="text-[12px] text-[var(--t-text-muted)] mt-0.5">{hint}</p>}
-    </div>
+    </Modal>
   )
 }

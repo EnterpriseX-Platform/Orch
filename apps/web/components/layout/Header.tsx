@@ -4,7 +4,8 @@ import { useState, useRef, useEffect } from 'react'
 import { TenantSwitcher } from './TenantSwitcher'
 import { useTenantStore } from '@/stores/tenantStore'
 import { useAuthStore } from '@/stores/authStore'
-import { Bell, Search, Settings, HelpCircle, User, LogOut, Menu, X, ChevronRight } from 'lucide-react'
+import { Header as CarbonHeader, HeaderMenuButton, HeaderName, HeaderGlobalBar, HeaderGlobalAction, SkipToContent, Theme } from '@carbon/react'
+import { Bell, Search, Settings, HelpCircle, User, LogOut } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
 import { useRouter, usePathname } from 'next/navigation'
 import Link from 'next/link'
@@ -202,30 +203,25 @@ export function Header({ sidebarCollapsed = false, onToggleSidebar }: HeaderProp
   }
 
   const initial = (user?.fullName || user?.username || 'A').charAt(0).toUpperCase()
-  const iconBtn = 'h-12 w-12 flex items-center justify-center text-[#c6c6c6] hover:bg-[#333333] hover:text-white transition-colors'
 
   return (
-    <header
-      style={{ fontFamily: FONT, backgroundColor: '#161616' }}
-      className="fixed top-0 left-0 right-0 h-12 z-[45] flex items-stretch border-b border-[#393939]"
-    >
-      {/* Left: menu toggle + product name + tenant */}
-      <button
+    <Theme theme="g100">
+    <CarbonHeader aria-label="Orch Platform">
+      <SkipToContent href="#main-content" />
+      <HeaderMenuButton
+        aria-label={sidebarCollapsed ? 'Open menu' : 'Close menu'}
+        isActive={!sidebarCollapsed}
+        isCollapsible
         onClick={onToggleSidebar}
-        className={iconBtn}
-        aria-label={sidebarCollapsed ? 'Expand side navigation' : 'Collapse side navigation'}
-        title={sidebarCollapsed ? 'Expand' : 'Collapse'}
-      >
-        {sidebarCollapsed ? <Menu className="w-5 h-5" /> : <X className="w-5 h-5" />}
-      </button>
-      <Link href="/dashboard" className="flex items-center px-4 text-[14px] text-white whitespace-nowrap hover:bg-[#333333]">
-        <span className="font-semibold">Orch</span>&nbsp;<span className="text-[#c6c6c6]">Platform</span>
-      </Link>
+      />
+      <HeaderName as={Link} href="/dashboard" prefix="Orch">
+        Platform
+      </HeaderName>
       <div className="w-px my-3 bg-[#393939]" />
       <TenantSwitcher variant="dark" />
 
       {/* Right: search, notifications, user */}
-      <div className="ml-auto flex items-stretch">
+      <HeaderGlobalBar>
         <div className="hidden md:flex items-center px-2">
           <div className="relative w-56 xl:w-72">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#8d8d8d]" />
@@ -239,15 +235,15 @@ export function Header({ sidebarCollapsed = false, onToggleSidebar }: HeaderProp
 
         {/* Notifications */}
         <div className="relative" ref={notificationsRef}>
-          <button
-            onClick={() => setShowNotifications(!showNotifications)}
-            className={iconBtn + ' relative'}
-            style={showNotifications ? { backgroundColor: '#393939', color: '#fff' } : undefined}
+          <HeaderGlobalAction
             aria-label="Notifications"
+            isActive={showNotifications}
+            onClick={() => setShowNotifications(!showNotifications)}
+            className="relative"
           >
             <Bell className="w-5 h-5" />
             <span className="absolute top-3 right-3 w-2 h-2 bg-[#da1e28] rounded-full" />
-          </button>
+          </HeaderGlobalAction>
           {showNotifications && (
             <div className="absolute right-0 top-12 w-80 border-x border-b" style={{ backgroundColor: 'var(--t-panel)', borderColor: 'var(--t-border)' }}>
               <div className="px-4 h-10 border-b flex items-center justify-between" style={{ borderColor: 'var(--t-border)' }}>
@@ -274,16 +270,16 @@ export function Header({ sidebarCollapsed = false, onToggleSidebar }: HeaderProp
 
         {/* User */}
         <div className="relative" ref={userMenuRef}>
-          <button
-            onClick={() => setShowUserMenu(!showUserMenu)}
-            className={iconBtn}
-            style={showUserMenu ? { backgroundColor: '#393939' } : undefined}
+          <HeaderGlobalAction
             aria-label="User menu"
+            isActive={showUserMenu}
+            onClick={() => setShowUserMenu(!showUserMenu)}
+            tooltipAlignment="end"
           >
             <span className="w-7 h-7 rounded-full bg-[#0f62fe] text-white text-[12px] font-semibold flex items-center justify-center">
               {initial}
             </span>
-          </button>
+          </HeaderGlobalAction>
           {showUserMenu && (
             <div className="absolute right-0 top-12 w-60 border-x border-b" style={{ backgroundColor: 'var(--t-panel)', borderColor: 'var(--t-border)' }}>
               <div className="px-4 py-3 border-b" style={{ borderColor: 'var(--t-border)' }}>
@@ -309,7 +305,8 @@ export function Header({ sidebarCollapsed = false, onToggleSidebar }: HeaderProp
             </div>
           )}
         </div>
-      </div>
-    </header>
+      </HeaderGlobalBar>
+    </CarbonHeader>
+    </Theme>
   )
 }

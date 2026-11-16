@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Prompt } from "next/font/google";
 import "./globals.css";
+import "./carbon.css"; // generated from carbon.scss — run: pnpm build:carbon-css
 import { Providers } from "./providers";
 
 const prompt = Prompt({

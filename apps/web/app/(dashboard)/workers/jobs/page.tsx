@@ -16,8 +16,20 @@ import {
   RotateCw,
   Ban,
 } from 'lucide-react'
+import {
+  Button,
+  ContentSwitcher,
+  Switch,
+  Tag,
+  Table,
+  TableHead,
+  TableRow,
+  TableHeader,
+  TableBody,
+  TableCell,
+} from '@carbon/react'
 
-const FONT = "'Prompt', sans-serif"
+const FONT = '"IBM Plex Sans Thai", "IBM Plex Sans", "Sarabun", system-ui, sans-serif'
 
 const THEME = {
   bg: 'var(--t-bg)',
@@ -27,11 +39,11 @@ const THEME = {
   text: { primary: 'var(--t-text)', secondary: 'var(--t-text-secondary)', muted: 'var(--t-text-muted)' },
   accent: 'var(--t-accent)',
   colors: {
-    blue: '#3B82F6',
-    emerald: '#10B981',
-    purple: '#8B5CF6',
-    amber: '#F59E0B',
-    red: '#EF4444',
+    blue: '#0f62fe',
+    emerald: '#24a148',
+    purple: '#8a3ffc',
+    amber: '#ba4e00',
+    red: '#da1e28',
     slate: '#64748B',
   }
 }
@@ -64,14 +76,14 @@ interface JobsResponse {
   totalPages: number
 }
 
-const statusConfig: Record<string, { color: string; icon: React.ElementType; label: string }> = {
-  PENDING:    { color: '#64748B', icon: Clock,        label: 'Pending' },
-  QUEUED:     { color: '#3B82F6', icon: Clock,        label: 'Queued' },
-  PROCESSING: { color: '#F59E0B', icon: Loader2,      label: 'Processing' },
-  SUCCESS:    { color: '#10B981', icon: CheckCircle2, label: 'Success' },
-  FAILED:     { color: '#EF4444', icon: XCircle,      label: 'Failed' },
-  RETRYING:   { color: '#F59E0B', icon: RotateCw,     label: 'Retrying' },
-  CANCELLED:  { color: '#64748B', icon: Ban,          label: 'Cancelled' },
+const statusConfig: Record<string, { color: string; icon: React.ElementType; label: string; tag: 'gray' | 'blue' | 'warm-gray' | 'green' | 'red' | 'purple' }> = {
+  PENDING:    { color: '#64748B', icon: Clock,        label: 'Pending', tag: 'gray' },
+  QUEUED:     { color: '#0f62fe', icon: Clock,        label: 'Queued', tag: 'blue' },
+  PROCESSING: { color: '#ba4e00', icon: Loader2,      label: 'Processing', tag: 'warm-gray' },
+  SUCCESS:    { color: '#24a148', icon: CheckCircle2, label: 'Success', tag: 'green' },
+  FAILED:     { color: '#da1e28', icon: XCircle,      label: 'Failed', tag: 'red' },
+  RETRYING:   { color: '#ba4e00', icon: RotateCw,     label: 'Retrying', tag: 'purple' },
+  CANCELLED:  { color: '#64748B', icon: Ban,          label: 'Cancelled', tag: 'gray' },
 }
 
 export default function WorkerJobsPage() {
@@ -128,30 +140,13 @@ export default function WorkerJobsPage() {
         <div>
           <h1 style={{ fontSize: 22, fontWeight: 700, color: THEME.text.primary }}>Worker Jobs</h1>
           <p style={{ fontSize: 13, color: THEME.text.muted, marginTop: 2 }}>
-            Manage and monitor the status of async jobs from the worker
+            Manage and track async jobs from workers
           </p>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <button
-            onClick={() => refetch()}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 6,
-              padding: '6px 14px',
-              background: THEME.panel,
-              border: `1px solid ${THEME.border}`,
-              borderRadius: 8,
-              fontSize: 13,
-              color: THEME.text.secondary,
-              cursor: 'pointer',
-              transition: 'all 0.15s ease',
-            }}
-            className="hover:border-[#3B82F6] hover:text-[#3B82F6]"
-          >
-            <RefreshCw className="w-4 h-4" />
+          <Button kind="tertiary" size="sm" renderIcon={RefreshCw} onClick={() => refetch()}>
             Refresh
-          </button>
+          </Button>
         </div>
       </div>
 
@@ -166,39 +161,17 @@ export default function WorkerJobsPage() {
         padding: 12,
         marginBottom: 12,
       }}>
-        <div className="flex flex-wrap gap-2">
-          {filterTabs.map((tab) => (
-            <button
-              key={tab.id}
-              onClick={() => { setStatusFilter(tab.id); setPage(1) }}
-              style={{
-                padding: '4px 10px',
-                fontSize: 12,
-                fontWeight: 500,
-                borderRadius: 6,
-                border: statusFilter === tab.id ? 'none' : `1px solid ${THEME.border}`,
-                background: statusFilter === tab.id ? THEME.accent : 'var(--t-input)',
-                color: statusFilter === tab.id ? '#FFFFFF' : THEME.text.secondary,
-                transition: 'all 0.15s ease',
-                display: 'flex',
-                alignItems: 'center',
-                gap: 6,
-                cursor: 'pointer',
-                fontFamily: FONT,
-              }}
-            >
-              {tab.label}
-              <span style={{
-                padding: '1px 5px',
-                borderRadius: 10,
-                fontSize: 11,
-                background: statusFilter === tab.id ? 'rgba(255,255,255,0.2)' : THEME.panel,
-                color: statusFilter === tab.id ? '#FFFFFF' : THEME.text.muted,
-              }}>
-                {tab.count}
-              </span>
-            </button>
-          ))}
+        <div style={{ overflowX: 'auto' }}>
+          <ContentSwitcher
+            size="sm"
+            selectedIndex={Math.max(0, filterTabs.findIndex((t) => t.id === statusFilter))}
+            onChange={({ index }: { index?: number }) => { setStatusFilter(filterTabs[index ?? 0].id); setPage(1) }}
+            style={{ minWidth: 820 }}
+          >
+            {filterTabs.map((tab) => (
+              <Switch key={tab.id} name={tab.id} text={`${tab.label} (${tab.count})`} />
+            ))}
+          </ContentSwitcher>
         </div>
       </div>
 
@@ -209,112 +182,56 @@ export default function WorkerJobsPage() {
         borderRadius: 10,
         overflow: 'hidden',
       }}>
-        <table style={{ width: '100%', fontSize: 13, borderCollapse: 'collapse', fontFamily: FONT }}>
-          <thead>
-            <tr style={{ borderBottom: `1px solid ${THEME.border}`, background: 'var(--t-input)' }}>
+        <div style={{ overflowX: 'auto' }}>
+        <Table size="md" useZebraStyles={false}>
+          <TableHead>
+            <TableRow>
               {['Status', 'Node Type', 'Queue', 'Retry', 'Job ID', 'Created', ''].map((h) => (
-                <th key={h} style={{
-                  padding: '10px 14px',
-                  textAlign: 'left',
-                  fontSize: 11,
-                  fontWeight: 600,
-                  color: THEME.text.muted,
-                  letterSpacing: 0.5,
-                  textTransform: 'uppercase',
-                }}>
-                  {h}
-                </th>
+                <TableHeader key={h || 'actions'}>{h}</TableHeader>
               ))}
-            </tr>
-          </thead>
-          <tbody>
+            </TableRow>
+          </TableHead>
+          <TableBody>
             {isLoading ? (
-              <tr>
-                <td colSpan={7} style={{ padding: 32, textAlign: 'center', color: THEME.text.muted }}>
+              <TableRow>
+                <TableCell colSpan={7} style={{ padding: 32, textAlign: 'center', color: THEME.text.muted }}>
                   Loading...
-                </td>
-              </tr>
+                </TableCell>
+              </TableRow>
             ) : jobs.length === 0 ? (
-              <tr>
-                <td colSpan={7} style={{ padding: 32, textAlign: 'center', color: THEME.text.muted }}>
+              <TableRow>
+                <TableCell colSpan={7} style={{ padding: 32, textAlign: 'center', color: THEME.text.muted }}>
                   No jobs
-                </td>
-              </tr>
+                </TableCell>
+              </TableRow>
             ) : (
               jobs.map((job) => {
                 const cfg = statusConfig[job.status] || statusConfig.PENDING
                 const Icon = cfg.icon
                 return (
-                  <tr
-                    key={job.id}
-                    style={{ borderTop: `1px solid ${THEME.borderLight}` }}
-                    className="hover:bg-[var(--t-panel-hover)]"
-                  >
-                    <td style={{ padding: '10px 14px' }}>
-                      <span style={{
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        gap: 5,
-                        padding: '2px 8px',
-                        fontSize: 11,
-                        fontWeight: 600,
-                        borderRadius: 6,
-                        background: `${cfg.color}15`,
-                        color: cfg.color,
-                        border: `1px solid ${cfg.color}30`,
-                      }}>
-                        <Icon className="w-3 h-3" />
-                        {cfg.label}
-                      </span>
-                    </td>
-                    <td style={{ padding: '10px 14px', color: THEME.text.primary }}>{job.nodeType}</td>
-                    <td style={{ padding: '10px 14px', fontSize: 12, color: THEME.text.secondary }}>
-                      {job.queueName}
-                    </td>
-                    <td style={{ padding: '10px 14px', fontSize: 12, color: THEME.text.muted }}>
-                      {job.retryCount}/{job.maxRetries}
-                    </td>
-                    <td style={{ padding: '10px 14px' }}>
-                      <code style={{
-                        fontSize: 11,
-                        color: THEME.text.muted,
-                        background: 'var(--t-input)',
-                        padding: '2px 6px',
-                        borderRadius: 4,
-                      }}>
-                        {job.id.slice(0, 12)}...
-                      </code>
-                    </td>
-                    <td style={{ padding: '10px 14px', fontSize: 12, color: THEME.text.muted }}>
-                      {new Date(job.createdAt).toLocaleString('th-TH')}
-                    </td>
-                    <td style={{ padding: '10px 14px' }}>
-                      <button
-                        onClick={() => setSelectedJob(job)}
-                        style={{
-                          padding: '4px 8px',
-                          border: `1px solid ${THEME.border}`,
-                          borderRadius: 6,
-                          background: 'transparent',
-                          color: THEME.text.secondary,
-                          cursor: 'pointer',
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: 4,
-                          fontSize: 12,
-                        }}
-                        className="hover:border-[#3B82F6] hover:text-[#3B82F6]"
-                      >
-                        <Eye className="w-3.5 h-3.5" />
+                  <TableRow key={job.id}>
+                    <TableCell>
+                      <Tag size="sm" type={cfg.tag} renderIcon={Icon}>{cfg.label}</Tag>
+                    </TableCell>
+                    <TableCell>{job.nodeType}</TableCell>
+                    <TableCell>{job.queueName}</TableCell>
+                    <TableCell>{job.retryCount}/{job.maxRetries}</TableCell>
+                    <TableCell>
+                      <code style={{ fontSize: 11 }}>{job.id.slice(0, 12)}...</code>
+                    </TableCell>
+                    <TableCell>{new Date(job.createdAt).toLocaleString('th-TH')}</TableCell>
+                    <TableCell>
+                      <Button kind="ghost" size="sm" renderIcon={Eye} onClick={() => setSelectedJob(job)}>
                         View
-                      </button>
-                    </td>
-                  </tr>
+                      </Button>
+                    </TableCell>
+                  </TableRow>
                 )
               })
             )}
-          </tbody>
-        </table>
+          </TableBody>
+        </Table>
+        </div>
       </div>
 
       {/* Pagination */}
@@ -330,41 +247,15 @@ export default function WorkerJobsPage() {
             Showing {jobs.length} of {data.total} jobs
           </span>
           <div style={{ display: 'flex', gap: 8 }}>
-            <button
-              disabled={page === 1}
-              onClick={() => setPage((p) => p - 1)}
-              style={{
-                padding: '6px 14px',
-                border: `1px solid ${THEME.border}`,
-                borderRadius: 6,
-                background: THEME.panel,
-                color: THEME.text.secondary,
-                fontSize: 12,
-                cursor: page === 1 ? 'not-allowed' : 'pointer',
-                opacity: page === 1 ? 0.5 : 1,
-              }}
-            >
+            <Button kind="tertiary" size="sm" disabled={page === 1} onClick={() => setPage((p) => p - 1)}>
               Previous
-            </button>
+            </Button>
             <span style={{ padding: '6px 14px', color: THEME.text.muted }}>
               Page {page}/{data.totalPages}
             </span>
-            <button
-              disabled={page >= data.totalPages}
-              onClick={() => setPage((p) => p + 1)}
-              style={{
-                padding: '6px 14px',
-                border: `1px solid ${THEME.border}`,
-                borderRadius: 6,
-                background: THEME.panel,
-                color: THEME.text.secondary,
-                fontSize: 12,
-                cursor: page >= data.totalPages ? 'not-allowed' : 'pointer',
-                opacity: page >= data.totalPages ? 0.5 : 1,
-              }}
-            >
+            <Button kind="tertiary" size="sm" disabled={page >= data.totalPages} onClick={() => setPage((p) => p + 1)}>
               Next
-            </button>
+            </Button>
           </div>
         </div>
       )}
@@ -407,18 +298,7 @@ export default function WorkerJobsPage() {
               alignItems: 'center',
             }}>
               <h2 style={{ fontSize: 16, fontWeight: 700, color: THEME.text.primary }}>Job Details</h2>
-              <button
-                onClick={() => setSelectedJob(null)}
-                style={{
-                  padding: 4,
-                  background: 'transparent',
-                  border: 'none',
-                  color: THEME.text.muted,
-                  cursor: 'pointer',
-                }}
-              >
-                <X className="w-5 h-5" />
-              </button>
+              <Button kind="ghost" size="sm" hasIconOnly renderIcon={X} iconDescription="Close" onClick={() => setSelectedJob(null)} />
             </div>
 
             {/* Body */}
@@ -433,21 +313,7 @@ export default function WorkerJobsPage() {
                     const cfg = statusConfig[selectedJob.status] || statusConfig.PENDING
                     const Icon = cfg.icon
                     return (
-                      <span style={{
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        gap: 5,
-                        padding: '2px 8px',
-                        fontSize: 11,
-                        fontWeight: 600,
-                        borderRadius: 6,
-                        background: `${cfg.color}15`,
-                        color: cfg.color,
-                        border: `1px solid ${cfg.color}30`,
-                      }}>
-                        <Icon className="w-3 h-3" />
-                        {cfg.label}
-                      </span>
+                      <Tag size="sm" type={cfg.tag} renderIcon={Icon}>{cfg.label}</Tag>
                     )
                   })()}
                 </div>
@@ -489,10 +355,10 @@ export default function WorkerJobsPage() {
               {selectedJob.errorMessage && (
                 <div style={{
                   padding: 10,
-                  border: `1px solid #EF444430`,
-                  background: '#EF444408',
+                  border: `1px solid #da1e2830`,
+                  background: '#da1e2808',
                   borderRadius: 6,
-                  color: '#EF4444',
+                  color: '#da1e28',
                   fontSize: 13,
                   marginBottom: 12,
                 }}>

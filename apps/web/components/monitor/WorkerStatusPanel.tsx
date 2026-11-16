@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
+import { InlineNotification, Tag, Table, TableHead, TableRow, TableHeader, TableBody, TableCell } from '@carbon/react';
 import { Cpu, Activity, Clock, AlertCircle, CheckCircle } from 'lucide-react';
 import { useAuthStore } from '@/stores/authStore';
 
@@ -76,10 +76,7 @@ export function WorkerStatusPanel() {
 
   if (error) {
     return (
-      <div className="flex items-center gap-2 text-[#da1e28]">
-        <AlertCircle className="w-4 h-4" />
-        <span className="text-sm">{error}</span>
-      </div>
+      <InlineNotification kind="error" title={error} hideCloseButton lowContrast />
     );
   }
 
@@ -144,49 +141,49 @@ export function WorkerStatusPanel() {
         </CardHeader>
         <CardContent>
           <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b">
-                  <th className="text-left p-2 font-medium">Worker Name</th>
-                  <th className="text-left p-2 font-medium">Queue</th>
-                  <th className="text-left p-2 font-medium">Status</th>
-                  <th className="text-left p-2 font-medium">Started At</th>
-                  <th className="text-right p-2 font-medium">Processed</th>
-                  <th className="text-right p-2 font-medium">Failed</th>
-                </tr>
-              </thead>
-              <tbody>
+            <Table size="md">
+              <TableHead>
+                <TableRow>
+                  <TableHeader>Worker Name</TableHeader>
+                  <TableHeader>Queue</TableHeader>
+                  <TableHeader>Status</TableHeader>
+                  <TableHeader>Started At</TableHeader>
+                  <TableHeader className="text-right">Processed</TableHeader>
+                  <TableHeader className="text-right">Failed</TableHeader>
+                </TableRow>
+              </TableHead>
+              <TableBody>
                 {workers.map((worker) => {
                   return (
-                    <tr key={worker.id} className="border-b last:border-0">
-                      <td className="p-2">
+                    <TableRow key={worker.id}>
+                      <TableCell>
                         <div className="flex flex-col">
                           <span className="font-medium text-sm">{worker.name}</span>
                           <span className="text-xs text-muted-foreground">ID: {worker.id}</span>
                         </div>
-                      </td>
-                      <td className="p-2">
-                        <Badge variant="outline" className="text-xs">{worker.queue}</Badge>
-                      </td>
-                      <td className="p-2">
+                      </TableCell>
+                      <TableCell>
+                        <Tag type="outline" size="sm">{worker.queue}</Tag>
+                      </TableCell>
+                      <TableCell>
                         <WorkerStatusBadge status={worker.status} />
-                      </td>
-                      <td className="p-2 text-muted-foreground text-xs">
+                      </TableCell>
+                      <TableCell className="text-muted-foreground text-xs">
                         {new Date(worker.started_at).toLocaleTimeString('th-TH')}
-                      </td>
-                      <td className="p-2 text-right font-mono text-xs">
+                      </TableCell>
+                      <TableCell className="text-right font-mono text-xs">
                         {worker.processed.toLocaleString()}
-                      </td>
-                      <td className="p-2 text-right font-mono text-xs">
+                      </TableCell>
+                      <TableCell className="text-right font-mono text-xs">
                         <span className={worker.failed > 0 ? 'text-[#da1e28]' : ''}>
                           {worker.failed.toLocaleString()}
                         </span>
-                      </td>
-                    </tr>
+                      </TableCell>
+                    </TableRow>
                   );
                 })}
-              </tbody>
-            </table>
+              </TableBody>
+            </Table>
           </div>
         </CardContent>
       </Card>
@@ -195,18 +192,16 @@ export function WorkerStatusPanel() {
 }
 
 function WorkerStatusBadge({ status }: { status: string }) {
-  const statusConfig: Record<string, { color: string; bg: string }> = {
-    'running': { color: 'text-[#0e6027]', bg: 'bg-[#defbe6]' },
-    'stopped': { color: 'text-[#525252]', bg: 'bg-[#e0e0e0]' },
-    'paused': { color: 'text-[#8a3800]', bg: 'bg-[#fcf4d6]' },
-    'error': { color: 'text-[#a2191f]', bg: 'bg-[#ffd7d9]' },
+  const statusType: Record<string, 'green' | 'gray' | 'warm-gray' | 'red'> = {
+    running: 'green',
+    stopped: 'gray',
+    paused: 'warm-gray',
+    error: 'red',
   };
 
-  const config = statusConfig[status.toLowerCase()] || { color: 'text-[#525252]', bg: 'bg-[#e0e0e0]' };
-
   return (
-    <span className={`inline-flex items-center px-2 py-0.5 cds-tag text-xs font-medium ${config.bg} ${config.color}`}>
+    <Tag type={statusType[status.toLowerCase()] ?? 'gray'} size="sm">
       {status.charAt(0).toUpperCase() + status.slice(1)}
-    </span>
+    </Tag>
   );
 }

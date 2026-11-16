@@ -15,6 +15,16 @@ import {
   Plus,
   ChevronRight,
 } from 'lucide-react'
+import {
+  Button,
+  Tag,
+  Table,
+  TableHead,
+  TableRow,
+  TableHeader,
+  TableBody,
+  TableCell,
+} from '@carbon/react'
 
 const FONT = '"IBM Plex Sans Thai", "IBM Plex Sans", "Sarabun", system-ui, sans-serif'
 
@@ -198,14 +208,9 @@ export default function DashboardPage() {
           <p style={{ fontSize: 13, color: THEME.text.muted, marginTop: 2 }}>Orch System Overview</p>
         </div>
         <div className="flex items-center gap-2">
-          <Link
-            href="/projects/new"
-            className="flex items-center gap-2 px-4 py-2 rounded-lg text-[13px] font-medium transition-all"
-            style={{ background: THEME.accent, color: '#fff' }}
-          >
-            <Plus className="w-4 h-4" />
+          <Button as={Link} href="/projects/new" kind="primary" size="sm" renderIcon={Plus}>
             Create Project
-          </Link>
+          </Button>
         </div>
       </div>
 
@@ -255,9 +260,9 @@ export default function DashboardPage() {
                   <p style={{ fontSize: 11, color: THEME.text.muted }}>Recently updated projects</p>
                 </div>
               </div>
-              <Link href="/projects" className="flex items-center gap-1 text-[12px] font-medium" style={{ color: THEME.accentLight }}>
-                View All <ArrowUpRight className="w-3.5 h-3.5" />
-              </Link>
+              <Button as={Link} href="/projects" kind="ghost" size="sm" renderIcon={ArrowUpRight}>
+                View All
+              </Button>
             </div>
             <div>
               {recentProjects?.data?.length > 0 ? recentProjects.data.slice(0, 5).map((project: any, i: number) => (
@@ -278,9 +283,9 @@ export default function DashboardPage() {
                   </div>
                   <div className="flex items-center gap-2">
                     {project._count?.apis > 0 && (
-                      <span style={{ fontSize: 11, color: THEME.text.secondary, background: 'var(--t-input)', padding: '2px 8px', borderRadius: 6 }}>
+                      <Tag size="sm" type="gray">
                         {project._count.apis} APIs
-                      </span>
+                      </Tag>
                     )}
                     <ChevronRight className="w-3.5 h-3.5" style={{ color: THEME.text.muted }} />
                   </div>
@@ -289,9 +294,9 @@ export default function DashboardPage() {
                 <div className="px-4 py-5 flex items-center justify-center gap-3">
                   <FolderKanban className="w-5 h-5" style={{ color: THEME.text.muted }} />
                   <p style={{ fontSize: 13, color: THEME.text.muted }}>No projects yet</p>
-                  <Link href="/projects/new" className="inline-flex items-center gap-1 text-[13px]" style={{ color: THEME.accentLight }}>
-                    <Plus className="w-3 h-3" /> Create First Project
-                  </Link>
+                  <Button as={Link} href="/projects/new" kind="ghost" size="sm" renderIcon={Plus}>
+                    Create First Project
+                  </Button>
                 </div>
               )}
             </div>
@@ -314,9 +319,9 @@ export default function DashboardPage() {
                   <p style={{ fontSize: 11, color: THEME.text.muted }}>Recent flow integrations</p>
                 </div>
               </div>
-              <Link href="/flows" className="flex items-center gap-1 text-[12px] font-medium" style={{ color: THEME.accentLight }}>
-                View All <ArrowUpRight className="w-3.5 h-3.5" />
-              </Link>
+              <Button as={Link} href="/flows" kind="ghost" size="sm" renderIcon={ArrowUpRight}>
+                View All
+              </Button>
             </div>
             <div>
               {recentFlows?.data?.length > 0 ? recentFlows.data.slice(0, 5).map((flow: any, i: number) => (
@@ -332,13 +337,9 @@ export default function DashboardPage() {
                     <p style={{ fontSize: 11, color: THEME.text.muted }}>{flow.triggerType || 'SYNC'} • {flow.nodes?.length ?? 0} nodes</p>
                   </div>
                   <div className="flex items-center gap-2">
-                    <span className="cds-tag" style={{
-                      fontSize: 12, padding: '2px 8px', lineHeight: '16px',
-                      background: flow.isActive ? '#a7f0ba' : '#e0e0e0',
-                      color: flow.isActive ? '#0e6027' : '#161616',
-                    }}>
+                    <Tag size="sm" type={flow.isActive ? 'green' : 'gray'}>
                       {flow.isActive ? 'Deployed' : 'Draft'}
-                    </span>
+                    </Tag>
                     <ChevronRight className="w-3.5 h-3.5" style={{ color: THEME.text.muted }} />
                   </div>
                 </Link>
@@ -346,9 +347,9 @@ export default function DashboardPage() {
                 <div className="px-4 py-5 flex items-center justify-center gap-3">
                   <Workflow className="w-5 h-5" style={{ color: THEME.text.muted }} />
                   <p style={{ fontSize: 13, color: THEME.text.muted }}>No flows yet</p>
-                  <Link href="/flows/builder" className="inline-flex items-center gap-1 text-[13px]" style={{ color: THEME.accentLight }}>
-                    <Plus className="w-3 h-3" /> Create First Flow
-                  </Link>
+                  <Button as={Link} href="/flows/builder" kind="ghost" size="sm" renderIcon={Plus}>
+                    Create First Flow
+                  </Button>
                 </div>
               )}
             </div>
@@ -370,53 +371,41 @@ export default function DashboardPage() {
                   <p style={{ fontSize: 11, color: THEME.text.muted }}>Most frequently called APIs</p>
                 </div>
               </div>
-              <Link href="/logs" className="flex items-center gap-1 text-[12px] font-medium" style={{ color: THEME.accentLight }}>
-                View Logs <ArrowUpRight className="w-3.5 h-3.5" />
-              </Link>
+              <Button as={Link} href="/logs" kind="ghost" size="sm" renderIcon={ArrowUpRight}>
+                View Logs
+              </Button>
             </div>
             <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr style={{ background: '#e0e0e0' }}>
-                    <th className="text-left px-4 py-2.5 text-[11px] font-semibold uppercase tracking-wider" style={{ color: THEME.text.muted }}>#</th>
-                    <th className="text-left px-4 py-2.5 text-[11px] font-semibold uppercase tracking-wider" style={{ color: THEME.text.muted }}>API Name</th>
-                    <th className="text-right px-4 py-2.5 text-[11px] font-semibold uppercase tracking-wider" style={{ color: THEME.text.muted }}>Requests</th>
-                    <th className="text-right px-4 py-2.5 text-[11px] font-semibold uppercase tracking-wider" style={{ color: THEME.text.muted }}>Avg Time</th>
-                    <th className="text-right px-4 py-2.5 text-[11px] font-semibold uppercase tracking-wider" style={{ color: THEME.text.muted }}>Error Rate</th>
-                  </tr>
-                </thead>
-                <tbody>
+              <Table size="md">
+                <TableHead>
+                  <TableRow>
+                    <TableHeader>#</TableHeader>
+                    <TableHeader>API Name</TableHeader>
+                    <TableHeader style={{ textAlign: 'right' }}>Requests</TableHeader>
+                    <TableHeader style={{ textAlign: 'right' }}>Avg Time</TableHeader>
+                    <TableHeader style={{ textAlign: 'right' }}>Error Rate</TableHeader>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
                   {dashboardData?.topApis?.length ? dashboardData.topApis.slice(0, 5).map((api, index) => (
-                    <tr key={api.apiId} className="hover:bg-[var(--t-panel-hover)] transition-colors" style={{ borderBottom: `1px solid ${THEME.borderLight}` }}>
-                      <td className="px-4 py-2.5">
-                        <span style={{ fontSize: 12, color: THEME.text.muted, fontWeight: 600 }}>#{index + 1}</span>
-                      </td>
-                      <td className="px-4 py-2.5">
-                        <p style={{ fontSize: 13, color: THEME.text.primary, fontWeight: 500 }}>{api.apiName}</p>
-                      </td>
-                      <td className="px-4 py-2.5 text-right">
-                        <span style={{ fontSize: 13, color: THEME.text.secondary, fontWeight: 600 }}>{api.requestCount.toLocaleString()}</span>
-                      </td>
-                      <td className="px-4 py-2.5 text-right">
-                        <span style={{ fontSize: 12, color: THEME.text.muted }}>{api.avgResponseTime}ms</span>
-                      </td>
-                      <td className="px-4 py-2.5 text-right">
-                        <span style={{
-                          fontSize: 12, padding: '2px 8px',
-                          background: api.errorRate > 5 ? '#ffd7d9' : '#a7f0ba',
-                          color: api.errorRate > 5 ? '#a2191f' : '#0e6027',
-                        }} className="cds-tag">{api.errorRate}%</span>
-                      </td>
-                    </tr>
+                    <TableRow key={api.apiId}>
+                      <TableCell>#{index + 1}</TableCell>
+                      <TableCell>{api.apiName}</TableCell>
+                      <TableCell style={{ textAlign: 'right' }}>{api.requestCount.toLocaleString()}</TableCell>
+                      <TableCell style={{ textAlign: 'right' }}>{api.avgResponseTime}ms</TableCell>
+                      <TableCell style={{ textAlign: 'right' }}>
+                        <Tag size="sm" type={api.errorRate > 5 ? 'red' : 'green'}>{api.errorRate}%</Tag>
+                      </TableCell>
+                    </TableRow>
                   )) : (
-                    <tr>
-                      <td colSpan={5} className="px-4 py-5 text-center" style={{ fontSize: 13, color: THEME.text.muted }}>
+                    <TableRow>
+                      <TableCell colSpan={5} style={{ textAlign: 'center', padding: 20, color: THEME.text.muted }}>
                         No API calls this week
-                      </td>
-                    </tr>
+                      </TableCell>
+                    </TableRow>
                   )}
-                </tbody>
-              </table>
+                </TableBody>
+              </Table>
             </div>
           </div>
         </div>
@@ -457,9 +446,9 @@ export default function DashboardPage() {
                 <h3 style={{ fontSize: 14, fontWeight: 600, color: THEME.text.primary }}>System Status</h3>
                 <p style={{ fontSize: 12, color: statusSummary.color }}>{statusSummary.text}</p>
               </div>
-              <Link href="/monitor" className="text-[12px] flex items-center gap-1" style={{ color: THEME.accentLight }}>
-                Monitor <ArrowUpRight className="w-3.5 h-3.5" />
-              </Link>
+              <Button as={Link} href="/monitor" kind="ghost" size="sm" renderIcon={ArrowUpRight}>
+                Monitor
+              </Button>
             </div>
             <div>
               {systemServices.map((svc) => (

@@ -14,7 +14,8 @@
  *   - cURL     : reconstruct the request as a copy-pasteable cURL
  */
 import { useState } from 'react'
-import { X, Copy, Check, Code, FileJson, Info, ExternalLink } from 'lucide-react'
+import { Copy, Check, Code, FileJson, Info, ExternalLink } from 'lucide-react'
+import { Button, ComposedModal, ModalHeader, ModalBody, Tabs, TabList, Tab } from '@carbon/react'
 import Link from 'next/link'
 import { toast } from 'sonner'
 
@@ -105,25 +106,19 @@ export function LogDetailModal({
     toast.success('cURL copied')
   }
 
-  const tabs: Array<{ id: TabId; label: string; icon: React.ComponentType<{ className?: string }> }> = [
+  const tabs: Array<{ id: TabId; label: string; icon: React.ComponentType<Record<string, unknown>> }> = [
     { id: 'info',     label: 'Info',     icon: Info },
     { id: 'request',  label: 'Request',  icon: FileJson },
     { id: 'response', label: 'Response', icon: FileJson },
     { id: 'curl',     label: 'cURL',     icon: Code },
   ]
 
+  const tabIndex = tabs.findIndex((t) => t.id === tab)
+
   return (
-    <div
-      className="fixed inset-0 z-50 bg-[rgba(22,22,22,0.5)] flex items-center justify-center p-4"
-      onClick={onClose}
-    >
-      <div
-        className="bg-[var(--t-panel)] border border-[var(--t-border)] rounded-none w-full max-w-5xl max-h-[90vh] flex flex-col overflow-hidden"
-        onClick={(e) => e.stopPropagation()}
-      >
-        {/* Header */}
-        <div className="flex items-center justify-between px-5 py-3 border-b border-[var(--t-border)]">
-          <div className="flex items-center gap-3 min-w-0">
+    <ComposedModal open onClose={onClose} size="lg">
+      <ModalHeader closeModal={onClose}>
+          <div className="flex items-center gap-3 min-w-0 pr-8">
             <span className="cds-tag px-2 py-0.5 text-[12px]" style={methodStyle}>
               {log.method}
             </span>
@@ -137,38 +132,20 @@ export function LogDetailModal({
               · {log.duration}ms
             </span>
           </div>
-          <button
-            onClick={onClose}
-            className="w-8 h-8 flex items-center justify-center hover:bg-[#e8e8e8] text-[#161616] shrink-0"
-          >
-            <X className="w-4 h-4" />
-          </button>
-        </div>
-
-        {/* Tabs */}
-        <div className="px-5 pt-2 border-b border-[var(--t-border)] flex gap-1">
-          {tabs.map((t) => {
-            const Icon = t.icon
-            const active = tab === t.id
-            return (
-              <button
-                key={t.id}
-                onClick={() => setTab(t.id)}
-                className={`flex items-center gap-2 px-4 h-10 text-sm border-b-2 ${
-                  active
-                    ? 'border-[#0f62fe] text-[#161616] font-semibold'
-                    : 'border-transparent text-[#525252] hover:bg-[#e8e8e8] hover:text-[#161616]'
-                }`}
-              >
-                <Icon className="w-3.5 h-3.5" />
-                {t.label}
-              </button>
-            )
-          })}
-        </div>
-
+      </ModalHeader>
+      <ModalBody>
+        <Tabs
+          selectedIndex={tabIndex}
+          onChange={({ selectedIndex }) => setTab(tabs[selectedIndex].id)}
+        >
+          <TabList aria-label="API log detail tabs">
+            {tabs.map((t) => (
+              <Tab key={t.id} renderIcon={t.icon}>{t.label}</Tab>
+            ))}
+          </TabList>
+        </Tabs>
         {/* Body */}
-        <div className="flex-1 overflow-auto p-5 text-sm">
+        <div className="pt-4 text-sm">
           {tab === 'info' && (
             <div className="grid grid-cols-2 gap-4">
               <InfoRow label="Request ID">
@@ -234,18 +211,19 @@ export function LogDetailModal({
               <pre className="px-3 py-3 bg-[#f4f4f4] text-[#161616] text-xs font-mono whitespace-pre-wrap break-all">
                 {curl}
               </pre>
-              <button
+              <Button
+                kind="primary"
+                size="sm"
                 onClick={copyCurl}
-                className="inline-flex items-center gap-2 h-8 px-3 bg-[#0f62fe] text-white text-sm hover:bg-[#0353e9]"
+                renderIcon={copied ? Check : Copy}
               >
-                {copied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
                 {copied ? 'Copied' : 'Copy cURL'}
-              </button>
+              </Button>
             </div>
           )}
         </div>
-      </div>
-    </div>
+      </ModalBody>
+    </ComposedModal>
   )
 }
 

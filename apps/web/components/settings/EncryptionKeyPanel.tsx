@@ -10,8 +10,9 @@
  */
 import { type ReactNode } from 'react'
 import { useQuery, useMutation } from '@tanstack/react-query'
-import { KeyRound, Loader2, RotateCw, ShieldCheck, ShieldOff, AlertTriangle } from 'lucide-react'
+import { KeyRound, Loader2, RotateCw, ShieldCheck, ShieldOff } from 'lucide-react'
 import { toast } from 'sonner'
+import { Button, InlineNotification, Tag } from '@carbon/react'
 import { confirmDialog } from '@/components/common/ConfirmDialog'
 import { useAuthStore } from '@/stores/authStore'
 
@@ -76,19 +77,19 @@ export function EncryptionKeyPanel() {
       ) : (
         <>
           {!st?.kekConfigured && (
-            <div className="flex items-start gap-2 text-xs text-[#8a3800] bg-[#fff1e6] border-l-[3px] border-[#f1c21b] p-2 mb-3">
-              <AlertTriangle size={14} className="mt-0.5 shrink-0" />
-              <span>
-                <code>ORCH_ENCRYPTION_KEK</code> is not set — an insecure dev fallback key is in use. Set it
-                (32-byte base64) in env / K8s secret for real environments, and back it up — losing it makes
-                encrypted data unrecoverable.
-              </span>
-            </div>
+            <InlineNotification
+              kind="warning"
+              lowContrast
+              hideCloseButton
+              title="ORCH_ENCRYPTION_KEK is not set"
+              subtitle="An insecure dev fallback key is in use. Set it (32-byte base64) in env / K8s secret for real environments, and back it up — losing it makes encrypted data unrecoverable."
+              className="mb-3"
+            />
           )}
 
           <div className="grid grid-cols-2 gap-3 text-xs mb-4">
             <Field label="Status">
-              {st?.enabled ? <span className="text-[#24a148] font-medium">Enabled</span> : <span className="text-[var(--t-text-muted)]">Disabled</span>}
+              {st?.enabled ? <Tag type="green" size="sm">Enabled</Tag> : <Tag type="gray" size="sm">Disabled</Tag>}
             </Field>
             <Field label="Active key version">{st?.activeKeyVersion != null ? `v${st.activeKeyVersion}` : '—'}</Field>
             <Field label="Key versions">{st?.versions?.length ? st.versions.map((v) => `v${v}`).join(', ') : '—'}</Field>
@@ -97,34 +98,38 @@ export function EncryptionKeyPanel() {
 
           <div className="flex flex-wrap gap-2">
             {!st?.configured ? (
-              <button
+              <Button
+                kind="primary"
+                size="sm"
                 disabled={busy}
                 onClick={() => mutate.mutate('generate')}
-                className="inline-flex items-center gap-2 text-sm h-8 px-3 bg-[#0f62fe] text-white disabled:opacity-50 hover:bg-[#0353e9]"
+                renderIcon={busy ? Spinner : KeyRound}
               >
-                {busy ? <Loader2 size={13} className="animate-spin" /> : <KeyRound size={13} />} Generate key
-              </button>
+                Generate key
+              </Button>
             ) : (
               <>
-                <button
+                <Button
+                  kind="secondary"
+                  size="sm"
                   disabled={busy}
                   onClick={async () => {
                     if (await confirmDialog({ title: 'Rotate encryption key?', body: 'Mint a new key version. New writes use it; existing values still decrypt with the version they were encrypted under.' })) {
                       mutate.mutate('rotate')
                     }
                   }}
-                  className="inline-flex items-center gap-2 text-sm h-8 px-3 bg-[#393939] text-white hover:bg-[#474747] disabled:opacity-50"
+                  renderIcon={busy ? Spinner : RotateCw}
                 >
-                  {busy ? <Loader2 size={13} className="animate-spin" /> : <RotateCw size={13} />} Rotate
-                </button>
+                  Rotate
+                </Button>
                 {st.enabled ? (
-                  <button disabled={busy} onClick={() => mutate.mutate('disable')} className="inline-flex items-center gap-2 text-sm h-8 px-3 bg-[#da1e28] text-white hover:bg-[#b81921] disabled:opacity-50">
-                    <ShieldOff size={13} /> Disable
-                  </button>
+                  <Button kind="danger" size="sm" disabled={busy} onClick={() => mutate.mutate('disable')} renderIcon={ShieldOff}>
+                    Disable
+                  </Button>
                 ) : (
-                  <button disabled={busy} onClick={() => mutate.mutate('enable')} className="inline-flex items-center gap-2 text-sm h-8 px-3 bg-[#0f62fe] text-white hover:bg-[#0353e9] disabled:opacity-50">
-                    <ShieldCheck size={13} /> Enable
-                  </button>
+                  <Button kind="primary" size="sm" disabled={busy} onClick={() => mutate.mutate('enable')} renderIcon={ShieldCheck}>
+                    Enable
+                  </Button>
                 )}
               </>
             )}
@@ -142,4 +147,8 @@ function Field({ label, children }: { label: string; children: ReactNode }) {
       <div className="text-[var(--t-text)]">{children}</div>
     </div>
   )
+}
+
+function Spinner(props: { className?: string }) {
+  return <Loader2 size={16} {...props} className={`animate-spin ${props.className ?? ''}`} />
 }

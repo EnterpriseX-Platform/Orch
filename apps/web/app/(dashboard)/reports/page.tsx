@@ -29,7 +29,7 @@ import { useQuery } from '@tanstack/react-query'
 import {
   LayoutGrid, Users, AlertCircle, TrendingUp,
   Activity, CheckCircle, AlertTriangle, FileCheck, Download,
-  Clock, RefreshCw, Globe, Search as SearchIcon, Zap, X,
+  Clock, RefreshCw, Globe, Search as SearchIcon, Zap,
   ChevronRight, Layers, BarChart3,
 } from 'lucide-react'
 import {
@@ -37,6 +37,10 @@ import {
   LineChart, Line, PieChart, Pie, Cell, Legend, AreaChart, Area,
 } from 'recharts'
 import { useAuthStore } from '@/stores/authStore'
+import {
+  Button, Tabs, TabList, Tab, Select, SelectItem, TextInput, InlineNotification,
+  ContentSwitcher, Switch, DismissibleTag,
+} from '@carbon/react'
 import { ExportMenu } from '@/components/common/ExportMenu'
 import type { ExportColumn } from '@/lib/export'
 import { ReportsFilters } from '@/components/reports/ReportsFilters'
@@ -200,14 +204,15 @@ export default function FeatureMonitorPage() {
             screenFilter={screenFilter} onScreenFilterChange={setScreenFilter}
           />
           <ExportMenu disabled={isFetching} getInput={() => buildExport(tab, { daily: daily.data, users: userShape.data, errors: errorsShape.data, capacity: capacity.data })} />
-          <button
+          <Button
+            kind="ghost"
+            size="sm"
+            hasIconOnly
+            renderIcon={(props: any) => <RefreshCw {...props} className={isFetching ? 'animate-spin' : ''} />}
+            iconDescription="Refresh"
             onClick={refetchAll}
             disabled={isFetching}
-            className="p-2 rounded-md bg-[var(--t-panel)] border border-[var(--t-border)] text-[var(--t-text-muted)] hover:text-[var(--t-text)] hover:border-[var(--t-accent)] disabled:opacity-40"
-            title="Refresh"
-          >
-            <RefreshCw className={`w-4 h-4 ${isFetching ? 'animate-spin' : ''}`} />
-          </button>
+          />
         </div>
       </div>
 
@@ -226,30 +231,19 @@ export default function FeatureMonitorPage() {
       />
 
       {/* ───────── Tab bar ───────── */}
-      <div className="flex gap-0 border-b border-[var(--t-border)] overflow-x-auto">
-        {tabs.map((t) => {
-          const Icon = t.icon
-          const active = tab === t.id
-          return (
-            <button
-              key={t.id}
-              onClick={() => setTab(t.id)}
-              className={`group flex flex-col items-start px-4 py-2.5 border-b-2 transition-colors ${
-                active
-                  ? 'border-[var(--t-accent)]'
-                  : 'border-transparent hover:bg-[var(--t-panel-hover)]'
-              }`}
-            >
-              <div className="flex items-center gap-1.5">
-                <Icon className={`w-3.5 h-3.5 ${active ? 'text-[var(--t-accent)]' : 'text-[var(--t-text-muted)]'}`} />
-                <span className={`text-sm font-semibold ${active ? 'text-[var(--t-accent)]' : 'text-[var(--t-text)]'}`}>
-                  {t.label}
-                </span>
-              </div>
-              <span className="text-[10px] text-[var(--t-text-muted)] mt-0.5">{t.hint}</span>
-            </button>
-          )
-        })}
+      <div style={{ maxWidth: '100%', overflowX: 'auto' }}>
+        <Tabs
+          selectedIndex={Math.max(0, tabs.findIndex((t) => t.id === tab))}
+          onChange={({ selectedIndex }: { selectedIndex: number }) => setTab(tabs[selectedIndex].id)}
+        >
+          <TabList aria-label="Analytics tabs" contained>
+            {tabs.map((t) => (
+              <Tab key={t.id} renderIcon={t.icon} secondaryLabel={t.hint} title={t.hint}>
+                {t.label}
+              </Tab>
+            ))}
+          </TabList>
+        </Tabs>
       </div>
 
       {/* ───────── Body ───────── */}
@@ -309,28 +303,43 @@ function AccessLogsTab({ token }: { token: string | null }) {
     <div className="space-y-3">
       <div className="flex items-center gap-2 flex-wrap">
         <div className="flex-1" />
-        <input
-          value={pathFilter}
-          onChange={(e) => setPathFilter(e.target.value)}
-          placeholder="Filter path…"
-          className="px-2 py-1 rounded-md text-xs bg-[var(--t-input)] border border-[var(--t-border)] text-[var(--t-text)] w-44"
-        />
-        <select
-          value={hours}
-          onChange={(e) => setHours(parseInt(e.target.value))}
-          className="px-2 py-1 rounded-md text-xs bg-[var(--t-panel)] border border-[var(--t-border)] text-[var(--t-text)]"
-        >
-          <option value={1}>1h</option>
-          <option value={24}>24h</option>
-          <option value={168}>7d</option>
-        </select>
+        <div className="w-44">
+          <TextInput
+            id="access-logs-path-filter"
+            size="sm"
+            labelText="Filter path"
+            hideLabel
+            value={pathFilter}
+            onChange={(e) => setPathFilter(e.target.value)}
+            placeholder="Filter path…"
+          />
+        </div>
+        <div className="w-28">
+          <Select
+            id="access-logs-hours"
+            size="sm"
+            labelText="Time range"
+            hideLabel
+            value={hours}
+            onChange={(e) => setHours(parseInt(e.target.value))}
+          >
+            <SelectItem value={1} text="1h" />
+            <SelectItem value={24} text="24h" />
+            <SelectItem value={168} text="7d" />
+          </Select>
+        </div>
         <span className="text-[11px] text-[var(--t-text-muted)] w-16 text-right">{entries.length} rows</span>
       </div>
 
       {err && (
-        <div className="text-xs rounded-md border border-[#ba4e0040] bg-[#ba4e0015] text-[#ba4e00] px-3 py-2">
-          Loki query: {String(err)}{q.data?.detail ? ` · ${q.data.detail}` : ''}
-        </div>
+        <InlineNotification
+          kind="warning"
+          lowContrast
+          hideCloseButton
+          title="Loki query:"
+          subtitle={`${String(err)}${q.data?.detail ? ` · ${q.data.detail}` : ''}`}
+          style={{ maxWidth: '100%' }}
+        />
       )}
 
       <div className="rounded-lg border border-[var(--t-border)] overflow-hidden">
@@ -666,9 +675,9 @@ function UsersTab({ data, dailyData }: { data: ReportData; dailyData: ReportData
           </ul>
           {tlTotalPages > 1 && (
             <div className="flex items-center justify-between mt-3 text-xs">
-              <button disabled={tlPageClamped <= 1} onClick={() => setTlPage((p) => Math.max(1, p - 1))} className="px-2 py-1 rounded border border-[var(--t-border)] text-[var(--t-text-muted)] hover:text-[var(--t-text)] disabled:opacity-40">‹ Previous</button>
+              <Button kind="tertiary" size="sm" disabled={tlPageClamped <= 1} onClick={() => setTlPage((p) => Math.max(1, p - 1))}>‹ Previous</Button>
               <span className="text-[var(--t-text-muted)]">Page {tlPageClamped} / {tlTotalPages} · {timeline.length} items</span>
-              <button disabled={tlPageClamped >= tlTotalPages} onClick={() => setTlPage((p) => Math.min(tlTotalPages, p + 1))} className="px-2 py-1 rounded border border-[var(--t-border)] text-[var(--t-text-muted)] hover:text-[var(--t-text)] disabled:opacity-40">Next ›</button>
+              <Button kind="tertiary" size="sm" disabled={tlPageClamped >= tlTotalPages} onClick={() => setTlPage((p) => Math.min(tlTotalPages, p + 1))}>Next ›</Button>
             </div>
           )}
           </>
@@ -833,23 +842,19 @@ function HealthTab({ errData, capData }: { errData: ReportData; capData: ReportD
 //                    SHARED COMPONENTS
 // ═══════════════════════════════════════════════════════
 
+const RANGES = ['1h', '24h', '7d', '30d'] as const
+
 function RangePicker({ value, onChange }: { value: Range; onChange: (v: Range) => void }) {
   return (
-    <div className="flex rounded-md overflow-hidden border border-[var(--t-border)] bg-[var(--t-panel)]">
-      {(['1h', '24h', '7d', '30d'] as const).map((r) => (
-        <button
-          key={r}
-          onClick={() => onChange(r)}
-          className={`px-3 py-1.5 text-xs font-semibold transition-colors ${
-            value === r
-              ? 'bg-[var(--t-accent)] text-white'
-              : 'text-[var(--t-text-muted)] hover:text-[var(--t-text)] hover:bg-[var(--t-panel-hover)]'
-          }`}
-        >
-          {r}
-        </button>
+    <ContentSwitcher
+      size="sm"
+      selectedIndex={RANGES.indexOf(value)}
+      onChange={({ index }: { index?: number }) => onChange(RANGES[index ?? 0])}
+    >
+      {RANGES.map((r) => (
+        <Switch key={r} name={r} text={r} />
       ))}
-    </div>
+    </ContentSwitcher>
   )
 }
 
@@ -874,18 +879,28 @@ function FilterBar({
   return (
     <div className="flex items-center gap-2 text-xs flex-wrap p-2.5 rounded-lg bg-[var(--t-panel)] border border-[var(--t-border)]">
       <SearchIcon className="w-3.5 h-3.5 text-[var(--t-text-muted)] ml-1" />
-      <input
-        value={userFilter}
-        onChange={(e) => setUserFilter(e.target.value)}
-        placeholder="Filter by user or IP"
-        className="px-3 py-1.5 rounded-md bg-[var(--t-bg)] border border-[var(--t-border)] text-[var(--t-text)] w-44 focus:border-[var(--t-accent)] outline-none"
-      />
-      <input
-        value={screenFilter}
-        onChange={(e) => setScreenFilter(e.target.value)}
-        placeholder="Filter by screen code"
-        className="px-3 py-1.5 rounded-md bg-[var(--t-bg)] border border-[var(--t-border)] text-[var(--t-text)] w-60 focus:border-[var(--t-accent)] outline-none"
-      />
+      <div className="w-44">
+        <TextInput
+          id="reports-user-filter"
+          size="sm"
+          labelText="Filter by user or IP"
+          hideLabel
+          value={userFilter}
+          onChange={(e) => setUserFilter(e.target.value)}
+          placeholder="Filter by user or IP"
+        />
+      </div>
+      <div className="w-60">
+        <TextInput
+          id="reports-screen-filter"
+          size="sm"
+          labelText="Filter by screen code"
+          hideLabel
+          value={screenFilter}
+          onChange={(e) => setScreenFilter(e.target.value)}
+          placeholder="Filter by screen code"
+        />
+      </div>
       <span className="text-[var(--t-text-muted)]">·</span>
       <span className="text-[11px] text-[var(--t-text-muted)]">
         {rangeLabel(range)}
@@ -894,15 +909,14 @@ function FilterBar({
         <>
           <span className="text-[var(--t-text-muted)]">·</span>
           {activeChips.map((c, i) => (
-            <span
+            <DismissibleTag
               key={i}
-              className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-[var(--t-accent)]/15 text-[var(--t-accent)] border border-[var(--t-accent)]/30 text-[11px] font-semibold"
-            >
-              {c.label}
-              <button onClick={c.clear} className="hover:text-white">
-                <X className="w-3 h-3" />
-              </button>
-            </span>
+              size="sm"
+              type="blue"
+              text={c.label}
+              title="Clear filter"
+              onClose={c.clear}
+            />
           ))}
         </>
       )}

@@ -2,9 +2,9 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { cn } from '@/lib/utils'
 import { useQuery } from '@tanstack/react-query'
 import { useTenantStore, featureForPath } from '@/stores/tenantStore'
+import { SideNav, SideNavItems, SideNavLink, SideNavDivider, Tag } from '@carbon/react'
 import {
   LayoutDashboard,
   Database,
@@ -18,7 +18,6 @@ import {
   BarChart3,
 } from 'lucide-react'
 
-const FONT = '"IBM Plex Sans Thai", "IBM Plex Sans", "Sarabun", system-ui, sans-serif';
 
 interface NavItemType {
   name: string
@@ -44,57 +43,6 @@ const systemNav: NavItemType[] = [
 
 interface SidebarProps {
   collapsed?: boolean
-}
-
-function NavItem({ item, collapsed, isActive }: {
-  item: NavItemType
-  pathname: string
-  collapsed: boolean
-  isActive: boolean
-}) {
-  return (
-    <Link
-      href={item.href}
-      aria-current={isActive ? 'page' : undefined}
-      style={{
-        fontFamily: FONT,
-        color: isActive ? '#161616' : '#525252',
-        backgroundColor: isActive ? '#e0e0e0' : undefined,
-        boxShadow: isActive ? 'inset 3px 0 0 #0f62fe' : undefined,
-      }}
-      className={cn(
-        'group flex items-center gap-3 h-8 px-4 text-[14px] leading-[18px] hover:bg-[#e8e8e8] hover:!text-[#161616] transition-colors',
-        isActive && 'font-semibold',
-        collapsed && 'justify-center px-0'
-      )}
-      title={collapsed ? item.name : undefined}
-    >
-      <item.icon className="w-4 h-4 flex-shrink-0" style={{ color: isActive ? '#161616' : '#525252' }} />
-      {!collapsed && (
-        <>
-          <span className="flex-1 truncate">{item.name}</span>
-          {item.count !== undefined && item.count > 0 && (
-            <span className="min-w-5 h-5 px-1.5 rounded-full bg-[#e0e0e0] group-aria-[current=page]:bg-white text-[11px] font-normal text-[#161616] tabular-nums flex items-center justify-center">
-              {item.count}
-            </span>
-          )}
-        </>
-      )}
-    </Link>
-  )
-}
-
-function NavGroup({ title, collapsed, children }: { title: string; collapsed: boolean; children: React.ReactNode }) {
-  return (
-    <div className="pb-2">
-      {collapsed ? (
-        <div className="mx-3 my-2 h-px bg-[#e0e0e0]" />
-      ) : (
-        <p className="px-4 pt-4 pb-1 text-[11px] font-semibold uppercase tracking-[0.32px] text-[#6f6f6f]">{title}</p>
-      )}
-      {children}
-    </div>
-  )
 }
 
 export function Sidebar({ collapsed = false }: SidebarProps) {
@@ -140,7 +88,7 @@ export function Sidebar({ collapsed = false }: SidebarProps) {
     { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
     { name: 'Projects', href: '/projects', icon: FolderKanban, count: counts?.projects },
     { name: 'Data Catalogs', href: '/datasets', icon: Database, count: counts?.datasets },
-    // spec — physical tables managed by Orch with auto CRUD
+    // TOR 4.5.1 — physical tables managed by Orch with auto CRUD
     // + per-column encryption (engine-aware DDL).
     { name: 'Data Repository', href: '/data-repository', icon: Database },
     { name: 'Flows', href: '/flows', icon: Workflow, count: counts?.flows },
@@ -164,30 +112,53 @@ export function Sidebar({ collapsed = false }: SidebarProps) {
     { name: 'Analytics', href: '/reports', icon: BarChart3 },
   ]
 
-  const renderItems = (items: NavItemType[]) =>
-    items.filter(visible).map((item) => {
-      const isActive = [item.href, '/orch' + item.href].some(h => pathname === h || pathname.startsWith(h + '/'))
-      return <NavItem key={item.name} item={item} pathname={pathname} collapsed={collapsed} isActive={isActive} />
-    })
+  const isActive = (href: string) =>
+    [href, '/orch' + href].some((h) => pathname === h || pathname.startsWith(h + '/'))
 
+  const renderItems = (items: NavItemType[]) =>
+    items.filter(visible).map((item) => (
+      <SideNavLink
+        key={item.name}
+        as={Link}
+        href={item.href}
+        renderIcon={item.icon}
+        isActive={isActive(item.href)}
+        aria-current={isActive(item.href) ? 'page' : undefined}
+      >
+        <span className="flex items-center gap-2 w-full">
+          <span className="flex-1 truncate">{item.name}</span>
+          {item.count !== undefined && item.count > 0 && (
+            <Tag size="sm" type="gray" className="!m-0">{item.count}</Tag>
+          )}
+        </span>
+      </SideNavLink>
+    ))
+
+  const group = (title: string) =>
+    collapsed ? <SideNavDivider /> : (
+      <li className="px-4 pt-4 pb-1 text-[11px] font-semibold uppercase tracking-[0.32px] text-[#6f6f6f]" aria-hidden>
+        {title}
+      </li>
+    )
+
+  // Carbon UI Shell side nav: fixed under the 48px header; collapses to a rail.
   return (
-    <aside
-      style={{ fontFamily: FONT, backgroundColor: '#ffffff', borderColor: '#e0e0e0' }}
-      className={cn(
-        'fixed top-12 bottom-0 left-0 z-40 border-r flex flex-col transition-[width] duration-150',
-        collapsed ? 'w-12' : 'w-[216px]'
-      )}
+    <SideNav
+      aria-label="Main navigation"
+      expanded={!collapsed}
+      isRail={collapsed}
+      isFixedNav
+      isChildOfHeader={false}
+      className="!top-12"
     >
-      <nav className="flex-1 overflow-y-auto pb-4" aria-label="Main navigation">
-        <NavGroup title="Workspace" collapsed={collapsed}>{renderItems(mainNav)}</NavGroup>
-        <NavGroup title="Observability" collapsed={collapsed}>{renderItems(observabilityNav)}</NavGroup>
-        <NavGroup title="System" collapsed={collapsed}>{renderItems(systemNav)}</NavGroup>
-      </nav>
-      {!collapsed && (
-        <div className="px-4 h-10 flex items-center border-t text-[11px] text-[#6f6f6f]" style={{ borderColor: '#e0e0e0' }}>
-          Orch · Service Mesh
-        </div>
-      )}
-    </aside>
+      <SideNavItems>
+        {group('Workspace')}
+        {renderItems(mainNav)}
+        {group('Observability')}
+        {renderItems(observabilityNav)}
+        {group('System')}
+        {renderItems(systemNav)}
+      </SideNavItems>
+    </SideNav>
   )
 }

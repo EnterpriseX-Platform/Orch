@@ -33,9 +33,9 @@ export default function DashboardLayout({
           onToggleSidebar={() => setSidebarCollapsed(!sidebarCollapsed)}
         />
         <Sidebar collapsed={sidebarCollapsed} />
-        <div className={`flex-shrink-0 transition-[width] duration-150 ${sidebarCollapsed ? 'w-12' : 'w-[216px]'}`} />
+        <div className={`flex-shrink-0 transition-[width] duration-150 ${sidebarCollapsed ? 'w-12' : 'w-64'}`} />
 
-        <main className="flex-1 min-w-0 flex flex-col pt-12" style={{ backgroundColor: 'var(--t-bg)' }}>
+        <main id="main-content" className="flex-1 min-w-0 flex flex-col pt-12" style={{ backgroundColor: 'var(--t-bg)' }}>
           <div className="flex-1 px-8 pt-4 pb-8 max-w-[1600px] w-full">
             <Breadcrumb />
             {blocked ? (

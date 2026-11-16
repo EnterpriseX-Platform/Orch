@@ -7,6 +7,7 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Plus, Pencil, Trash2, Shield, Loader2 } from 'lucide-react'
+import { Button, Checkbox, Modal, Tag, TextInput } from '@carbon/react'
 import { auditConfigApi } from '@/lib/api'
 import { toast } from 'sonner'
 import { confirmDialog } from '@/components/common/ConfirmDialog'
@@ -40,9 +41,9 @@ export function AuditConfigsSection({ projectId }: { projectId: string }) {
   return (
     <div>
       <div className="flex items-center justify-end mb-3">
-        <button onClick={() => setShowCreate(true)} className="flex items-center gap-2 h-8 px-3 text-sm text-white bg-[#0f62fe] hover:bg-[#0353e9]">
-          <Plus className="w-3.5 h-3.5" /> New Config
-        </button>
+        <Button kind="primary" size="sm" renderIcon={Plus} onClick={() => setShowCreate(true)}>
+          New Config
+        </Button>
       </div>
 
       {isLoading ? (
@@ -63,12 +64,12 @@ export function AuditConfigsSection({ projectId }: { projectId: string }) {
                   <td className="px-4 py-2.5">
                     <div className="font-medium text-[var(--t-text)]">{ac.name}</div>
                     {ac.description && <div className="text-xs text-[var(--t-text-muted)]">{ac.description}</div>}
-                    {!ac.projectId && <span className="cds-tag text-[12px] px-2 py-0.5 bg-[#fff1e6] text-[#8a3800] mt-1 inline-block">global</span>}
+                    {!ac.projectId && <Tag type="warm-gray" size="sm" className="mt-1">global</Tag>}
                   </td>
                   <td className="px-4 py-2.5">
-                    <span className={`text-xs px-2 py-0.5 ${ac.enabled ? 'cds-tag bg-[#a7f0ba] text-[#0e6027]' : 'cds-tag bg-[#e0e0e0] text-[#161616]'}`}>
+                    <Tag type={ac.enabled ? 'green' : 'gray'} size="sm">
                       {ac.enabled ? 'Enabled' : 'Disabled'}
-                    </span>
+                    </Tag>
                   </td>
                   <td className="px-4 py-2.5">
                     <span className="text-xs font-semibold">{ac._count?.messageFormats ?? 0}</span>
@@ -76,12 +77,8 @@ export function AuditConfigsSection({ projectId }: { projectId: string }) {
                   </td>
                   <td className="px-4 py-2.5">
                     <div className="flex items-center gap-2">
-                      <button onClick={() => setEditing(ac)} className="p-1.5 hover:bg-[#e8e8e8]">
-                        <Pencil className="w-3.5 h-3.5 text-[var(--t-text-muted)]" />
-                      </button>
-                      <button onClick={async () => { if (await confirmDialog({ title: `Delete "${ac.name}"?`, variant: 'danger' })) del.mutate(ac.id) }} className="p-1.5 rounded-none hover:bg-[#e8e8e8]">
-                        <Trash2 className="w-3.5 h-3.5 text-[#da1e28]" />
-                      </button>
+                      <Button kind="ghost" size="sm" hasIconOnly renderIcon={Pencil} iconDescription="Edit" onClick={() => setEditing(ac)} />
+                      <Button kind="danger--ghost" size="sm" hasIconOnly renderIcon={Trash2} iconDescription="Delete" onClick={async () => { if (await confirmDialog({ title: `Delete "${ac.name}"?`, variant: 'danger' })) del.mutate(ac.id) }} />
                     </div>
                   </td>
                 </tr>
@@ -112,7 +109,7 @@ function Empty({ onCreate }: { onCreate: () => void }) {
     <div className="text-center py-12 rounded-none bg-[var(--t-panel)] border border-dashed border-[var(--t-border)]">
       <Shield className="w-8 h-8 text-[var(--t-text-muted)] mx-auto mb-2" />
       <p className="text-sm text-[var(--t-text)]">No audit configs yet</p>
-      <button onClick={onCreate} className="mt-3 text-sm h-8 px-3 bg-[#0f62fe] text-white inline-flex items-center gap-2 hover:bg-[#0353e9]">Create one</button>
+      <Button kind="primary" size="sm" onClick={onCreate} className="mt-3">Create one</Button>
     </div>
   )
 }
@@ -131,35 +128,21 @@ function Editor({ item, projectId, onClose, onSaved }: { item: AC | null; projec
   })
 
   return (
-    <div className="fixed inset-0 z-50 bg-[rgba(22,22,22,0.5)] flex items-center justify-center p-4" onClick={onClose}>
-      <div className="bg-[var(--t-panel)] border border-[var(--t-border)] rounded-none w-full max-w-md" onClick={(e) => e.stopPropagation()}>
-        <div className="flex items-center justify-between px-5 py-3 border-b border-[var(--t-border)]">
-          <h2 className="text-[20px] font-normal text-[var(--t-text)]">{isEdit ? 'Edit Audit Config' : 'New Audit Config'}</h2>
-          <button onClick={onClose} className="text-[var(--t-text-muted)]">✕</button>
-        </div>
-        <div className="p-5 space-y-4">
-          <Field label="Name *">
-            <input value={form.name ?? ''} onChange={(e) => set('name', e.target.value)} className="w-full px-3 py-2 text-sm text-[var(--t-text)]" placeholder="Strict / Default / Off" />
-          </Field>
-          <Field label="Description">
-            <input value={form.description ?? ''} onChange={(e) => set('description', e.target.value)} className="w-full px-3 py-2 text-sm text-[var(--t-text)]" />
-          </Field>
-          <label className="flex items-center gap-2">
-            <input type="checkbox" checked={form.enabled ?? true} onChange={(e) => set('enabled', e.target.checked)} className="rounded-none" />
-            <span className="text-sm text-[var(--t-text)]">Enabled (write to audit_logs)</span>
-          </label>
-        </div>
-        <div className="px-5 py-3 border-t border-[var(--t-border)] flex justify-end gap-2">
-          <button onClick={onClose} className="h-8 px-3 text-sm inline-flex items-center gap-2 bg-[#393939] text-white hover:bg-[#474747]">Cancel</button>
-          <button onClick={() => save.mutate()} disabled={!form.name || save.isPending} className="h-8 px-3 text-sm bg-[#0f62fe] text-white disabled:opacity-50 inline-flex items-center gap-2 hover:bg-[#0353e9]">
-            {save.isPending ? <Loader2 className="w-4 h-4 animate-spin inline mr-1" /> : null}Save
-          </button>
-        </div>
+    <Modal
+      open
+      size="sm"
+      modalHeading={isEdit ? 'Edit Audit Config' : 'New Audit Config'}
+      primaryButtonText={save.isPending ? 'Saving…' : 'Save'}
+      secondaryButtonText="Cancel"
+      primaryButtonDisabled={!form.name || save.isPending}
+      onRequestClose={onClose}
+      onRequestSubmit={() => save.mutate()}
+    >
+      <div className="space-y-4">
+        <TextInput id="audit-config-name" labelText="Name *" value={form.name ?? ''} onChange={(e) => set('name', e.target.value)} placeholder="Strict / Default / Off" />
+        <TextInput id="audit-config-description" labelText="Description" value={form.description ?? ''} onChange={(e) => set('description', e.target.value)} />
+        <Checkbox id="audit-config-enabled" labelText="Enabled (write to audit_logs)" checked={form.enabled ?? true} onChange={(_, { checked }) => set('enabled', checked)} />
       </div>
-    </div>
+    </Modal>
   )
-}
-
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
-  return <div><label className="block text-xs text-[#525252] mb-1">{label}</label>{children}</div>
 }

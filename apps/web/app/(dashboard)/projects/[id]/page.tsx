@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useId } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { projectApi, apiRegistrationApi } from '@/lib/api'
@@ -28,7 +28,6 @@ import {
   Code,
   SlidersHorizontal,
   Edit3,
-  Eye,
   Workflow,
   MessageSquareText,
   Share2,
@@ -52,6 +51,21 @@ import { SystemConfigPanel } from '@/components/settings/SystemConfigPanel'
 import { Combobox } from '@/components/ui/combobox'
 import { EnvAwareInput } from '@/components/common/EnvAwareInput'
 import yaml from 'js-yaml'
+import {
+  Button,
+  ComposedModal,
+  ContentSwitcher,
+  ModalBody,
+  ModalHeader,
+  Switch,
+  Tab,
+  TabList,
+  Tabs,
+  Tag as CdsTag,
+  TextArea,
+  TextInput,
+  Toggle,
+} from '@carbon/react'
 
 // Swagger UI CSS
 import 'swagger-ui-react/swagger-ui.css'
@@ -87,15 +101,6 @@ const METHOD_COLORS: Record<string, string> = {
   PUT: '#ba4e00',
   DELETE: '#da1e28',
   PATCH: '#8a3ffc',
-}
-
-// Carbon tag colour pair for a semantic hex colour (green / red / blue, else grey).
-function cdsTag(color: string): { background: string; color: string } {
-  const c = (color || '').toLowerCase()
-  if (['#24a148', '#198038', '#10b981', '#22c55e'].includes(c)) return { background: '#a7f0ba', color: '#0e6027' }
-  if (['#da1e28', '#ef4444', '#a2191f'].includes(c)) return { background: '#ffd7d9', color: '#a2191f' }
-  if (['#0f62fe', '#0043ce', '#3b82f6', '#0353e9'].includes(c)) return { background: '#d0e2ff', color: '#0043ce' }
-  return { background: '#e0e0e0', color: '#161616' }
 }
 
 const STATUS_STYLES: Record<string, { bg: string; color: string }> = {
@@ -177,6 +182,20 @@ function FormField({
   )
 }
 
+// Spinner usable as a Carbon `renderIcon`.
+function SpinIcon(props: { size?: number | string; className?: string }) {
+  return <Loader2 size={typeof props.size === 'number' ? props.size : 16} className={`animate-spin ${props.className ?? ''}`} />
+}
+
+// Carbon Tag type for a semantic hex colour (green / red / blue, else grey).
+function tagType(color: string): 'green' | 'red' | 'blue' | 'gray' {
+  const c = (color || '').toLowerCase()
+  if (['#24a148', '#198038', '#10b981', '#22c55e'].includes(c)) return 'green'
+  if (['#da1e28', '#ef4444', '#a2191f'].includes(c)) return 'red'
+  if (['#0f62fe', '#0043ce', '#3b82f6', '#0353e9'].includes(c)) return 'blue'
+  return 'gray'
+}
+
 function InputField({
   value,
   onChange,
@@ -190,30 +209,18 @@ function InputField({
   type?: string
   disabled?: boolean
 }) {
+  const id = useId()
   return (
-    <input
+    <TextInput
+      id={id}
+      labelText=""
+      hideLabel
       type={type}
       value={value}
       onChange={(e) => onChange(e.target.value)}
       placeholder={placeholder}
       disabled={disabled}
-      style={{
-        width: '100%',
-        padding: '8px 12px',
-        backgroundColor: 'var(--t-input)',
-        border: `1px solid ${THEME.border}`,
-        borderRadius: 0,
-        fontSize: 13,
-        color: THEME.text.primary,
-        fontFamily: FONT,
-        outline: 'none',
-        transition: 'border-color 0.15s',
-        opacity: disabled ? 0.5 : 1,
-        cursor: disabled ? 'not-allowed' : 'text',
-        boxSizing: 'border-box' as const,
-      }}
-      onFocus={(e) => (e.target.style.borderColor = THEME.accent)}
-      onBlur={(e) => (e.target.style.borderColor = THEME.border)}
+      style={{ width: '100%' }}
     />
   )
 }
@@ -229,28 +236,16 @@ function TextareaField({
   placeholder?: string
   rows?: number
 }) {
+  const id = useId()
   return (
-    <textarea
+    <TextArea
+      id={id}
+      labelText=""
+      hideLabel
       value={value}
       onChange={(e) => onChange(e.target.value)}
       placeholder={placeholder}
       rows={rows}
-      style={{
-        width: '100%',
-        padding: '8px 12px',
-        backgroundColor: 'var(--t-input)',
-        border: `1px solid ${THEME.border}`,
-        borderRadius: 0,
-        fontSize: 13,
-        color: THEME.text.primary,
-        fontFamily: FONT,
-        outline: 'none',
-        resize: 'vertical' as const,
-        transition: 'border-color 0.15s',
-        boxSizing: 'border-box' as const,
-      }}
-      onFocus={(e) => (e.target.style.borderColor = THEME.accent)}
-      onBlur={(e) => (e.target.style.borderColor = THEME.border)}
     />
   )
 }
@@ -274,43 +269,18 @@ function SelectField({
 function StatusBadge({ status }: { status: string }) {
   const style = STATUS_STYLES[status] || { bg: '#5A617818', color: '#8B92A5' }
   return (
-    <span
-      className="cds-tag"
-      style={{
-        display: 'inline-flex',
-        alignItems: 'center',
-        padding: '2px 10px',
-        fontSize: 12,
-        fontWeight: 400,
-        ...cdsTag(style.color),
-        fontFamily: FONT,
-      }}
-    >
+    <CdsTag size="sm" type={tagType(style.color)} style={{ margin: 0 }}>
       {status}
-    </span>
+    </CdsTag>
   )
 }
 
 function MethodBadge({ method }: { method: string }) {
   const color = METHOD_COLORS[method] || '#64748B'
   return (
-    <span
-      className="cds-tag"
-      style={{
-        display: 'inline-flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        padding: '2px 8px',
-        fontSize: 12,
-        fontWeight: 400,
-        fontFamily: 'monospace',
-        ...cdsTag(color),
-        minWidth: 52,
-        
-      }}
-    >
+    <CdsTag size="sm" type={tagType(color)} style={{ margin: 0, minWidth: 52, justifyContent: 'center', fontFamily: 'monospace' }}>
       {method}
-    </span>
+    </CdsTag>
   )
 }
 
@@ -453,9 +423,13 @@ function ApiRow({
       <StatusBadge status={api.status} />
 
       {onDelete && (
-        <button
-          type="button"
-          onClick={(e) => {
+        <Button
+          kind="ghost"
+          size="sm"
+          hasIconOnly
+          iconDescription="Delete API"
+          renderIcon={deletingId === api.id ? SpinIcon : Trash2}
+          onClick={(e: React.MouseEvent) => {
             // The whole row is wrapped in a <Link>; without these
             // the click navigates to the detail page before our
             // confirm dialog opens.
@@ -464,37 +438,7 @@ function ApiRow({
             onDelete(api)
           }}
           disabled={deletingId === api.id}
-          title="Delete API"
-          style={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            width: 28,
-            height: 28,
-            borderRadius: 0,
-            border: 'none',
-            background: 'transparent',
-            color: THEME.text.muted,
-            cursor: deletingId === api.id ? 'not-allowed' : 'pointer',
-            opacity: deletingId === api.id ? 0.5 : 0.6,
-            transition: 'background-color 0.15s, color 0.15s, opacity 0.15s',
-          }}
-          onMouseEnter={(e) => {
-            if (deletingId === api.id) return
-            e.currentTarget.style.backgroundColor = '#e8e8e8'
-            e.currentTarget.style.color = '#da1e28'
-            e.currentTarget.style.opacity = '1'
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.backgroundColor = 'transparent'
-            e.currentTarget.style.color = THEME.text.muted
-            e.currentTarget.style.opacity = deletingId === api.id ? '0.5' : '0.6'
-          }}
-        >
-          {deletingId === api.id
-            ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
-            : <Trash2 className="w-3.5 h-3.5" />}
-        </button>
+        />
       )}
 
       <ExternalLink
@@ -1203,65 +1147,25 @@ function SettingsTab({ project }: { project: Project }) {
 
       {/* Actions */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <button
+        <Button
+          kind="danger"
+          size="md"
+          renderIcon={deleteMutation.isPending ? SpinIcon : Trash2}
           onClick={handleDelete}
           disabled={deleteMutation.isPending}
-          style={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: 8,
-            height: 32,
-            padding: '0 12px',
-            backgroundColor: '#da1e28',
-            color: '#ffffff',
-            border: 'none',
-            borderRadius: 0,
-            fontSize: 13,
-            fontWeight: 500,
-            fontFamily: FONT,
-            cursor: deleteMutation.isPending ? 'not-allowed' : 'pointer',
-            opacity: deleteMutation.isPending ? 0.5 : 1,
-            transition: 'background-color 0.15s',
-          }}
-          onMouseEnter={(e) => {
-            if (!deleteMutation.isPending) e.currentTarget.style.backgroundColor = '#b81921'
-          }}
-          onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = '#da1e28')}
         >
-          {deleteMutation.isPending ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14} />}
           Delete Project
-        </button>
+        </Button>
 
-        <button
+        <Button
+          kind="primary"
+          size="md"
+          renderIcon={updateMutation.isPending ? SpinIcon : Save}
           onClick={handleSave}
           disabled={updateMutation.isPending || !form.name || !form.slug || !form.baseUrl}
-          style={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: 6,
-            padding: '0 12px', height: 32,
-            backgroundColor: THEME.accent,
-            color: '#FFFFFF',
-            border: 'none',
-            borderRadius: 0,
-            fontSize: 13,
-            fontWeight: 400,
-            fontFamily: FONT,
-            cursor:
-              updateMutation.isPending || !form.name || !form.slug || !form.baseUrl
-                ? 'not-allowed'
-                : 'pointer',
-            opacity: updateMutation.isPending || !form.name || !form.slug || !form.baseUrl ? 0.5 : 1,
-            transition: 'background-color 0.15s',
-          }}
-          onMouseEnter={(e) => {
-            if (!updateMutation.isPending) e.currentTarget.style.backgroundColor = THEME.accentHover
-          }}
-          onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = THEME.accent)}
         >
-          {updateMutation.isPending ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}
           Save Changes
-        </button>
+        </Button>
       </div>
     </div>
   )
@@ -1421,40 +1325,22 @@ function EventLogTab({ project }: { project: Project }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
       <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center' }}>
-        <button
-          onClick={() => { setEditing('new'); setDraft(EMPTY_PATTERN) }}
-          style={{
-            display: 'inline-flex', alignItems: 'center', gap: 6,
-            padding: '0 12px', height: 32, backgroundColor: THEME.accent, color: '#fff',
-            borderRadius: 0, fontSize: 13, fontWeight: 400, border: 'none', cursor: 'pointer',
-          }}
-        >
-          <Plus size={14} /> Add Rule
-        </button>
+        <Button kind="primary" size="sm" renderIcon={Plus} onClick={() => { setEditing('new'); setDraft(EMPTY_PATTERN) }}>
+          Add Rule
+        </Button>
       </div>
 
-      {editing && (
-        <div
-          className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4"
-          onClick={() => { setEditing(null); setDraft(EMPTY_PATTERN) }}
-        >
-          <div
-            onClick={(e) => e.stopPropagation()}
-            className="w-full max-w-3xl max-h-[90vh] overflow-y-auto"
-            style={{ backgroundColor: THEME.panel, border: `1px solid ${THEME.border}` }}
-          >
-            <div style={{ padding: '14px 20px', borderBottom: `1px solid ${THEME.border}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <h2 style={{ fontSize: 16, fontWeight: 600, color: THEME.text.primary, margin: 0 }}>
-                {editing === 'new' ? 'Add Event Log Rule' : 'Edit Event Log Rule'}
-              </h2>
-              <button
-                onClick={() => { setEditing(null); setDraft(EMPTY_PATTERN) }}
-                style={{ padding: 4, border: 'none', background: 'transparent', color: THEME.text.muted, cursor: 'pointer' }}
-                title="Close"
-              >
-                <X size={16} />
-              </button>
-            </div>
+      <ComposedModal
+        open={!!editing}
+        size="lg"
+        onClose={() => { setEditing(null); setDraft(EMPTY_PATTERN) }}
+      >
+        <ModalHeader
+          title={editing === 'new' ? 'Add Event Log Rule' : 'Edit Event Log Rule'}
+          closeModal={() => { setEditing(null); setDraft(EMPTY_PATTERN) }}
+        />
+        <ModalBody hasScrollingContent style={{ paddingRight: 16 }}>
+          {editing && (
             <EventPatternForm
               draft={draft}
               setDraft={setDraft}
@@ -1462,9 +1348,9 @@ function EventLogTab({ project }: { project: Project }) {
               onCancel={() => { setEditing(null); setDraft(EMPTY_PATTERN) }}
               saving={createMut.isPending || updateMut.isPending}
             />
-          </div>
-        </div>
-      )}
+          )}
+        </ModalBody>
+      </ComposedModal>
 
       {isLoading ? (
         <SkeletonBlock height={64} />
@@ -1497,27 +1383,25 @@ function EventLogTab({ project }: { project: Project }) {
                   </div>
                 )}
               </div>
-              <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 0, background: r.capture === 'FULL_BODY' ? '#d0e2ff' : r.capture === 'NONE' ? '#e0e0e0' : '#a7f0ba', color: r.capture === 'FULL_BODY' ? '#0043ce' : r.capture === 'NONE' ? '#161616' : '#0e6027', textAlign: 'center' }}>
+              <CdsTag size="sm" type={r.capture === 'FULL_BODY' ? 'blue' : r.capture === 'NONE' ? 'gray' : 'green'} style={{ justifySelf: 'center' }}>
                 {r.capture}
-              </span>
+              </CdsTag>
               <span style={{ fontSize: 11, color: THEME.text.muted, textAlign: 'center' }}>level: {r.level}</span>
-              <button
+              <Button
+                kind={r.enabled ? 'secondary' : 'tertiary'}
+                size="sm"
                 onClick={() => updateMut.mutate({ id: r.id, body: { enabled: !r.enabled } })}
-                style={{
-                  fontSize: 11, padding: '4px 10px', borderRadius: 0,
-                  border: 'none',
-                  background: r.enabled ? '#a7f0ba' : '#e0e0e0',
-                  color: r.enabled ? '#0e6027' : '#161616',
-                  cursor: 'pointer',
-                }}
               >
                 {r.enabled ? 'Enabled' : 'Disabled'}
-              </button>
-              <div style={{ display: 'flex', gap: 6 }}>
-                <button onClick={() => startEdit(r)} style={{ padding: 6, border: 'none', background: 'transparent', color: THEME.text.muted, cursor: 'pointer' }} title="Edit">
-                  <Edit3 size={14} />
-                </button>
-                <button
+              </Button>
+              <div style={{ display: 'flex', gap: 2 }}>
+                <Button kind="ghost" size="sm" hasIconOnly iconDescription="Edit" renderIcon={Edit3} onClick={() => startEdit(r)} />
+                <Button
+                  kind="ghost"
+                  size="sm"
+                  hasIconOnly
+                  iconDescription="Delete"
+                  renderIcon={Trash2}
                   onClick={async () => {
                     const ok = await confirmDialog({
                       title: `Delete rule "${r.name}"?`,
@@ -1527,11 +1411,7 @@ function EventLogTab({ project }: { project: Project }) {
                     })
                     if (ok) deleteMut.mutate(r.id)
                   }}
-                  style={{ padding: 6, border: 'none', background: 'transparent', color: THEME.text.muted, cursor: 'pointer' }}
-                  title="Delete"
-                >
-                  <Trash2 size={14} />
-                </button>
+                />
               </div>
             </div>
           ))}
@@ -1602,10 +1482,16 @@ function EventPatternForm({
           />
         </FormField>
         <FormField label="Enabled">
-          <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
-            <input type="checkbox" checked={draft.enabled} onChange={(e) => update('enabled', e.target.checked)} />
-            <span style={{ fontSize: 13, color: THEME.text.secondary }}>{draft.enabled ? 'On' : 'Off'}</span>
-          </label>
+          <Toggle
+            id="event-pattern-enabled"
+            size="sm"
+            labelText="Enabled"
+            hideLabel
+            labelA="Off"
+            labelB="On"
+            toggled={draft.enabled}
+            onToggle={(checked) => update('enabled', checked)}
+          />
         </FormField>
         <div style={{ gridColumn: '1 / -1' }}>
           <FormField label="Description">
@@ -1647,29 +1533,34 @@ function EventPatternForm({
                     }}
                     placeholder="expected value"
                   />
-                  <button
+                  <Button
+                    kind="ghost"
+                    size="sm"
+                    hasIconOnly
+                    iconDescription="Remove rule"
+                    renderIcon={X}
                     onClick={() => update('bodyMatch', draft.bodyMatch.filter((_, j) => j !== i))}
-                    style={{ padding: 6, background: 'transparent', border: 'none', color: THEME.text.muted, cursor: 'pointer' }}
-                  >
-                    <X size={14} />
-                  </button>
+                  />
                 </div>
               ))}
-              <button
+              <Button
+                kind="ghost"
+                size="sm"
+                renderIcon={Plus}
+                style={{ alignSelf: 'flex-start' }}
                 onClick={() => update('bodyMatch', [...draft.bodyMatch, { source: 'BODY' as const, field: '', value: '' }])}
-                style={{ alignSelf: 'flex-start', display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 12, padding: '4px 10px', borderRadius: 0, background: 'transparent', color: '#0f62fe', border: 'none', cursor: 'pointer' }}
               >
-                <Plus size={12} /> Add rule
-              </button>
+                Add rule
+              </Button>
             </div>
           </FormField>
         </div>
       </div>
       <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 16 }}>
-        <button onClick={onCancel} style={{ padding: '8px 16px', borderRadius: 0, border: `1px solid ${THEME.border}`, background: 'transparent', color: THEME.text.secondary, cursor: 'pointer' }}>Cancel</button>
-        <button onClick={onSave} disabled={saving} style={{ padding: '0 12px', height: 32, borderRadius: 0, border: 'none', background: THEME.accent, color: '#fff', cursor: saving ? 'not-allowed' : 'pointer', opacity: saving ? 0.5 : 1 }}>
+        <Button kind="secondary" size="md" onClick={onCancel}>Cancel</Button>
+        <Button kind="primary" size="md" onClick={onSave} disabled={saving}>
           {saving ? 'Saving…' : 'Save Rule'}
-        </button>
+        </Button>
       </div>
     </div>
   )
@@ -1692,31 +1583,22 @@ function RulesTab({ project }: { project: Project }) {
   ]
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-      {/* Sub-section selector — pills, not nested tabs, so it doesn't
-          fight the main tab visually. */}
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-        {sections.map((s) => {
-          const Icon = s.icon
-          const active = activeRule === s.id
-          return (
-            <button
-              key={s.id}
-              onClick={() => setActiveRule(s.id)}
-              style={{
-                display: 'inline-flex', alignItems: 'center', gap: 6,
-                padding: '8px 14px', borderRadius: 0, fontSize: 13,
-                fontWeight: active ? 600 : 400,
-                border: `1px solid ${active ? THEME.accent : THEME.border}`,
-                background: active ? '#e0e0e0' : THEME.panel,
-                color: active ? THEME.accent : THEME.text.secondary,
-                cursor: 'pointer',
-              }}
-            >
-              <Icon size={14} /> {s.label}
-            </button>
-          )
-        })}
-      </div>
+      {/* Sub-section selector — contained Carbon tabs */}
+      <Tabs
+        selectedIndex={Math.max(0, sections.findIndex((s) => s.id === activeRule))}
+        onChange={({ selectedIndex }) => {
+          const s = sections[selectedIndex]
+          if (s) setActiveRule(s.id)
+        }}
+      >
+        <TabList aria-label="Rule sections" contained>
+          {sections.map((s) => (
+            <Tab key={s.id} renderIcon={s.icon}>
+              {s.label}
+            </Tab>
+          ))}
+        </TabList>
+      </Tabs>
       <div>
         <p style={{ fontSize: 12, color: THEME.text.muted, marginBottom: 12 }}>
           {sections.find((s) => s.id === activeRule)?.hint}
@@ -1838,22 +1720,6 @@ function OpenApiTab({ project }: { project: Project }) {
     return { endpoints, methods }
   }, [spec])
 
-  const btnBase = {
-    display: 'inline-flex' as const,
-    alignItems: 'center' as const,
-    gap: 6,
-    padding: '6px 14px',
-    backgroundColor: THEME.panel,
-    color: THEME.text.secondary,
-    border: `1px solid ${THEME.border}`,
-    borderRadius: 0,
-    fontSize: 12,
-    fontWeight: 500,
-    fontFamily: FONT,
-    cursor: 'pointer' as const,
-    transition: 'all 0.15s',
-  }
-
   if (isLoading) {
     return (
       <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
@@ -1889,38 +1755,15 @@ function OpenApiTab({ project }: { project: Project }) {
         >
           Generate OpenAPI specification from registered APIs
         </p>
-        <button
+        <Button
+          kind="primary"
+          size="sm"
+          renderIcon={regenerateMutation.isPending ? SpinIcon : FileText}
           onClick={() => regenerateMutation.mutate()}
           disabled={regenerateMutation.isPending}
-          style={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: 6,
-            padding: '0 12px', height: 32,
-            backgroundColor: THEME.accent,
-            color: '#FFFFFF',
-            border: 'none',
-            borderRadius: 0,
-            fontSize: 13,
-            fontWeight: 400,
-            fontFamily: FONT,
-            cursor: regenerateMutation.isPending ? 'not-allowed' : 'pointer',
-            opacity: regenerateMutation.isPending ? 0.5 : 1,
-            transition: 'background-color 0.15s',
-          }}
-          onMouseEnter={(e) => {
-            if (!regenerateMutation.isPending)
-              e.currentTarget.style.backgroundColor = THEME.accentHover
-          }}
-          onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = THEME.accent)}
         >
-          {regenerateMutation.isPending ? (
-            <Loader2 size={14} className="animate-spin" />
-          ) : (
-            <FileText size={14} />
-          )}
           Generate OpenAPI Spec
-        </button>
+        </Button>
       </div>
     )
   }
@@ -1944,94 +1787,54 @@ function OpenApiTab({ project }: { project: Project }) {
           </p>
           <div style={{ display: 'flex', gap: 6 }}>
             {Object.entries(specStats.methods).map(([method, count]) => (
-              <span
-                key={method}
-                style={{
-                  fontSize: 11,
-                  fontWeight: 600,
-                  padding: '2px 8px',
-                  ...cdsTag(METHOD_COLORS[method] || ''),
-                  fontFamily: FONT,
-                }}
-              >
+              <CdsTag key={method} size="sm" type={tagType(METHOD_COLORS[method] || '')} style={{ margin: 0 }}>
                 {method} {count}
-              </span>
+              </CdsTag>
             ))}
           </div>
         </div>
 
         {/* Right: Actions */}
-        <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+        <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
           {/* View Toggle */}
-          <div
-            style={{
-              display: 'flex',
-              backgroundColor: 'var(--t-input)',
-              borderRadius: 0,
-              border: `1px solid ${THEME.border}`,
-              overflow: 'hidden',
-            }}
+          <ContentSwitcher
+            size="sm"
+            selectedIndex={(['preview', 'yaml', 'json'] as const).indexOf(viewMode)}
+            onChange={({ name }) => setViewMode(name as 'preview' | 'yaml' | 'json')}
+            style={{ width: 'auto' }}
           >
             {(['preview', 'yaml', 'json'] as const).map((mode) => (
-              <button
-                key={mode}
-                onClick={() => setViewMode(mode)}
-                style={{
-                  ...btnBase,
-                  border: 'none',
-                  borderRadius: 0,
-                  backgroundColor: viewMode === mode ? THEME.accent : 'transparent',
-                  color: viewMode === mode ? '#fff' : THEME.text.muted,
-                  padding: '5px 12px',
-                }}
-              >
-                {mode === 'preview' && <Eye size={13} />}
-                {mode === 'yaml' && <Code size={13} />}
-                {mode === 'json' && <Code size={13} />}
-                {mode === 'preview' ? 'Preview' : mode.toUpperCase()}
-              </button>
+              <Switch key={mode} name={mode} text={mode === 'preview' ? 'Preview' : mode.toUpperCase()} />
             ))}
-          </div>
+          </ContentSwitcher>
 
-          <button
+          <Button
+            kind="tertiary"
+            size="sm"
+            renderIcon={copied ? Check : Copy}
             onClick={() => handleCopy(viewMode === 'json' ? 'json' : 'yaml')}
-            style={btnBase}
-            onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = 'var(--t-panel-hover)')}
-            onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = THEME.panel)}
           >
-            {copied ? <Check size={13} /> : <Copy size={13} />}
             {copied ? 'Copied' : 'Copy'}
-          </button>
+          </Button>
 
-          <button
+          <Button
+            kind="tertiary"
+            size="sm"
+            hasIconOnly
+            iconDescription="Download"
+            renderIcon={Download}
             onClick={() => handleDownload(viewMode === 'json' ? 'json' : 'yaml')}
-            style={btnBase}
-            onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = 'var(--t-panel-hover)')}
-            onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = THEME.panel)}
-          >
-            <Download size={13} />
-          </button>
+          />
 
-          <button
+          <Button
+            kind="tertiary"
+            size="sm"
+            renderIcon={regenerateMutation.isPending ? SpinIcon : RefreshCw}
             onClick={() => regenerateMutation.mutate()}
             disabled={regenerateMutation.isPending}
-            style={{
-              ...btnBase,
-              cursor: regenerateMutation.isPending ? 'not-allowed' : 'pointer',
-              opacity: regenerateMutation.isPending ? 0.5 : 1,
-            }}
-            onMouseEnter={(e) => {
-              if (!regenerateMutation.isPending) e.currentTarget.style.backgroundColor = 'var(--t-panel-hover)'
-            }}
-            onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = THEME.panel)}
           >
-            {regenerateMutation.isPending ? (
-              <Loader2 size={13} className="animate-spin" />
-            ) : (
-              <RefreshCw size={13} />
-            )}
             Regenerate
-          </button>
+          </Button>
         </div>
       </div>
 
@@ -2308,6 +2111,7 @@ function OpenApiTab({ project }: { project: Project }) {
 export default function ProjectDetailPage() {
   const params = useParams()
   const id = params.id as string
+  const router = useRouter()
   const [activeTab, setActiveTab] = useState<TabId>('apis')
 
   const { data: project, isLoading } = useQuery<Project>({
@@ -2496,70 +2300,26 @@ export default function ProjectDetailPage() {
         </div>
 
         {/* Tabs */}
-        <div
-          style={{
-            display: 'flex',
-            gap: 0,
-            borderBottom: '1px solid #e0e0e0',
-            marginBottom: 24,
-          }}
-          className="overflow-x-auto"
-        >
-          {TABS.map((tab) => {
-            const Icon = tab.icon
-            const isActive = activeTab === tab.id
-            // Link-tabs (with href) navigate to a sub-page rather than
-            // toggling activeTab — used for the project-scoped library
-            // pages (Field Mappings / Audit Configs / Clients) that live
-            // at /orch/projects/<id>/<href>.
-            const tabStyle = {
-              display: 'flex',
-              alignItems: 'center',
-              gap: 8,
-              height: 40,
-              padding: '0 16px',
-              fontSize: 14,
-              fontWeight: 400,
-              flexShrink: 0,
-              color: isActive && !tab.href ? '#161616' : '#525252',
-              backgroundColor: 'transparent',
-              border: 'none',
-              borderBottom: isActive && !tab.href ? '2px solid #0f62fe' : '2px solid transparent',
-              cursor: 'pointer',
-              fontFamily: FONT,
-              transition: 'color 0.15s, border-color 0.15s',
-              marginBottom: -1,
-              textDecoration: 'none',
-            } as const
-            if (tab.href) {
-              return (
-                <Link
-                  key={tab.id}
-                  href={`/projects/${project.id}/${tab.href}`}
-                  style={tabStyle}
-                >
-                  <Icon className="w-3.5 h-3.5" />
+        <div className="overflow-x-auto" style={{ marginBottom: 24 }}>
+          <Tabs
+            selectedIndex={Math.max(0, TABS.findIndex((t) => t.id === activeTab))}
+            onChange={({ selectedIndex }) => {
+              const tab = TABS[selectedIndex]
+              if (!tab) return
+              // Link-tabs (with href) navigate to a sub-page rather than
+              // toggling activeTab.
+              if (tab.href) router.push(`/projects/${project.id}/${tab.href}`)
+              else setActiveTab(tab.id as TabId)
+            }}
+          >
+            <TabList aria-label="Project sections" contained={false}>
+              {TABS.map((tab) => (
+                <Tab key={tab.id} renderIcon={tab.icon}>
                   {tab.label}
-                </Link>
-              )
-            }
-            return (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id as TabId)}
-                style={tabStyle}
-                onMouseEnter={(e) => {
-                  if (!isActive) (e.currentTarget as HTMLElement).style.color = THEME.text.primary
-                }}
-                onMouseLeave={(e) => {
-                  if (!isActive) (e.currentTarget as HTMLElement).style.color = THEME.text.secondary
-                }}
-              >
-                <Icon size={15} />
-                {tab.label}
-              </button>
-            )
-          })}
+                </Tab>
+              ))}
+            </TabList>
+          </Tabs>
         </div>
 
         {/* Tab Content */}

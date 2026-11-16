@@ -1,16 +1,14 @@
 'use client'
 
-import { useState, useMemo, useEffect } from 'react'
+import { useState, useMemo, useEffect, useRef } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { apiClient } from '@/lib/api'
 import {
   Users,
   Plus,
-  Search,
   Trash2,
   Edit2,
   User as UserIcon,
-  Check,
   RefreshCw,
   UserCheck,
   Crown,
@@ -19,7 +17,6 @@ import {
   Server,
   Database,
   Save,
-  X,
   Shield,
   Settings,
   Activity,
@@ -33,6 +30,17 @@ import {
   Wifi,
 } from 'lucide-react'
 import { toast } from 'sonner'
+import {
+  Button,
+  Checkbox,
+  Modal,
+  Search as CdsSearch,
+  Tab,
+  TabList,
+  Tabs,
+  Tag,
+  TextInput,
+} from '@carbon/react'
 import { WorkersTab } from './WorkersTab'
 import { TenantsPanel } from '@/components/settings/TenantsPanel'
 import { Building2 } from 'lucide-react'
@@ -55,11 +63,11 @@ const THEME = {
   accentLight: 'var(--t-accent-light)',
 }
 
-const ROLE_COLORS: Record<string, { bg: string; color: string; border: string }> = {
-  admin: { bg: '#ffd7d9', color: '#a2191f', border: 'transparent' },
-  user: { bg: '#d0e2ff', color: '#0043ce', border: 'transparent' },
-  viewer: { bg: '#e0e0e0', color: '#161616', border: 'transparent' },
-  operator: { bg: '#a7f0ba', color: '#0e6027', border: 'transparent' },
+const ROLE_TAG_TYPES: Record<string, 'red' | 'blue' | 'gray' | 'green'> = {
+  admin: 'red',
+  user: 'blue',
+  viewer: 'gray',
+  operator: 'green',
 }
 
 const ROLE_LABELS: Record<string, string> = {
@@ -184,17 +192,9 @@ function SystemStatusCard({
           <span style={{ fontSize: 13 }} className="font-semibold text-[var(--t-text)]">{title}</span>
         </div>
         {status && (
-          <span
-            className="px-2 py-0.5 rounded-full font-medium"
-            style={{
-              fontSize: 11,
-              background: statusColor === 'green' ? '#24a14818' : '#da1e2818',
-              color: statusColor === 'green' ? '#24a148' : '#da1e28',
-              border: `1px solid ${statusColor === 'green' ? '#24a14835' : '#da1e2835'}`
-            }}
-          >
+          <Tag size="sm" type={statusColor === 'green' ? 'green' : 'red'}>
             {status}
-          </span>
+          </Tag>
         )}
       </div>
       {children}
@@ -392,30 +392,19 @@ export default function SettingsPage() {
       </div>
 
       {/* Tabs - Responsive */}
-      <div className="flex items-center gap-1 mb-4 overflow-x-auto min-w-0 [scrollbar-width:thin]" style={{ borderBottom: `1px solid var(--t-border)` }}>
-        {tabs.map(tab => {
-          const Icon = tab.icon
-          const isActive = activeTab === tab.id
-          return (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              className="flex items-center gap-2 cursor-pointer transition-colors whitespace-nowrap"
-              style={{
-                padding: '8px 14px',
-                fontSize: 13,
-                fontWeight: 500,
-                color: isActive ? '#0f62fe' : 'var(--t-text-secondary)',
-                borderBottom: `2px solid ${isActive ? '#0f62fe' : 'transparent'}`,
-                marginBottom: -1,
-              }}
-            >
-              <Icon className="w-4 h-4" />
-              <span className="hidden sm:inline">{tab.label}</span>
-              <span className="sm:hidden">{tab.label.split(' ')[0]}</span>
-            </button>
-          )
-        })}
+      <div className="mb-4 min-w-0">
+        <Tabs
+          selectedIndex={Math.max(0, tabs.findIndex((t) => t.id === activeTab))}
+          onChange={({ selectedIndex }) => setActiveTab(tabs[selectedIndex].id)}
+        >
+          <TabList aria-label="System settings sections" contained={false}>
+            {tabs.map(tab => (
+              <Tab key={tab.id} renderIcon={tab.icon}>
+                {tab.label}
+              </Tab>
+            ))}
+          </TabList>
+        </Tabs>
       </div>
 
       {/* Content */}
@@ -425,67 +414,36 @@ export default function SettingsPage() {
           <div>
             {/* Top row: Add User button */}
             <div className="flex items-center justify-end mb-4">
-              <button
-                onClick={() => setIsCreateOpen(true)}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  height: 32,
-                  gap: 8,
-                  padding: '0 12px',
-                  background: THEME.accent,
-                  color: '#FFFFFF',
-                  fontSize: 14,
-                  fontWeight: 400,
-                  borderRadius: 0,
-                  transition: 'all 0.15s ease',
-                }}
-                className="hover:bg-[#0353e9]"
-              >
-                <Plus className="w-4 h-4" />
+              <Button kind="primary" size="sm" onClick={() => setIsCreateOpen(true)} renderIcon={Plus}>
                 Add User
-              </button>
+              </Button>
             </div>
 
             {/* Filter Tabs */}
             <div className="flex items-center gap-2 mb-4">
               {filterTabs.map(tab => (
-                <button
+                <Button
                   key={tab.id}
+                  kind={activeFilter === tab.id ? 'secondary' : 'ghost'}
+                  size="sm"
+                  isSelected={activeFilter === tab.id}
                   onClick={() => setActiveFilter(tab.id)}
-                  style={{
-                    height: 32,
-                    padding: '0 12px',
-                    fontSize: 14,
-                    fontWeight: 400,
-                    borderRadius: 0,
-                    border: 'none',
-                    background: activeFilter === tab.id ? '#e0e0e0' : 'transparent',
-                    color: activeFilter === tab.id ? '#161616' : '#525252',
-                    transition: 'all 0.15s ease',
-                  }}
                 >
                   {tab.label}
-                </button>
+                </Button>
               ))}
             </div>
 
             {/* Search */}
             <div className="flex items-center gap-3 mb-4">
-              <div className="flex-1 max-w-md relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: THEME.text.muted }} />
-                <input
-                  type="text"
+              <div className="flex-1 max-w-md">
+                <CdsSearch
+                  id="settings-user-search"
+                  size="md"
+                  labelText="Search users"
                   placeholder="Search users by name or email..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  style={{
-                    width: '100%',
-                    padding: '6px 12px 6px 36px',
-                    fontSize: 14,
-                    color: THEME.text.primary,
-                    outline: 'none',
-                  }}
                 />
               </div>
             </div>
@@ -528,20 +486,9 @@ export default function SettingsPage() {
                           {user.firstName} {user.lastName}
                         </h3>
                         {user.roles.map(role => (
-                          <span
-                            key={role}
-                            className="cds-tag"
-                            style={{
-                              padding: '1px 8px',
-                              fontSize: 12,
-                              fontWeight: 400,
-                              background: ROLE_COLORS[role]?.bg || ROLE_COLORS.user.bg,
-                              color: ROLE_COLORS[role]?.color || ROLE_COLORS.user.color,
-                              border: `1px solid ${ROLE_COLORS[role]?.border || ROLE_COLORS.user.border}`,
-                            }}
-                          >
+                          <Tag key={role} size="sm" type={ROLE_TAG_TYPES[role] || ROLE_TAG_TYPES.user}>
                             {ROLE_LABELS[role] || role}
-                          </span>
+                          </Tag>
                         ))}
                       </div>
                       <p style={{ fontSize: 12, color: '#525252' }}>
@@ -564,35 +511,26 @@ export default function SettingsPage() {
                     </div>
 
                     {/* Status Badge */}
-                    <div className="cds-tag" style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 4,
-                      padding: '2px 8px',
-                      fontSize: 12,
-                      fontWeight: 400,
-                      background: user.isActive ? '#a7f0ba' : '#e0e0e0',
-                      color: user.isActive ? '#0e6027' : '#161616',
-                    }}>
-                      <span style={{
-                        width: 5,
-                        height: 5,
-                        borderRadius: '50%',
-                        background: user.isActive ? '#24a148' : 'var(--t-text-muted)',
-                      }} />
+                    <Tag size="sm" type={user.isActive ? 'green' : 'gray'}>
                       {user.isActive ? 'Active' : 'Inactive'}
-                    </div>
+                    </Tag>
 
                     {/* Actions */}
                     <div className="flex items-center gap-1">
-                      <button
+                      <Button
+                        kind="ghost"
+                        size="sm"
+                        hasIconOnly
+                        renderIcon={Edit2}
+                        iconDescription="Edit user"
                         onClick={() => setEditingUser(user)}
-                        className="p-1.5 rounded-none transition-colors hover:bg-[var(--t-panel-hover)]"
-                        style={{ color: 'var(--t-text-muted)' }}
-                      >
-                        <Edit2 className="w-3.5 h-3.5" />
-                      </button>
-                      <button
+                      />
+                      <Button
+                        kind="danger--ghost"
+                        size="sm"
+                        hasIconOnly
+                        renderIcon={Trash2}
+                        iconDescription="Delete user"
                         onClick={async () => {
                           if (await confirmDialog({
                             title: 'Delete user?',
@@ -600,11 +538,7 @@ export default function SettingsPage() {
                             variant: 'danger',
                           })) deleteMutation.mutate(user.id)
                         }}
-                        className="p-1.5 rounded-none transition-colors hover:bg-[#e8e8e8]"
-                        style={{ color: '#da1e28' }}
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
+                      />
                     </div>
                   </div>
                 ))}
@@ -654,80 +588,72 @@ export default function SettingsPage() {
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
               <h2 className="text-base font-semibold text-[var(--t-text)]">OIDC / SSO Authentication</h2>
               {hasOidcChanges && (
-                <button
-                  onClick={handleSaveOidc}
-                  className="flex items-center justify-center gap-2 h-8 px-3 bg-[#0f62fe] text-white text-sm hover:bg-[#0353e9] w-full sm:w-auto"
-                >
-                  <Save className="w-4 h-4" />
+                <Button kind="primary" size="sm" onClick={handleSaveOidc} renderIcon={Save}>
                   Save Changes
-                </button>
+                </Button>
               )}
             </div>
 
-            <label className={`
-              flex items-center gap-3 p-4 rounded-none border cursor-pointer mb-5
+            <div className={`
+              p-4 rounded-none border mb-5
               ${oidc.enabled ? 'bg-[var(--t-panel-hover)] border-[#0f62fe]' : 'bg-[var(--t-bg)] border-[var(--t-border)]'}
             `}>
-              <input
-                type="checkbox"
+              <Checkbox
+                id="oidc-enabled"
                 checked={oidc.enabled}
                 onChange={(e) => { setOidc({ ...oidc, enabled: e.target.checked }); setHasOidcChanges(true) }}
-                className="w-5 h-5 rounded-none"
+                labelText="Enable OIDC Authentication"
+                helperText="Allow users to login via external identity provider"
               />
-              <div>
-                <div className="text-base font-semibold text-[var(--t-text)]">Enable OIDC Authentication</div>
-                <div className="text-sm text-[var(--t-text-muted)]">Allow users to login via external identity provider</div>
-              </div>
-            </label>
+            </div>
 
             {oidc.enabled && (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs text-[#525252] mb-1.5">Provider Name</label>
-                  <input
+                  <TextInput
+                    id="oidc-provider"
+                    labelText="Provider Name"
                     value={oidc.provider}
                     onChange={(e) => { setOidc({ ...oidc, provider: e.target.value }); setHasOidcChanges(true) }}
                     placeholder="e.g., Keycloak"
-                    className="w-full px-3 py-2 text-base text-[var(--t-text)] outline-none placeholder:text-[var(--t-text-muted)]"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs text-[#525252] mb-1.5">Client ID</label>
-                  <input
+                  <TextInput
+                    id="oidc-clientId"
+                    labelText="Client ID"
                     value={oidc.clientId}
                     onChange={(e) => { setOidc({ ...oidc, clientId: e.target.value }); setHasOidcChanges(true) }}
                     placeholder="your-client-id"
-                    className="w-full px-3 py-2 text-base text-[var(--t-text)] outline-none placeholder:text-[var(--t-text-muted)]"
                   />
                 </div>
 
                 <div className="md:col-span-2">
-                  <label className="block text-xs text-[#525252] mb-1.5">Client Secret</label>
-                  <input
-                    type="password"
+                  <TextInput
+                    id="oidc-clientSecret"
+                    labelText="Client Secret" type="password"
                     value={oidc.clientSecret}
                     onChange={(e) => { setOidc({ ...oidc, clientSecret: e.target.value }); setHasOidcChanges(true) }}
                     placeholder="••••••••"
-                    className="w-full px-3 py-2 text-base text-[var(--t-text)] outline-none placeholder:text-[var(--t-text-muted)]"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs text-[#525252] mb-1.5">Issuer URL</label>
-                  <input
+                  <TextInput
+                    id="oidc-issuerUrl"
+                    labelText="Issuer URL"
                     value={oidc.issuerUrl}
                     onChange={(e) => { setOidc({ ...oidc, issuerUrl: e.target.value }); setHasOidcChanges(true) }}
                     placeholder="https://auth.example.com"
-                    className="w-full px-3 py-2 text-base text-[var(--t-text)] outline-none placeholder:text-[var(--t-text-muted)]"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs text-[#525252] mb-1.5">Redirect URI</label>
-                  <input
+                  <TextInput
+                    id="oidc-redirectUri"
+                    labelText="Redirect URI"
                     value={oidc.redirectUri}
                     onChange={(e) => { setOidc({ ...oidc, redirectUri: e.target.value }); setHasOidcChanges(true) }}
                     placeholder="https://app.com/callback"
-                    className="w-full px-3 py-2 text-base text-[var(--t-text)] outline-none placeholder:text-[var(--t-text-muted)]"
                   />
                 </div>
               </div>
@@ -863,6 +789,7 @@ function UserModal({ user, onClose, onSubmit, isLoading }: UserModalProps) {
     isActive: user?.isActive ?? true,
   })
 
+  const formRef = useRef<HTMLFormElement>(null)
   const availableRoles = ['admin', 'user', 'viewer', 'operator']
 
   const toggleRole = (role: string) => {
@@ -882,138 +809,92 @@ function UserModal({ user, onClose, onSubmit, isLoading }: UserModalProps) {
   }
 
   return (
-    <div 
-      className="fixed inset-0 bg-[rgba(22,22,22,0.5)] flex items-center justify-center z-50 p-4"
-      onClick={onClose}
+    <Modal
+      open
+      size="sm"
+      modalHeading={user ? 'Edit User' : 'Create New User'}
+      primaryButtonText={isLoading ? 'Saving...' : (user ? 'Update' : 'Create')}
+      secondaryButtonText="Cancel"
+      primaryButtonDisabled={isLoading}
+      onRequestClose={onClose}
+      onRequestSubmit={() => formRef.current?.requestSubmit()}
     >
-      <div 
-        className="bg-[var(--t-panel)] border border-[var(--t-border)] rounded-none p-6 w-full max-w-md max-h-[90vh] overflow-y-auto"
-        onClick={e => e.stopPropagation()}
-      >
-        <h2 className="text-[20px] font-normal text-[var(--t-text)] mb-5">
-          {user ? 'Edit User' : 'Create New User'}
-        </h2>
-        
-        <form onSubmit={handleSubmit}>
+        <form ref={formRef} onSubmit={handleSubmit}>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
-            <div>
-              <label className="block text-xs text-[#525252] mb-1">Username *</label>
-              <input
-                value={formData.username}
-                onChange={(e) => setFormData({ ...formData, username: e.target.value })}
-                required
-                className="w-full px-3 py-2 text-base text-[var(--t-text)] outline-none placeholder:text-[var(--t-text-muted)]"
-              />
-            </div>
-            <div>
-              <label className="block text-xs text-[#525252] mb-1">Email *</label>
-              <input
-                type="email"
-                value={formData.email}
-                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                required
-                className="w-full px-3 py-2 text-base text-[var(--t-text)] outline-none placeholder:text-[var(--t-text-muted)]"
-              />
-            </div>
+            <TextInput
+              id="user-username"
+              labelText="Username *"
+              value={formData.username}
+              onChange={(e) => setFormData({ ...formData, username: e.target.value })}
+              required
+            />
+            <TextInput
+              id="user-email"
+              labelText="Email *"
+              type="email"
+              value={formData.email}
+              onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+              required
+            />
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
-            <div>
-              <label className="block text-xs text-[#525252] mb-1">First Name</label>
-              <input
-                value={formData.firstName}
-                onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
-                className="w-full px-3 py-2 text-base text-[var(--t-text)] outline-none placeholder:text-[var(--t-text-muted)]"
-              />
-            </div>
-            <div>
-              <label className="block text-xs text-[#525252] mb-1">Last Name</label>
-              <input
-                value={formData.lastName}
-                onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
-                className="w-full px-3 py-2 text-base text-[var(--t-text)] outline-none placeholder:text-[var(--t-text-muted)]"
-              />
-            </div>
+            <TextInput
+              id="user-first-name"
+              labelText="First Name"
+              value={formData.firstName}
+              onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
+            />
+            <TextInput
+              id="user-last-name"
+              labelText="Last Name"
+              value={formData.lastName}
+              onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
+            />
           </div>
 
           <div className="mb-3">
-            <label className="block text-xs text-[#525252] mb-1">Department</label>
-            <input
+            <TextInput
+              id="user-department"
+              labelText="Department"
               value={formData.department}
               onChange={(e) => setFormData({ ...formData, department: e.target.value })}
-              className="w-full px-3 py-2 text-base text-[var(--t-text)] outline-none placeholder:text-[var(--t-text-muted)]"
             />
           </div>
 
           <div className="mb-4">
-            <label className="block text-xs text-[#525252] mb-1">
-              Password {user ? '(leave blank to keep current)' : '*'}
-            </label>
-            <input
+            <TextInput
+              id="user-password"
+              labelText={`Password ${user ? '(leave blank to keep current)' : '*'}`}
               type="password"
               value={formData.password}
               onChange={(e) => setFormData({ ...formData, password: e.target.value })}
               required={!user}
-              className="w-full px-3 py-2 text-base text-[var(--t-text)] outline-none placeholder:text-[var(--t-text-muted)]"
             />
           </div>
 
-          <div className="mb-4">
-            <label className="block text-xs text-[#525252] mb-2">Roles</label>
-            <div className="flex flex-wrap gap-2">
+          <fieldset className="mb-4">
+            <legend className="cds--label">Roles</legend>
+            <div className="flex flex-wrap gap-x-4">
               {availableRoles.map((role) => (
-                <button
+                <Checkbox
                   key={role}
-                  type="button"
-                  onClick={() => toggleRole(role)}
-                  className={`
-                    px-3 py-1.5 text-sm rounded-none border transition-colors
-                    ${formData.roles.includes(role)
-                      ? 'bg-opacity-10'
-                      : 'bg-[var(--t-input)] text-[var(--t-text-secondary)] border-[var(--t-border)]'
-                    }
-                  `}
-                  style={{
-                    background: formData.roles.includes(role) ? ROLE_COLORS[role]?.bg : undefined,
-                    color: formData.roles.includes(role) ? ROLE_COLORS[role]?.color : undefined,
-                    borderColor: formData.roles.includes(role) ? ROLE_COLORS[role]?.border : undefined,
-                  }}
-                >
-                  {formData.roles.includes(role) && <Check className="w-3 h-3 inline mr-1" />}
-                  {ROLE_LABELS[role]}
-                </button>
+                  id={`user-role-${role}`}
+                  labelText={ROLE_LABELS[role]}
+                  checked={formData.roles.includes(role)}
+                  onChange={() => toggleRole(role)}
+                />
               ))}
             </div>
-          </div>
+          </fieldset>
 
-          <label className="flex items-center gap-2 text-base text-[var(--t-text)] mb-5">
-            <input
-              type="checkbox"
-              checked={formData.isActive}
-              onChange={(e) => setFormData({ ...formData, isActive: e.target.checked })}
-              className="rounded-none"
-            />
-            Active
-          </label>
-
-          <div className="flex justify-end gap-2">
-            <button
-              type="button"
-              onClick={onClose}
-              className="h-8 px-3 text-sm inline-flex items-center gap-2 bg-[#393939] text-white hover:bg-[#474747]"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={isLoading}
-              className="h-8 px-3 text-sm bg-[#0f62fe] text-white hover:bg-[#0353e9] disabled:opacity-50 inline-flex items-center gap-2"
-            >
-              {isLoading ? 'Saving...' : (user ? 'Update' : 'Create')}
-            </button>
-          </div>
+          <Checkbox
+            id="user-active"
+            labelText="Active"
+            checked={formData.isActive}
+            onChange={(e) => setFormData({ ...formData, isActive: e.target.checked })}
+          />
         </form>
-      </div>
-    </div>
+    </Modal>
   )
 }

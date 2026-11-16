@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback, useMemo, useRef, DragEvent } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef, useId, DragEvent } from 'react';
 import dynamic from 'next/dynamic';
 import 'swagger-ui-react/swagger-ui.css';
 
@@ -23,6 +23,10 @@ import {
   GripVertical, Columns, Clock, Terminal, Hash, Code,
   Lock, Unlock,
 } from 'lucide-react';
+import {
+  Button, TextInput, Search as CdsSearch, Select, SelectItem, TextArea, Checkbox, RadioButtonGroup, RadioButton, Tag,
+  InlineNotification, ComposedModal, Tabs, TabList, Tab, ModalHeader, ModalBody, Modal as CdsModal,
+} from '@carbon/react';
 import * as XLSX from 'xlsx';
 import { toast } from 'sonner';
 import { useAuthStore } from '@/stores/authStore';
@@ -111,24 +115,6 @@ const CONNECTION_TYPE_LABELS: Record<ConnectionType, string> = {
   oracle: 'Oracle',
 };
 
-const CONNECTION_TYPE_COLORS: Record<ConnectionType, string> = {
-  postgresql: 'bg-blue-100 text-blue-700',
-  mysql: 'bg-orange-100 text-orange-700',
-  oracle: 'bg-red-100 text-red-700',
-};
-
-const STATUS_COLORS: Record<ConnectionStatus, string> = {
-  Connected: 'bg-green-100 text-green-700',
-  Disconnected: 'bg-[var(--t-panel-hover)] text-[var(--t-text-secondary)]',
-  Error: 'bg-red-100 text-red-700',
-};
-
-const PERMISSION_COLORS: Record<Permission, string> = {
-  read: 'bg-blue-100 text-blue-700',
-  write: 'bg-amber-100 text-amber-700',
-  admin: 'bg-red-100 text-red-700',
-};
-
 const DEFAULT_PORTS: Record<ConnectionType, string> = {
   postgresql: '5432',
   mysql: '3306',
@@ -143,17 +129,10 @@ function Modal({ title, onClose, children }: {
   children: React.ReactNode;
 }) {
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-      <div className="bg-[var(--t-panel)] w-full max-w-lg mx-4">
-        <div className="flex items-center justify-between px-6 py-4 border-b border-[var(--t-border)]">
-          <h2 className="text-lg font-semibold text-[var(--t-text)]">{title}</h2>
-          <button onClick={onClose} className="p-1 text-[var(--t-text-muted)] hover:text-[var(--t-text-secondary)]">
-            <X size={20} />
-          </button>
-        </div>
-        <div className="px-6 py-5">{children}</div>
-      </div>
-    </div>
+    <ComposedModal open onClose={() => { onClose(); return false; }} size="sm">
+      <ModalHeader title={title} />
+      <ModalBody>{children}</ModalBody>
+    </ComposedModal>
   );
 }
 
@@ -165,19 +144,18 @@ function ConfirmDialog({ message, onConfirm, onCancel }: {
   onCancel: () => void;
 }) {
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-      <div className="bg-[var(--t-panel)] w-full max-w-sm mx-4 p-6">
-        <p className="text-[var(--t-text)] mb-6">{message}</p>
-        <div className="flex justify-end gap-3">
-          <button onClick={onCancel} className="px-4 py-2 text-sm border border-[var(--t-border)] text-[var(--t-text-secondary)] hover:bg-[var(--t-bg)]">
-            Cancel
-          </button>
-          <button onClick={onConfirm} className="px-4 py-2 text-sm bg-red-600 text-white hover:bg-red-700">
-            Delete
-          </button>
-        </div>
-      </div>
-    </div>
+    <CdsModal
+      open
+      danger
+      size="xs"
+      modalHeading="Confirm"
+      primaryButtonText="Delete"
+      secondaryButtonText="Cancel"
+      onRequestSubmit={onConfirm}
+      onRequestClose={onCancel}
+    >
+      <p>{message}</p>
+    </CdsModal>
   );
 }
 
@@ -199,66 +177,22 @@ function CustomSelect({
   placeholder?: string;
   label?: string;
 }) {
-  const [isOpen, setIsOpen] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (!isOpen) return;
-    const handle = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) setIsOpen(false);
-    };
-    document.addEventListener('mousedown', handle);
-    return () => document.removeEventListener('mousedown', handle);
-  }, [isOpen]);
-
-  const selected = options.find(o => o.value === value);
-
+  const id = useId();
+  const hasEmpty = options.some(o => o.value === '');
   return (
-    <div ref={ref} className="relative">
-      {label && <label className="block text-sm font-medium text-[var(--t-text-secondary)] mb-1">{label}</label>}
-      <button
-        type="button"
-        onClick={() => setIsOpen(o => !o)}
-        className={`w-full flex items-center justify-between px-3 py-2 bg-[var(--t-panel)] border  text-sm transition-all ${
-          isOpen
-            ? 'border-[#0f62fe] ring-2 ring-[#e0e0e0]'
-            : 'border-[var(--t-border)] hover:border-[#0f62fe]'
-        }`}
-      >
-        <span className="flex items-center gap-2 truncate">
-          {selected?.icon}
-          <span className={selected ? 'text-[var(--t-text)]' : 'text-[var(--t-text-muted)]'}>
-            {selected?.label ?? placeholder ?? 'Select...'}
-          </span>
-        </span>
-        <ChevronDown size={14} className={`text-[var(--t-text-muted)] transition-transform duration-200 flex-shrink-0 ${isOpen ? 'rotate-180' : ''}`} />
-      </button>
-
-      {isOpen && (
-        <div className="absolute z-[60] w-full mt-1 bg-[var(--t-panel)] border border-[var(--t-border)] max-h-60 overflow-y-auto py-1">
-          {options.map(opt => (
-            <button
-              key={opt.value}
-              type="button"
-              onClick={() => { onChange(opt.value); setIsOpen(false); }}
-              className={`w-full text-left px-3 py-2 text-sm flex items-center gap-2 transition-colors ${
-                value === opt.value ? 'bg-[#e0e0e0] text-[#0f62fe]' : 'text-[var(--t-text-secondary)] hover:bg-[var(--t-bg)]'
-              }`}
-            >
-              {opt.icon}
-              <div className="flex-1 min-w-0">
-                <div className="truncate">{opt.label}</div>
-                {opt.description && <div className="text-[10px] text-[var(--t-text-muted)]">{opt.description}</div>}
-              </div>
-              {value === opt.value && <Check size={13} className="text-[#0f62fe] flex-shrink-0" />}
-            </button>
-          ))}
-          {options.length === 0 && (
-            <div className="px-3 py-4 text-xs text-[var(--t-text-muted)] text-center">No options</div>
-          )}
-        </div>
-      )}
-    </div>
+    <Select
+      id={`repo-select-${id}`}
+      labelText={label ?? placeholder ?? 'Select'}
+      hideLabel={!label}
+      size="sm"
+      value={value}
+      onChange={e => onChange(e.target.value)}
+    >
+      {!hasEmpty && <SelectItem value="" text={placeholder ?? 'Select...'} disabled hidden />}
+      {options.map(opt => (
+        <SelectItem key={opt.value} value={opt.value} text={opt.description ? `${opt.label} (${opt.description})` : opt.label} />
+      ))}
+    </Select>
   );
 }
 
@@ -386,9 +320,9 @@ function ConnectionsSection() {
           <h2 className="text-xl font-semibold text-[var(--t-text)]">Connections</h2>
           <p className="text-sm text-[var(--t-text-muted)] mt-0.5">Manage database connections for data import and sync</p>
         </div>
-        <button onClick={openCreate} className="flex items-center gap-2 px-3 h-8 bg-[#0f62fe] text-white text-sm font-medium hover:bg-[#0353e9]">
-          <Plus size={16} /> New Connection
-        </button>
+        <Button size="sm" kind="primary" renderIcon={Plus} onClick={openCreate}>
+          New Connection
+        </Button>
       </div>
 
       {loading ? (
@@ -410,12 +344,10 @@ function ConnectionsSection() {
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2 flex-wrap">
                       <span className="text-sm font-medium text-[var(--t-text)] truncate">{c.name}</span>
-                      <span className={`text-[10px] px-1.5 py-px rounded-full font-medium leading-tight ${CONNECTION_TYPE_COLORS[c.type]}`}>
-                        {CONNECTION_TYPE_LABELS[c.type]}
-                      </span>
-                      <span className={`text-[10px] px-1.5 py-px rounded-full font-medium leading-tight ${STATUS_COLORS[c.status]}`}>
+                      <Tag size="sm" type="blue">{CONNECTION_TYPE_LABELS[c.type]}</Tag>
+                      <Tag size="sm" type={c.status === 'Connected' ? 'green' : c.status === 'Error' ? 'red' : 'gray'}>
                         {c.status}
-                      </span>
+                      </Tag>
                       {testResults[c.id] && (
                         <span className={`text-[10px] px-1.5 py-px rounded-full font-medium leading-tight ${testResults[c.id].ok ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'}`}>
                           {testResults[c.id].ok ? <Check size={10} className="inline mr-0.5" /> : <AlertCircle size={10} className="inline mr-0.5" />}
@@ -429,20 +361,13 @@ function ConnectionsSection() {
                   </div>
                 </div>
                 <div className="flex items-center gap-0.5 shrink-0">
-                  <button
+                  <Button size="sm" kind="ghost" hasIconOnly iconDescription="Test connection"
                     onClick={() => handleTest(c)}
                     disabled={testingId === c.id}
-                    title="Test connection"
-                    className="p-1.5 text-[var(--t-text-muted)] hover:text-green-600 hover:bg-green-50 disabled:opacity-50"
-                  >
-                    {testingId === c.id ? <Loader2 size={14} className="animate-spin" /> : <Play size={14} />}
-                  </button>
-                  <button onClick={() => openEdit(c)} title="Edit" className="p-1.5 text-[var(--t-text-muted)] hover:text-[#0f62fe] hover:bg-[#e0e0e0]">
-                    <Pencil size={14} />
-                  </button>
-                  <button onClick={() => setDeleteTarget(c)} title="Delete" className="p-1.5 text-[var(--t-text-muted)] hover:text-red-600 hover:bg-red-50">
-                    <Trash2 size={14} />
-                  </button>
+                    renderIcon={testingId === c.id ? (() => <Loader2 size={14} className="animate-spin" />) : Play}
+                  />
+                  <Button size="sm" kind="ghost" hasIconOnly iconDescription="Edit" renderIcon={Pencil} onClick={() => openEdit(c)} />
+                  <Button size="sm" kind="danger--ghost" hasIconOnly iconDescription="Delete" renderIcon={Trash2} onClick={() => setDeleteTarget(c)} />
                 </div>
               </div>
             </div>
@@ -454,9 +379,9 @@ function ConnectionsSection() {
         <Modal title={editTarget ? 'Edit Connection' : 'New Connection'} onClose={() => setShowModal(false)}>
           <div className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-[var(--t-text-secondary)] mb-1">Name <span className="text-red-500">*</span></label>
-              <input
-                className="w-full border border-[var(--t-border)] px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#0f62fe]"
+              <TextInput
+                id="repo-conn-name"
+                labelText={<>Name <span className="text-red-500">*</span></>}
                 value={form.name}
                 onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
                 placeholder="My Database"
@@ -477,27 +402,27 @@ function ConnectionsSection() {
             />
             <div className="grid grid-cols-3 gap-3">
               <div className="col-span-2">
-                <label className="block text-sm font-medium text-[var(--t-text-secondary)] mb-1">Host <span className="text-red-500">*</span></label>
-                <input
-                  className="w-full border border-[var(--t-border)] px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#0f62fe]"
+                <TextInput
+                  id="repo-conn-host"
+                  labelText={<>Host <span className="text-red-500">*</span></>}
                   value={form.host}
                   onChange={e => setForm(f => ({ ...f, host: e.target.value }))}
                   placeholder="localhost"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-[var(--t-text-secondary)] mb-1">Port</label>
-                <input
-                  className="w-full border border-[var(--t-border)] px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#0f62fe]"
+                <TextInput
+                  id="repo-conn-port"
+                  labelText="Port"
                   value={form.port}
                   onChange={e => setForm(f => ({ ...f, port: e.target.value }))}
                 />
               </div>
             </div>
             <div>
-              <label className="block text-sm font-medium text-[var(--t-text-secondary)] mb-1">Database <span className="text-red-500">*</span></label>
-              <input
-                className="w-full border border-[var(--t-border)] px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#0f62fe]"
+              <TextInput
+                id="repo-conn-db"
+                labelText={<>Database <span className="text-red-500">*</span></>}
                 value={form.database}
                 onChange={e => setForm(f => ({ ...f, database: e.target.value }))}
                 placeholder="mydb"
@@ -505,51 +430,42 @@ function ConnectionsSection() {
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block text-sm font-medium text-[var(--t-text-secondary)] mb-1">Username <span className="text-red-500">*</span></label>
-                <input
-                  className="w-full border border-[var(--t-border)] px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#0f62fe]"
+                <TextInput
+                  id="repo-conn-user"
+                  labelText={<>Username <span className="text-red-500">*</span></>}
                   value={form.username}
                   onChange={e => setForm(f => ({ ...f, username: e.target.value }))}
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-[var(--t-text-secondary)] mb-1">Password</label>
-                <input
+                <TextInput
+                  id="repo-conn-pass"
                   type="password"
-                  className="w-full border border-[var(--t-border)] px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#0f62fe]"
+                  labelText="Password"
                   value={form.password}
                   onChange={e => setForm(f => ({ ...f, password: e.target.value }))}
                 />
               </div>
             </div>
-            <label className="flex items-center gap-2 cursor-pointer">
-              <input
-                type="checkbox"
-                className="w-4 h-4 accent-teal-600"
-                checked={form.ssl}
-                onChange={e => setForm(f => ({ ...f, ssl: e.target.checked }))}
-              />
-              <span className="text-sm text-[var(--t-text-secondary)]">Enable SSL</span>
-            </label>
+            <Checkbox
+              id="repo-conn-ssl"
+              labelText="Enable SSL"
+              checked={form.ssl}
+              onChange={(_, { checked }) => setForm(f => ({ ...f, ssl: checked }))}
+            />
 
             {error && (
-              <div className="flex items-center gap-2 text-sm text-red-600 bg-red-50 px-3 py-2">
-                <AlertCircle size={14} /> {error}
-              </div>
+              <InlineNotification kind="error" lowContrast hideCloseButton title={error} />
             )}
 
             <div className="flex justify-end gap-3 pt-2">
-              <button onClick={() => setShowModal(false)} className="px-4 py-2 text-sm border border-[var(--t-border)] text-[var(--t-text-secondary)] hover:bg-[var(--t-bg)]">
+              <Button kind="secondary" onClick={() => setShowModal(false)}>
                 Cancel
-              </button>
-              <button
-                onClick={handleSubmit}
-                disabled={submitting}
-                className="px-3 h-8 text-sm bg-[#0f62fe] text-white hover:bg-[#0353e9] disabled:opacity-60 flex items-center gap-2"
-              >
-                {submitting && <Loader2 size={14} className="animate-spin" />}
+              </Button>
+              <Button kind="primary" onClick={handleSubmit} disabled={submitting}>
+                {submitting && <Loader2 size={14} className="animate-spin mr-2" />}
                 {editTarget ? 'Save Changes' : 'Create'}
-              </button>
+              </Button>
             </div>
           </div>
         </Modal>
@@ -653,12 +569,11 @@ function ApiKeysSection() {
           <h2 className="text-xl font-semibold text-[var(--t-text)]">API Keys</h2>
           <p className="text-sm text-[var(--t-text-muted)] mt-0.5">Manage access tokens for the Data Repository API</p>
         </div>
-        <button
+        <Button size="sm" kind="primary" renderIcon={Plus}
           onClick={() => { setForm({ name: '', permissions: 'read', expiresAt: '' }); setError(''); setShowModal(true); }}
-          className="flex items-center gap-2 px-3 h-8 bg-[#0f62fe] text-white text-sm font-medium hover:bg-[#0353e9]"
         >
-          <Plus size={16} /> New API Key
-        </button>
+          New API Key
+        </Button>
       </div>
 
       {newKey && (
@@ -666,12 +581,8 @@ function ApiKeysSection() {
           <p className="text-sm font-medium text-green-800 mb-2">API key created. Copy it now — it won't be shown again.</p>
           <div className="flex items-center gap-2">
             <code className="flex-1 text-xs font-mono bg-[var(--t-panel)] border border-green-200 px-3 py-2 text-green-900 truncate">{newKey}</code>
-            <button onClick={() => copyKey(newKey)} className="p-2 bg-green-600 text-white hover:bg-green-700">
-              {copied ? <Check size={16} /> : <Copy size={16} />}
-            </button>
-            <button onClick={() => setNewKey(null)} className="p-2 text-green-700 hover:bg-green-100">
-              <X size={16} />
-            </button>
+            <Button size="sm" kind="primary" hasIconOnly iconDescription="Copy" renderIcon={copied ? Check : Copy} onClick={() => copyKey(newKey)} />
+            <Button size="sm" kind="ghost" hasIconOnly iconDescription="Dismiss" renderIcon={X} onClick={() => setNewKey(null)} />
           </div>
         </div>
       )}
@@ -693,24 +604,22 @@ function ApiKeysSection() {
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
                     <span className="font-medium text-[var(--t-text)]">{k.name}</span>
-                    <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${PERMISSION_COLORS[k.permissions]}`}>
+                    <Tag size="sm" type={k.permissions === 'admin' ? 'red' : k.permissions === 'write' ? 'blue' : 'gray'}>
                       {k.permissions}
-                    </span>
-                    <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${k.isActive ? 'bg-green-100 text-green-700' : 'bg-[var(--t-panel-hover)] text-[var(--t-text-muted)]'}`}>
+                    </Tag>
+                    <Tag size="sm" type={k.isActive ? 'green' : 'gray'}>
                       {k.isActive ? 'Active' : 'Inactive'}
-                    </span>
+                    </Tag>
                   </div>
                   <div className="flex items-center gap-2 mt-2">
                     <code className="text-xs font-mono text-[var(--t-text-muted)] bg-[var(--t-bg)] px-2 py-1">
                       {revealed[k.id] ? k.key : maskKey(k.key)}
                     </code>
-                    <button onClick={() => setRevealed(r => ({ ...r, [k.id]: !r[k.id] }))} className="text-[var(--t-text-muted)] hover:text-[var(--t-text-secondary)]">
-                      {revealed[k.id] ? <EyeOff size={14} /> : <Eye size={14} />}
-                    </button>
+                    <Button size="sm" kind="ghost" hasIconOnly iconDescription={revealed[k.id] ? 'Hide' : 'Reveal'}
+                      renderIcon={revealed[k.id] ? EyeOff : Eye}
+                      onClick={() => setRevealed(r => ({ ...r, [k.id]: !r[k.id] }))} />
                     {revealed[k.id] && (
-                      <button onClick={() => copyKey(k.key)} className="text-[var(--t-text-muted)] hover:text-[#0f62fe]">
-                        <Copy size={14} />
-                      </button>
+                      <Button size="sm" kind="ghost" hasIconOnly iconDescription="Copy" renderIcon={Copy} onClick={() => copyKey(k.key)} />
                     )}
                   </div>
                   {k.expiresAt && (
@@ -718,16 +627,9 @@ function ApiKeysSection() {
                   )}
                 </div>
                 <div className="flex items-center gap-1 shrink-0">
-                  <button
-                    onClick={() => handleToggle(k)}
-                    title={k.isActive ? 'Deactivate' : 'Activate'}
-                    className={`p-2  ${k.isActive ? 'text-green-600 hover:bg-green-50' : 'text-[var(--t-text-muted)] hover:bg-[var(--t-bg)]'}`}
-                  >
-                    <RefreshCw size={16} />
-                  </button>
-                  <button onClick={() => setDeleteTarget(k)} className="p-2 text-[var(--t-text-muted)] hover:text-red-600 hover:bg-red-50">
-                    <Trash2 size={16} />
-                  </button>
+                  <Button size="sm" kind="ghost" hasIconOnly iconDescription={k.isActive ? 'Deactivate' : 'Activate'}
+                    renderIcon={RefreshCw} onClick={() => handleToggle(k)} />
+                  <Button size="sm" kind="danger--ghost" hasIconOnly iconDescription="Delete" renderIcon={Trash2} onClick={() => setDeleteTarget(k)} />
                 </div>
               </div>
             </div>
@@ -739,63 +641,54 @@ function ApiKeysSection() {
         <Modal title="New API Key" onClose={() => setShowModal(false)}>
           <div className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-[var(--t-text-secondary)] mb-1">Name <span className="text-red-500">*</span></label>
-              <input
-                className="w-full border border-[var(--t-border)] px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#0f62fe]"
+              <TextInput
+                id="repo-key-name"
+                labelText={<>Name <span className="text-red-500">*</span></>}
                 value={form.name}
                 onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
                 placeholder="My app key"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-[var(--t-text-secondary)] mb-2">Permissions</label>
-              <div className="space-y-2">
+              <RadioButtonGroup
+                legendText="Permissions"
+                name="repo-permissions"
+                orientation="vertical"
+                valueSelected={form.permissions}
+                onChange={v => setForm(f => ({ ...f, permissions: v as Permission }))}
+              >
                 {(['read', 'write', 'admin'] as Permission[]).map(p => (
-                  <label key={p} className="flex items-center gap-3 cursor-pointer">
-                    <input
-                      type="radio"
-                      name="repo-permissions"
-                      value={p}
-                      checked={form.permissions === p}
-                      onChange={() => setForm(f => ({ ...f, permissions: p }))}
-                      className="accent-teal-600"
-                    />
-                    <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${PERMISSION_COLORS[p]}`}>{p}</span>
-                    <span className="text-sm text-[var(--t-text-secondary)]">
-                      {p === 'read' ? 'Read-only access to tables' : p === 'write' ? 'Read and write access' : 'Full admin access'}
-                    </span>
-                  </label>
+                  <RadioButton
+                    key={p}
+                    id={`repo-perm-${p}`}
+                    value={p}
+                    labelText={`${p} — ${p === 'read' ? 'Read-only access to tables' : p === 'write' ? 'Read and write access' : 'Full admin access'}`}
+                  />
                 ))}
-              </div>
+              </RadioButtonGroup>
             </div>
             <div>
-              <label className="block text-sm font-medium text-[var(--t-text-secondary)] mb-1">Expires At (optional)</label>
-              <input
+              <TextInput
+                id="repo-key-expires"
                 type="date"
-                className="w-full border border-[var(--t-border)] px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#0f62fe]"
+                labelText="Expires At (optional)"
                 value={form.expiresAt}
                 onChange={e => setForm(f => ({ ...f, expiresAt: e.target.value }))}
               />
             </div>
 
             {error && (
-              <div className="flex items-center gap-2 text-sm text-red-600 bg-red-50 px-3 py-2">
-                <AlertCircle size={14} /> {error}
-              </div>
+              <InlineNotification kind="error" lowContrast hideCloseButton title={error} />
             )}
 
             <div className="flex justify-end gap-3 pt-2">
-              <button onClick={() => setShowModal(false)} className="px-4 py-2 text-sm border border-[var(--t-border)] text-[var(--t-text-secondary)] hover:bg-[var(--t-bg)]">
+              <Button kind="secondary" onClick={() => setShowModal(false)}>
                 Cancel
-              </button>
-              <button
-                onClick={handleCreate}
-                disabled={submitting}
-                className="px-3 h-8 text-sm bg-[#0f62fe] text-white hover:bg-[#0353e9] disabled:opacity-60 flex items-center gap-2"
-              >
-                {submitting && <Loader2 size={14} className="animate-spin" />}
+              </Button>
+              <Button kind="primary" onClick={handleCreate} disabled={submitting}>
+                {submitting && <Loader2 size={14} className="animate-spin mr-2" />}
                 Create Key
-              </button>
+              </Button>
             </div>
           </div>
         </Modal>
@@ -1055,35 +948,19 @@ function TableDataSection({ table }: { table: RepoTable }) {
           <span>{totalCount.toLocaleString()} rows total</span>
         </div>
         <div className="flex items-center gap-2">
-          <button
-            onClick={() => loadData(page)}
-            className="p-2 text-[var(--t-text-muted)] hover:text-[#0f62fe] hover:bg-[#e0e0e0]"
-            title="Refresh"
-          >
-            <RefreshCw size={14} />
-          </button>
-          <div className="flex items-center gap-1 border border-[var(--t-border)] overflow-hidden">
-            <button
-              onClick={exportCSV}
-              disabled={exporting !== null}
-              className="flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium text-[var(--t-text-secondary)] hover:bg-[var(--t-bg)] disabled:opacity-50"
-              title="Export CSV"
-            >
-              {exporting === 'csv' ? <Loader2 size={12} className="animate-spin" /> : <Download size={12} />}
-              CSV
-            </button>
-            <div className="w-px h-5 bg-[var(--t-border-light)]" />
-            <button
-              onClick={exportXLSX}
-              disabled={exporting !== null}
-              className="flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium text-[var(--t-text-secondary)] hover:bg-[var(--t-bg)] disabled:opacity-50"
-              title="Export Excel"
-            >
-              {exporting === 'xlsx' ? <Loader2 size={12} className="animate-spin" /> : <Download size={12} />}
-              XLSX
-            </button>
-          </div>
-          <button
+          <Button size="sm" kind="ghost" hasIconOnly iconDescription="Refresh" renderIcon={RefreshCw} onClick={() => loadData(page)} />
+          <Button size="sm" kind="tertiary" onClick={exportCSV} disabled={exporting !== null}
+            renderIcon={exporting === 'csv' ? (() => <Loader2 size={12} className="animate-spin" />) : Download}>
+            CSV
+          </Button>
+          <Button size="sm" kind="tertiary" onClick={exportXLSX} disabled={exporting !== null}
+            renderIcon={exporting === 'xlsx' ? (() => <Loader2 size={12} className="animate-spin" />) : Download}>
+            XLSX
+          </Button>
+          <Button
+            size="sm"
+            kind="primary"
+            renderIcon={Plus}
             onClick={() => {
               const init: Record<string, any> = {};
               columns.forEach(c => { init[c.name] = ''; });
@@ -1091,17 +968,14 @@ function TableDataSection({ table }: { table: RepoTable }) {
               setShowAddRow(true);
               setEditRid(null);
             }}
-            className="flex items-center gap-1.5 px-3 h-8 bg-[#0f62fe] text-white text-sm font-medium hover:bg-[#0353e9]"
           >
-            <Plus size={14} /> Add Row
-          </button>
+            Add Row
+          </Button>
         </div>
       </div>
 
       {error && (
-        <div className="mb-3 flex items-center gap-2 text-sm text-red-600 bg-red-50 border border-red-200 px-3 py-2 flex-shrink-0">
-          <AlertCircle size={14} /> {error}
-        </div>
+        <InlineNotification kind="error" lowContrast hideCloseButton title={error} className="mb-3 flex-shrink-0" />
       )}
 
       {/* Table */}
@@ -1232,21 +1106,13 @@ function TableDataSection({ table }: { table: RepoTable }) {
       <div className="flex items-center justify-between mt-4 flex-shrink-0 text-xs text-[var(--t-text-muted)]">
         <span>{totalCount > 0 ? `Rows ${startRow}–${endRow} of ${totalCount.toLocaleString()}` : '0 rows'}</span>
         <div className="flex items-center gap-2">
-          <button
-            onClick={() => goPage(page - 1)}
-            disabled={page === 0 || loading}
-            className="px-3 py-1.5 border border-[var(--t-border)] hover:bg-[var(--t-bg)] disabled:opacity-40 disabled:cursor-not-allowed"
-          >
+          <Button size="sm" kind="tertiary" onClick={() => goPage(page - 1)} disabled={page === 0 || loading}>
             ← Prev
-          </button>
+          </Button>
           <span>Page {page + 1} / {Math.max(1, totalPages)}</span>
-          <button
-            onClick={() => goPage(page + 1)}
-            disabled={page >= totalPages - 1 || loading}
-            className="px-3 py-1.5 border border-[var(--t-border)] hover:bg-[var(--t-bg)] disabled:opacity-40 disabled:cursor-not-allowed"
-          >
+          <Button size="sm" kind="tertiary" onClick={() => goPage(page + 1)} disabled={page >= totalPages - 1 || loading}>
             Next →
-          </button>
+          </Button>
         </div>
       </div>
 
@@ -1271,35 +1137,25 @@ function SettingsModal({ onClose }: { onClose: () => void }) {
     { id: 'apikeys', label: 'API Keys', icon: <Key size={13} /> },
   ];
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-      <div className="bg-[var(--t-panel)] w-[900px] max-w-[95vw] flex flex-col" style={{ height: '80vh' }}>
-        {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b">
-          <div className="flex items-center gap-2 font-semibold text-[var(--t-text)]">
-            <Settings size={16} className="text-[#0f62fe]" /> Settings
-          </div>
-          <button onClick={onClose} className="p-1 hover:bg-[var(--t-panel-hover)] text-[var(--t-text-muted)] hover:text-[var(--t-text-secondary)]">
-            <X size={16} />
-          </button>
-        </div>
-        {/* Tab bar */}
-        <div className="flex border-b border-[#e0e0e0] px-6 gap-0 overflow-x-auto">
-          {TABS.map(t => (
-            <button key={t.id} onClick={() => setTab(t.id)}
-              className={`flex items-center gap-1.5 h-10 px-4 text-sm font-normal border-b-2 flex-shrink-0 -mb-px transition-colors ${
-                tab === t.id ? 'border-[#0f62fe] text-[#161616]' : 'border-transparent text-[#525252] hover:text-[#161616]'
-              }`}>
-              {t.icon}{t.label}
-            </button>
-          ))}
-        </div>
-        {/* Content */}
-        <div className="flex-1 overflow-y-auto p-6">
-          {tab === 'connections' && <ConnectionsSection />}
-          {tab === 'apikeys' && <ApiKeysSection />}
-        </div>
+    <ComposedModal open onClose={() => { onClose(); return false; }} size="lg">
+      <ModalHeader title="Settings" />
+      <div className="px-4">
+        <Tabs
+          selectedIndex={TABS.findIndex(t => t.id === tab)}
+          onChange={({ selectedIndex }) => setTab(TABS[selectedIndex].id)}
+        >
+          <TabList aria-label="Settings sections" contained={false}>
+            {TABS.map(t => (
+              <Tab key={t.id}><span className="flex items-center gap-1.5">{t.icon}{t.label}</span></Tab>
+            ))}
+          </TabList>
+        </Tabs>
       </div>
-    </div>
+      <ModalBody style={{ height: '65vh' }}>
+        {tab === 'connections' && <ConnectionsSection />}
+        {tab === 'apikeys' && <ApiKeysSection />}
+      </ModalBody>
+    </ComposedModal>
   );
 }
 
@@ -1964,31 +1820,30 @@ function SqlEditorPanel({ connections }: { connections: RepoConnection[] }) {
             }))}
           />
         </div>
-        <button
+        <Button
+          size="sm"
+          kind="primary"
           onClick={() => runQuery()}
           disabled={activeTab.running || !connId || !activeTab.sql.trim()}
-          className="flex items-center gap-1.5 px-3 h-8 text-xs font-medium bg-[#0f62fe] text-white hover:bg-[#0353e9] disabled:opacity-50 transition-colors"
           title="Run (Ctrl+Enter)"
+          renderIcon={activeTab.running ? (() => <Loader2 size={12} className="animate-spin" />) : Play}
         >
-          {activeTab.running ? <Loader2 size={12} className="animate-spin" /> : <Play size={12} />}
           Run
-        </button>
-        <button
+        </Button>
+        <Button
+          size="sm"
+          kind="ghost"
           onClick={() => updateTab(activeTab.id, { sql: formatSql(activeTab.sql) })}
           disabled={!activeTab.sql.trim()}
-          className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium text-[var(--t-text-secondary)] hover:bg-[var(--t-panel-hover)] disabled:opacity-40 transition-colors"
           title="Format SQL"
+          renderIcon={Code}
         >
-          <Code size={12} /> Format
-        </button>
+          Format
+        </Button>
         <div className="relative" ref={historyRef}>
-          <button
-            onClick={() => setShowHistory(!showHistory)}
-            className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium text-[var(--t-text-secondary)] hover:bg-[var(--t-panel-hover)] transition-colors"
-            title="Query History"
-          >
-            <Clock size={12} /> History
-          </button>
+          <Button size="sm" kind="ghost" renderIcon={Clock} onClick={() => setShowHistory(!showHistory)} title="Query History">
+            History
+          </Button>
           {showHistory && history.length > 0 && (
             <div className="absolute top-full left-0 mt-1 w-96 max-h-72 overflow-y-auto bg-[var(--t-panel)] border border-[var(--t-border)] z-50">
               <div className="px-3 py-2 border-b border-[var(--t-border-light)] text-[10px] font-semibold text-[var(--t-text-muted)]">Recent Queries</div>
@@ -2008,22 +1863,14 @@ function SqlEditorPanel({ connections }: { connections: RepoConnection[] }) {
             </div>
           )}
         </div>
-        <button
-          onClick={() => setShowSchema(s => !s)}
-          className={`flex items-center gap-1.5 px-2.5 py-1.5  text-xs font-medium transition-colors ${showSchema ? 'text-[#0f62fe] bg-[#e0e0e0]' : 'text-[var(--t-text-secondary)] hover:bg-[var(--t-panel-hover)]'}`}
-          title="Toggle Schema Browser"
-        >
-          <Table2 size={12} /> Schema
-        </button>
+        <Button size="sm" kind={showSchema ? 'secondary' : 'ghost'} renderIcon={Table2} onClick={() => setShowSchema(s => !s)} title="Toggle Schema Browser">
+          Schema
+        </Button>
         <div className="flex-1" />
         {activeTab.result && !activeTab.result.error && activeTab.result.columns.length > 0 && (
           <div className="flex items-center gap-1">
-            <button onClick={exportCsv} className="flex items-center gap-1 px-2 py-1 text-[10px] font-medium text-[var(--t-text-muted)] hover:bg-[var(--t-panel-hover)] transition-colors" title="Export CSV">
-              <Download size={10} /> CSV
-            </button>
-            <button onClick={exportXlsx} className="flex items-center gap-1 px-2 py-1 text-[10px] font-medium text-[var(--t-text-muted)] hover:bg-[var(--t-panel-hover)] transition-colors" title="Export XLSX">
-              <Download size={10} /> XLSX
-            </button>
+            <Button size="sm" kind="ghost" renderIcon={Download} onClick={exportCsv} title="Export CSV">CSV</Button>
+            <Button size="sm" kind="ghost" renderIcon={Download} onClick={exportXlsx} title="Export XLSX">XLSX</Button>
           </div>
         )}
         {activeTab.result?.time != null && (
@@ -2628,31 +2475,18 @@ export default function DataRepository() {
         {/* Right panel */}
         <main className="flex-1 overflow-hidden flex flex-col">
           {/* Tab bar */}
-          <div className="flex-shrink-0 bg-[var(--t-panel)] border-b border-[var(--t-border)] flex items-center gap-0 px-4 overflow-x-auto">
-            <button
-              onClick={() => setRightTab('data')}
-              className={`h-10 px-4 text-sm font-normal border-b-2 flex-shrink-0 transition-colors ${rightTab === 'data' ? 'border-[#0f62fe] text-[#161616]' : 'border-transparent text-[#525252] hover:text-[#161616]'}`}
+          <div className="flex-shrink-0 bg-[var(--t-panel)] px-4 overflow-x-auto">
+            <Tabs
+              selectedIndex={(['data', 'properties', 'spec', 'sql'] as const).indexOf(rightTab as 'data')}
+              onChange={({ selectedIndex }) => setRightTab((['data', 'properties', 'spec', 'sql'] as const)[selectedIndex])}
             >
-              <Table2 size={12} className="inline mr-1 -mt-0.5" /> Data
-            </button>
-            <button
-              onClick={() => setRightTab('properties')}
-              className={`h-10 px-4 text-sm font-normal border-b-2 flex-shrink-0 transition-colors ${rightTab === 'properties' ? 'border-[#0f62fe] text-[#161616]' : 'border-transparent text-[#525252] hover:text-[#161616]'}`}
-            >
-              <Columns size={12} className="inline mr-1 -mt-0.5" /> Properties
-            </button>
-            <button
-              onClick={() => setRightTab('spec')}
-              className={`h-10 px-4 text-sm font-normal border-b-2 flex-shrink-0 transition-colors ${rightTab === 'spec' ? 'border-[#0f62fe] text-[#161616]' : 'border-transparent text-[#525252] hover:text-[#161616]'}`}
-            >
-              <Code size={12} className="inline mr-1 -mt-0.5" /> API Spec
-            </button>
-            <button
-              onClick={() => setRightTab('sql')}
-              className={`h-10 px-4 text-sm font-normal border-b-2 flex-shrink-0 transition-colors ${rightTab === 'sql' ? 'border-[#0f62fe] text-[#161616]' : 'border-transparent text-[#525252] hover:text-[#161616]'}`}
-            >
-              <Database size={12} className="inline mr-1 -mt-0.5" /> SQL Editor
-            </button>
+              <TabList aria-label="Table views">
+                <Tab renderIcon={Table2}>Data</Tab>
+                <Tab renderIcon={Columns}>Properties</Tab>
+                <Tab renderIcon={Code}>API Spec</Tab>
+                <Tab renderIcon={Database}>SQL Editor</Tab>
+              </TabList>
+            </Tabs>
           </div>
 
           {rightTab === 'data' ? (
@@ -2670,11 +2504,16 @@ export default function DataRepository() {
                     <input type="file" accept=".csv,.tsv,.json,.xlsx,.xls,.zip" className="hidden" ref={fileInputRef}
                       onChange={e => { const file = e.target.files?.[0]; if (file) handleImport(file); e.target.value = ''; }}
                     />
-                    <button onClick={() => fileInputRef.current?.click()} disabled={importingId !== null}
-                      className="flex items-center gap-1 px-2 py-1 text-[11px] font-medium text-[var(--t-text-muted)] hover:bg-[var(--t-panel-hover)] disabled:opacity-50" title="Import file">
-                      {importingId ? <Loader2 size={12} className="animate-spin" /> : <Upload size={12} />} Import
-                    </button>
-                    <button
+                    <Button size="sm" kind="ghost" onClick={() => fileInputRef.current?.click()} disabled={importingId !== null} title="Import file"
+                      renderIcon={importingId ? (() => <Loader2 size={12} className="animate-spin" />) : Upload}>
+                      Import
+                    </Button>
+                    <Button
+                      size="sm"
+                      kind="ghost"
+                      hasIconOnly
+                      iconDescription="Edit table properties"
+                      renderIcon={Pencil}
                       onClick={() => {
                         setEditTable(selectedTable);
                         setEditTableForm({
@@ -2683,24 +2522,19 @@ export default function DataRepository() {
                           folderId: selectedTable.folderId ?? '',
                         });
                       }}
-                      className="flex items-center gap-1 px-2 py-1 text-[11px] font-medium text-[var(--t-text-muted)] hover:text-[#0f62fe] hover:bg-[#e8e8e8]"
-                      title="Edit table properties"
-                    >
-                      <Pencil size={12} />
-                    </button>
-                    <button onClick={() => setDeleteTarget(selectedTable)}
-                      className="flex items-center gap-1 px-2 py-1 text-[11px] font-medium text-[var(--t-text-muted)] hover:text-red-600 hover:bg-red-50" title="Remove from list">
-                      <Trash2 size={12} />
-                    </button>
+                    />
+                    <Button size="sm" kind="danger--ghost" hasIconOnly iconDescription="Remove from list" renderIcon={Trash2} onClick={() => setDeleteTarget(selectedTable)} />
                   </div>
                 </div>
 
                 {importResult && (
-                  <div className={`flex-shrink-0 px-5 py-1.5 text-xs flex items-center gap-2 ${importResult.ok ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-600'}`}>
-                    {importResult.ok ? <Check size={12} /> : <AlertCircle size={12} />}
-                    {importResult.msg}
-                    <button onClick={() => setImportResult(null)} className="ml-auto text-[var(--t-text-muted)] hover:text-[var(--t-text-secondary)]"><X size={12} /></button>
-                  </div>
+                  <InlineNotification
+                    className="flex-shrink-0"
+                    kind={importResult.ok ? 'success' : 'error'}
+                    lowContrast
+                    title={importResult.msg}
+                    onClose={() => { setImportResult(null); return false; }}
+                  />
                 )}
 
                 <div className="flex-1 overflow-hidden flex flex-col px-5 py-3">
@@ -2829,46 +2663,35 @@ export default function DataRepository() {
       {editTable && (
         <Modal title={`Edit table: ${editTable.name}`} onClose={() => setEditTable(null)}>
           <div className="space-y-3">
-            <label className="block">
-              <span className="text-[11px] text-[var(--t-text-muted)] block mb-1">Display Name</span>
-              <input
-                value={editTableForm.name}
-                onChange={(e) => setEditTableForm((f) => ({ ...f, name: e.target.value }))}
-                className="w-full px-3 py-1.5 text-sm border border-[var(--t-border)] bg-[var(--t-input)] text-[var(--t-text)]"
-              />
-            </label>
-            <label className="block">
-              <span className="text-[11px] text-[var(--t-text-muted)] block mb-1">Description</span>
-              <textarea
-                rows={3}
-                value={editTableForm.description}
-                onChange={(e) => setEditTableForm((f) => ({ ...f, description: e.target.value }))}
-                className="w-full px-3 py-1.5 text-sm border border-[var(--t-border)] bg-[var(--t-input)] text-[var(--t-text)]"
-              />
-            </label>
-            <label className="block">
-              <span className="text-[11px] text-[var(--t-text-muted)] block mb-1">Folder</span>
-              <select
-                value={editTableForm.folderId}
-                onChange={(e) => setEditTableForm((f) => ({ ...f, folderId: e.target.value }))}
-                className="w-full px-3 py-1.5 text-sm border border-[var(--t-border)] bg-[var(--t-input)] text-[var(--t-text)]"
-              >
-                <option value="">— Root (no folder) —</option>
-                {folders.map((fl: any) => (
-                  <option key={fl.id} value={fl.id}>{fl.name}</option>
-                ))}
-              </select>
-            </label>
+            <TextInput
+              id="repo-edit-table-name"
+              labelText="Display Name"
+              value={editTableForm.name}
+              onChange={(e) => setEditTableForm((f) => ({ ...f, name: e.target.value }))}
+            />
+            <TextArea
+              id="repo-edit-table-desc"
+              labelText="Description"
+              rows={3}
+              value={editTableForm.description}
+              onChange={(e) => setEditTableForm((f) => ({ ...f, description: e.target.value }))}
+            />
+            <Select
+              id="repo-edit-table-folder"
+              labelText="Folder"
+              value={editTableForm.folderId}
+              onChange={(e) => setEditTableForm((f) => ({ ...f, folderId: e.target.value }))}
+            >
+              <SelectItem value="" text="— Root (no folder) —" />
+              {folders.map((fl: any) => (
+                <SelectItem key={fl.id} value={fl.id} text={fl.name} />
+              ))}
+            </Select>
             <div className="flex justify-end gap-2 pt-1">
-              <button
-                onClick={() => setEditTable(null)}
-                className="px-3 py-1.5 text-xs border border-[var(--t-border)] text-[var(--t-text-secondary)] hover:bg-[var(--t-panel-hover)]"
-              >Cancel</button>
-              <button
-                onClick={handleSaveEditTable}
-                disabled={editTableSaving}
-                className="px-3 h-8 text-xs bg-[#0f62fe] text-white font-medium hover:bg-[#0f62fe] disabled:opacity-50"
-              >{editTableSaving ? 'Saving…' : 'Save'}</button>
+              <Button size="sm" kind="secondary" onClick={() => setEditTable(null)}>Cancel</Button>
+              <Button size="sm" kind="primary" onClick={handleSaveEditTable} disabled={editTableSaving}>
+                {editTableSaving ? 'Saving…' : 'Save'}
+              </Button>
             </div>
           </div>
         </Modal>
@@ -2899,15 +2722,13 @@ export default function DataRepository() {
               </div>
             </div>
             <div className="flex justify-end gap-2 pt-1">
-              <button
-                onClick={() => setEncryptPreview(null)}
-                className="px-3 py-1.5 text-xs border border-[var(--t-border)] text-[var(--t-text-secondary)] hover:bg-[var(--t-panel-hover)]"
-              >Cancel</button>
-              <button
+              <Button size="sm" kind="secondary" onClick={() => setEncryptPreview(null)}>Cancel</Button>
+              <Button
+                size="sm"
+                kind="primary"
                 onClick={() => runEncryptAction(selectedTable.id, encryptPreview.column, encryptPreview.decrypt, 'apply')}
                 disabled={encryptingCol === encryptPreview.column}
-                className="px-3 py-1.5 text-xs bg-amber-500 text-white font-medium hover:bg-amber-600 disabled:opacity-50"
-              >{encryptingCol === encryptPreview.column ? 'Applying…' : 'Apply'}</button>
+              >{encryptingCol === encryptPreview.column ? 'Applying…' : 'Apply'}</Button>
             </div>
           </div>
         </Modal>
@@ -2969,34 +2790,31 @@ export default function DataRepository() {
                 )}
 
                 {discoverError && (
-                  <div className="flex items-center gap-2 text-sm text-amber-700 bg-amber-50 px-3 py-2">
-                    <AlertCircle size={14} /> {discoverError}
-                  </div>
+                  <InlineNotification kind="warning" lowContrast hideCloseButton title={discoverError} />
                 )}
 
                 {!discoverLoading && discoveredTables.length > 0 && (
                   <div className="space-y-2">
                     <label className="block text-sm font-medium text-[var(--t-text-secondary)]">Existing Tables</label>
-                    <div className="relative">
-                      <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--t-text-muted)]" />
-                      <input
-                        className="w-full border border-[var(--t-border)] pl-9 pr-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#0f62fe]"
-                        placeholder="Search tables..."
-                        value={discoverSearch}
-                        onChange={e => setDiscoverSearch(e.target.value)}
-                      />
-                    </div>
+                    <CdsSearch
+                      size="md"
+                      labelText="Search tables"
+                      placeholder="Search tables..."
+                      value={discoverSearch}
+                      onChange={e => setDiscoverSearch(e.target.value)}
+                    />
                     <div className="flex items-center justify-between text-xs text-[var(--t-text-muted)]">
                       <span>{discoveredTables.length} available &middot; {selectedExisting.size} selected</span>
-                      <button
-                        className="text-[#0f62fe] hover:text-[#0f62fe] font-medium"
+                      <Button
+                        size="sm"
+                        kind="ghost"
                         onClick={() => {
                           const filtered = discoveredTables.filter(t => !discoverSearch || t.name.toLowerCase().includes(discoverSearch.toLowerCase()));
                           setSelectedExisting(prev => prev.size === filtered.length ? new Set() : new Set(filtered.map(t => t.name)));
                         }}
                       >
                         {selectedExisting.size === discoveredTables.filter(t => !discoverSearch || t.name.toLowerCase().includes(discoverSearch.toLowerCase())).length ? 'Deselect all' : 'Select all'}
-                      </button>
+                      </Button>
                     </div>
                     <div className="max-h-48 overflow-y-auto border border-[var(--t-border)] divide-y divide-[var(--t-border-light)]">
                       {discoveredTables
@@ -3006,9 +2824,10 @@ export default function DataRepository() {
                             key={t.name}
                             className={`flex items-center gap-3 px-3 py-2 cursor-pointer hover:bg-[var(--t-bg)] transition-colors ${selectedExisting.has(t.name) ? 'bg-[#e0e0e0]' : ''}`}
                           >
-                            <input
-                              type="checkbox"
-                              className="accent-teal-600 w-4 h-4"
+                            <Checkbox
+                              id={`repo-discover-${t.name}`}
+                              labelText={t.name}
+                              hideLabel
                               checked={selectedExisting.has(t.name)}
                               onChange={() => {
                                 setSelectedExisting(prev => {
@@ -3043,20 +2862,18 @@ export default function DataRepository() {
 
             {/* Manual table name + description */}
             <div>
-              <label className="block text-sm font-medium text-[var(--t-text-secondary)] mb-1">
-                Table Name {!createForm.connectionId && <span className="text-red-500">*</span>}
-              </label>
-              <input
-                className="w-full border border-[var(--t-border)] px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#0f62fe]"
+              <TextInput
+                id="repo-create-table-name"
+                labelText={<>Table Name {!createForm.connectionId && <span className="text-red-500">*</span>}</>}
                 value={createForm.name}
                 onChange={e => setCreateForm(f => ({ ...f, name: e.target.value }))}
                 placeholder={createForm.connectionId ? 'Type a table name to add manually...' : 'my_table'}
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-[var(--t-text-secondary)] mb-1">Description (optional)</label>
-              <textarea
-                className="w-full border border-[var(--t-border)] px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#0f62fe] resize-none"
+              <TextArea
+                id="repo-create-table-desc"
+                labelText="Description (optional)"
                 rows={2}
                 value={createForm.description}
                 onChange={e => setCreateForm(f => ({ ...f, description: e.target.value }))}
@@ -3064,34 +2881,24 @@ export default function DataRepository() {
             </div>
 
             {createError && (
-              <div className="flex items-center gap-2 text-sm text-red-600 bg-red-50 px-3 py-2">
-                <AlertCircle size={14} /> {createError}
-              </div>
+              <InlineNotification kind="error" lowContrast hideCloseButton title={createError} />
             )}
 
             {/* Actions */}
             <div className="flex justify-end gap-3 pt-2">
-              <button onClick={() => setShowCreateModal(false)} className="px-4 py-2 text-sm border border-[var(--t-border)] text-[var(--t-text-secondary)] hover:bg-[var(--t-bg)]">
+              <Button kind="secondary" onClick={() => setShowCreateModal(false)}>
                 Cancel
-              </button>
+              </Button>
               {selectedExisting.size > 0 ? (
-                <button
-                  onClick={handleAddExistingTables}
-                  disabled={createSubmitting}
-                  className="px-3 h-8 text-sm bg-[#0f62fe] text-white hover:bg-[#0353e9] disabled:opacity-60 flex items-center gap-2"
-                >
-                  {createSubmitting && <Loader2 size={14} className="animate-spin" />}
+                <Button kind="primary" onClick={handleAddExistingTables} disabled={createSubmitting}>
+                  {createSubmitting && <Loader2 size={14} className="animate-spin mr-2" />}
                   Add {selectedExisting.size} Table{selectedExisting.size > 1 ? 's' : ''}
-                </button>
+                </Button>
               ) : (
-                <button
-                  onClick={handleCreateTable}
-                  disabled={createSubmitting || !createForm.name}
-                  className="px-3 h-8 text-sm bg-[#0f62fe] text-white hover:bg-[#0353e9] disabled:opacity-60 flex items-center gap-2"
-                >
-                  {createSubmitting && <Loader2 size={14} className="animate-spin" />}
+                <Button kind="primary" onClick={handleCreateTable} disabled={createSubmitting || !createForm.name}>
+                  {createSubmitting && <Loader2 size={14} className="animate-spin mr-2" />}
                   Add Table
-                </button>
+                </Button>
               )}
             </div>
           </div>
@@ -3103,9 +2910,9 @@ export default function DataRepository() {
         <Modal title="Create Folder" onClose={() => setShowFolderModal(false)}>
           <div className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-[var(--t-text-secondary)] mb-1">Folder Name <span className="text-red-500">*</span></label>
-              <input
-                className="w-full border border-[var(--t-border)] px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#0f62fe]"
+              <TextInput
+                id="repo-folder-name"
+                labelText={<>Folder Name <span className="text-red-500">*</span></>}
                 value={folderForm.name}
                 onChange={e => setFolderForm(f => ({ ...f, name: e.target.value }))}
                 placeholder="e.g. RESDB Tables"
@@ -3129,22 +2936,16 @@ export default function DataRepository() {
               />
             )}
             {folderError && (
-              <div className="flex items-center gap-2 text-sm text-red-600 bg-red-50 px-3 py-2">
-                <AlertCircle size={14} /> {folderError}
-              </div>
+              <InlineNotification kind="error" lowContrast hideCloseButton title={folderError} />
             )}
             <div className="flex justify-end gap-3 pt-2">
-              <button onClick={() => setShowFolderModal(false)} className="px-4 py-2 text-sm border border-[var(--t-border)] text-[var(--t-text-secondary)] hover:bg-[var(--t-bg)]">
+              <Button kind="secondary" onClick={() => setShowFolderModal(false)}>
                 Cancel
-              </button>
-              <button
-                onClick={handleCreateFolder}
-                disabled={folderSubmitting || !folderForm.name}
-                className="px-3 h-8 text-sm bg-[#0f62fe] text-white hover:bg-[#0353e9] disabled:opacity-60 flex items-center gap-2"
-              >
-                {folderSubmitting && <Loader2 size={14} className="animate-spin" />}
+              </Button>
+              <Button kind="primary" onClick={handleCreateFolder} disabled={folderSubmitting || !folderForm.name}>
+                {folderSubmitting && <Loader2 size={14} className="animate-spin mr-2" />}
                 Create
-              </button>
+              </Button>
             </div>
           </div>
         </Modal>

@@ -65,6 +65,7 @@ import {
   ArrowLeft,
 } from 'lucide-react'
 import { confirmDialog } from '@/components/common/ConfirmDialog'
+import { Button, ContentSwitcher, Switch, Tag, TextInput, TextArea, Search as CarbonSearch, Select as CarbonSelect, SelectItem } from '@carbon/react'
 
 // Import Orch SDK
 import { NodeRegistry, registerBuiltins } from '@orch/sdk'
@@ -1319,61 +1320,40 @@ export default function FlowBuilder({ flowId }: FlowBuilderProps) {
           {isDirty ? 'Unsaved changes' : 'Saved'}
         </span>
         <div className="flex items-center">
-          <button onClick={undo} disabled={!past.current.length} title="Undo (Ctrl/⌘+Z)" aria-label="Undo"
-            className="h-8 w-8 inline-flex items-center justify-center text-[#161616] hover:bg-[#e8e8e8] disabled:text-[#c6c6c6] disabled:hover:bg-transparent">
-            <Undo2 className="w-4 h-4" />
-          </button>
-          <button onClick={redo} disabled={!future.current.length} title="Redo (Shift+Ctrl/⌘+Z)" aria-label="Redo"
-            className="h-8 w-8 inline-flex items-center justify-center text-[#161616] hover:bg-[#e8e8e8] disabled:text-[#c6c6c6] disabled:hover:bg-transparent">
-            <Redo2 className="w-4 h-4" />
-          </button>
+          <Button kind="ghost" size="sm" hasIconOnly renderIcon={Undo2} iconDescription="Undo (Ctrl/⌘+Z)"
+            tooltipPosition="bottom" onClick={undo} disabled={!past.current.length} />
+          <Button kind="ghost" size="sm" hasIconOnly renderIcon={Redo2} iconDescription="Redo (Shift+Ctrl/⌘+Z)"
+            tooltipPosition="bottom" onClick={redo} disabled={!future.current.length} />
           {isDirty && flowId && (
-            <button onClick={discardChanges} className="h-8 px-2 text-[13px] text-[#da1e28] underline underline-offset-2 hover:bg-[#fff1f1]">
-              Discard
-            </button>
+            <Button kind="danger--ghost" size="sm" onClick={discardChanges}>Discard</Button>
           )}
         </div>
         <span className="text-[12px] text-[#6f6f6f] whitespace-nowrap hidden xl:inline">· {nodes.length} steps · {edges.length} links</span>
-        <span className="cds-tag text-[12px] px-2 leading-5 whitespace-nowrap" style={{
-          background: isDeployed ? '#a7f0ba' : '#e0e0e0', color: isDeployed ? '#0e6027' : '#161616',
-        }}>
+        <Tag size="sm" type={isDeployed ? 'green' : 'gray'} className="!m-0">
           {isDeployed ? 'Deployed' : 'Draft'}
-        </span>
+        </Tag>
 
         <div className="flex-1" />
 
         {/* View switcher + actions wrap together onto a second row when narrow */}
         <div className="flex items-center gap-3 flex-wrap">
-        <div className="flex border border-[#8d8d8d]" role="tablist">
+        <ContentSwitcher
+          size="sm"
+          selectedIndex={Math.max(0, VIEWS.findIndex((v) => v.id === activeTab))}
+          onChange={({ name }: { name?: string | number }) => setActiveTab(String(name))}
+          className="!w-[420px] flex-shrink-0"
+        >
           {VIEWS.map((v) => (
-            <button
-              key={v.id}
-              role="tab"
-              aria-selected={activeTab === v.id}
-              onClick={() => setActiveTab(v.id)}
-              className="h-8 px-3 text-[13px] whitespace-nowrap transition-colors"
-              style={activeTab === v.id
-                ? { background: '#161616', color: '#ffffff' }
-                : { background: '#ffffff', color: '#161616' }}
-            >
-              {v.label}
-            </button>
+            <Switch key={v.id} name={v.id} text={v.label} />
           ))}
-        </div>
+        </ContentSwitcher>
 
-        <button
-          onClick={saveWithFeedback}
-          disabled={saveMutation.isPending}
-          className="h-8 px-3 text-[13px] flex items-center gap-2 border border-[#0f62fe] text-[#0f62fe] hover:bg-[#0f62fe] hover:text-white disabled:opacity-50 whitespace-nowrap"
-        >
-          <Save className="w-4 h-4" /> {saveMutation.isPending ? 'Saving…' : 'Save'}
-        </button>
-        <button
-          onClick={() => setActiveTab('deploy')}
-          className="h-8 px-3 text-[13px] flex items-center gap-2 bg-[#0f62fe] hover:bg-[#0353e9] text-white whitespace-nowrap"
-        >
-          <Rocket className="w-4 h-4" /> Deploy
-        </button>
+        <Button kind="tertiary" size="sm" renderIcon={Save} onClick={saveWithFeedback} disabled={saveMutation.isPending}>
+          {saveMutation.isPending ? 'Saving…' : 'Save'}
+        </Button>
+        <Button kind="primary" size="sm" renderIcon={Rocket} onClick={() => setActiveTab('deploy')}>
+          Deploy
+        </Button>
         </div>
       </div>
 
@@ -1421,19 +1401,12 @@ export default function FlowBuilder({ flowId }: FlowBuilderProps) {
               />
               <Panel position="top-right">
                 <div className="flex gap-2">
-                  <button
-                    onClick={tidyUp}
-                    disabled={nodes.length < 2}
-                    className="h-8 px-3 text-[13px] flex items-center gap-2 bg-white border border-[#8d8d8d] text-[#161616] hover:bg-[#e8e8e8] disabled:opacity-40"
-                  >
-                    <LayoutGrid className="w-4 h-4" /> Tidy up
-                  </button>
-                  <button
-                    onClick={() => setPanelMode(panelMode === 'palette' ? null : 'palette')}
-                    className="h-8 px-3 text-[13px] flex items-center gap-2 bg-[#161616] text-white hover:bg-[#393939]"
-                  >
-                    <Plus className="w-4 h-4" /> Add step
-                  </button>
+                  <Button kind="tertiary" size="sm" renderIcon={LayoutGrid} onClick={tidyUp} disabled={nodes.length < 2} className="!bg-white">
+                    Tidy up
+                  </Button>
+                  <Button kind="secondary" size="sm" renderIcon={Plus} onClick={() => setPanelMode(panelMode === 'palette' ? null : 'palette')}>
+                    Add step
+                  </Button>
                 </div>
               </Panel>
             </ReactFlow>
@@ -1444,12 +1417,9 @@ export default function FlowBuilder({ flowId }: FlowBuilderProps) {
                   <WorkflowIcon className="w-6 h-6 mx-auto mb-2 text-[#8d8d8d]" />
                   <p className="text-[14px] text-[#161616] font-semibold">Start building your flow</p>
                   <p className="text-[13px] text-[#525252] mt-1 mb-4">Add a trigger first, e.g. HTTP Request, then add the next steps from there</p>
-                  <button
-                    onClick={() => { setPaletteQuery(''); setPanelMode('palette') }}
-                    className="h-8 px-3 text-[13px] inline-flex items-center gap-2 bg-[#0f62fe] text-white hover:bg-[#0353e9]"
-                  >
-                    <Plus className="w-4 h-4" /> Add step
-                  </button>
+                  <Button kind="primary" size="sm" renderIcon={Plus} onClick={() => { setPaletteQuery(''); setPanelMode('palette') }}>
+                    Add step
+                  </Button>
                 </div>
               </div>
             )}
@@ -1468,32 +1438,25 @@ export default function FlowBuilder({ flowId }: FlowBuilderProps) {
                 <div className="p-4 flex flex-col gap-4">
                   <div>
                     <div className="text-[12px] text-[#525252] mb-1">Method</div>
-                    <div className="flex border border-[#8d8d8d] w-fit" role="radiogroup">
-                      {['GET', 'POST', 'PUT', 'DELETE'].map((m) => (
-                        <button key={m} role="radio" aria-checked={testMethod === m} onClick={() => setTestMethod(m)}
-                          className="h-8 px-4 text-[13px]"
-                          style={testMethod === m ? { background: '#161616', color: '#fff' } : { background: '#fff', color: '#161616' }}>
-                          {m}
-                        </button>
-                      ))}
-                    </div>
+                    <ContentSwitcher size="sm" className="!w-auto"
+                      selectedIndex={Math.max(0, ['GET', 'POST', 'PUT', 'DELETE'].indexOf(testMethod))}
+                      onChange={({ name }: { name?: string | number }) => setTestMethod(String(name))}>
+                      {['GET', 'POST', 'PUT', 'DELETE'].map((m) => <Switch key={m} name={m} text={m} />)}
+                    </ContentSwitcher>
                   </div>
                   <div>
-                    <label className="block text-[12px] text-[#525252] mb-1">Path</label>
-                    <input placeholder="/api/v1/..." value={testPath} onChange={(e) => setTestPath(e.target.value)}
-                      style={{ width: '100%', padding: '6px 12px', fontFamily: 'var(--font-mono)' }} />
+                    <TextInput id="test-path" labelText="Path" placeholder="/api/v1/..." value={testPath}
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => setTestPath(e.target.value)} />
                   </div>
                   <div>
-                    <label className="block text-[12px] text-[#525252] mb-1">Body (JSON)</label>
-                    <textarea rows={10} value={testBody} onChange={(e) => setTestBody(e.target.value)} placeholder="{}"
-                      style={{ width: '100%', padding: '8px 12px', fontFamily: 'var(--font-mono)', resize: 'vertical' }} />
+                    <TextArea id="test-body" labelText="Body (JSON)" rows={10} value={testBody} placeholder="{}"
+                      onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setTestBody(e.target.value)}
+                      style={{ fontFamily: 'var(--font-mono)' }} />
                   </div>
                   <div className="flex justify-end">
-                    <button onClick={() => testMutation.mutate()} disabled={testMutation.isPending || !testPath}
-                      className="h-8 px-4 text-[13px] inline-flex items-center gap-2 bg-[#0f62fe] text-white hover:bg-[#0353e9] disabled:bg-[#c6c6c6] disabled:cursor-not-allowed">
-                      <FlaskConical className="w-4 h-4" />
+                    <Button kind="primary" size="md" renderIcon={FlaskConical} onClick={() => testMutation.mutate()} disabled={testMutation.isPending || !testPath}>
                       {testMutation.isPending ? 'Sending…' : 'Execute'}
-                    </button>
+                    </Button>
                   </div>
                 </div>
               </section>
@@ -1646,11 +1609,9 @@ export default function FlowBuilder({ flowId }: FlowBuilderProps) {
                     <p className="text-[13px] text-[#525252] mb-3">
                       Save the flow → validate each step's required fields → send to Orch Broker
                     </p>
-                    <button onClick={deployNow} disabled={blocked}
-                      className="w-full h-12 px-4 text-[14px] inline-flex items-center justify-between bg-[#0f62fe] text-white hover:bg-[#0353e9] disabled:bg-[#c6c6c6] disabled:cursor-not-allowed">
+                    <Button kind="primary" size="lg" renderIcon={Rocket} onClick={deployNow} disabled={blocked} className="!w-full !max-w-none">
                       {deployMutation.isPending ? 'Deploying…' : isDeployed ? 'Redeploy to broker' : 'Deploy to broker'}
-                      <Rocket className="w-4 h-4" />
-                    </button>
+                    </Button>
                     {!flowId && <p className="mt-2 text-[12px] text-[#da1e28]">Save the flow before deploying</p>}
                   </section>
                 </div>
@@ -1676,16 +1637,9 @@ export default function FlowBuilder({ flowId }: FlowBuilderProps) {
                 <div className="text-[14px] font-semibold text-[#161616] mb-4">General</div>
 
                 <div style={{ marginBottom: 14 }}>
-                  <label style={{ fontSize: 12, color: '#525252', display: 'block', marginBottom: 4 }}>
-                    Description
-                  </label>
-                  <textarea
-                    value={flowDescription}
-                    onChange={(e) => setFlowDescription(e.target.value)}
+                  <TextArea id="flow-description" labelText="Description" value={flowDescription} rows={3}
                     placeholder="Flow description..."
-                    rows={3}
-                    style={{ width: '100%', padding: '8px 12px', resize: 'vertical' }}
-                  />
+                    onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setFlowDescription(e.target.value)} />
                 </div>
 
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, marginBottom: 14 }}>
@@ -1775,12 +1729,8 @@ export default function FlowBuilder({ flowId }: FlowBuilderProps) {
               </div>
 
               <div className="flex justify-end gap-2">
-                <button onClick={() => setActiveTab('designer')}
-                  className="h-8 px-3 text-[13px] text-[#0f62fe] hover:bg-[#e8e8e8]">Back to designer</button>
-                <button onClick={saveWithFeedback}
-                  className="h-8 px-4 text-[13px] inline-flex items-center gap-2 bg-[#0f62fe] text-white hover:bg-[#0353e9]">
-                  <Save className="w-4 h-4" /> Save settings
-                </button>
+                <Button kind="ghost" onClick={() => setActiveTab('designer')}>Back to designer</Button>
+                <Button kind="primary" renderIcon={Save} onClick={saveWithFeedback}>Save settings</Button>
               </div>
             </div>
           </div>
@@ -1797,21 +1747,20 @@ export default function FlowBuilder({ flowId }: FlowBuilderProps) {
                     <div className="text-[11px] tracking-[0.32px] text-[#6f6f6f]">PALETTE</div>
                     <div className="text-[16px] font-semibold text-[#161616]">Add a step</div>
                   </div>
-                  <button onClick={() => setPanelMode(selectedNode ? 'inspector' : null)} aria-label="Close"
-                    className="h-8 w-8 flex items-center justify-center hover:bg-[#e8e8e8]"><X className="w-4 h-4" /></button>
+                  <Button kind="ghost" size="sm" hasIconOnly renderIcon={X} iconDescription="Close" tooltipPosition="left"
+                    onClick={() => setPanelMode(selectedNode ? 'inspector' : null)} />
                 </div>
                 <div className="px-4 pt-3">
-                  <div className="relative">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#6f6f6f]" />
-                    <input
-                      autoFocus
-                      value={paletteQuery}
-                      onChange={(e) => setPaletteQuery(e.target.value)}
-                      onKeyDown={(e) => { if (e.key === 'Enter' && paletteMatches[0]) addStep(paletteMatches[0]) }}
-                      placeholder="Search steps…"
-                      className="w-full h-10 pl-9 pr-3 text-[14px] bg-[#f4f4f4] border-0 border-b border-b-[#8d8d8d] outline-none focus:border-b-[#0f62fe]"
-                    />
-                  </div>
+                  <CarbonSearch
+                    id="palette-search"
+                    size="md"
+                    labelText="Search steps"
+                    placeholder="Search steps…"
+                    autoFocus
+                    value={paletteQuery}
+                    onChange={(e: any) => setPaletteQuery(e.target?.value ?? '')}
+                    onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => { if (e.key === 'Enter' && paletteMatches[0]) addStep(paletteMatches[0]) }}
+                  />
                   <p className="text-[12px] text-[#525252] mt-2">
                     {selectedNode
                       ? <>After <strong className="text-[#161616]">{String(selectedNode.data.label)}</strong></>
@@ -1862,21 +1811,21 @@ export default function FlowBuilder({ flowId }: FlowBuilderProps) {
                     <div className="text-[16px] font-semibold text-[#161616] truncate">{String(selectedNode.data.label)}</div>
                     <div className="text-[12px] text-[#6f6f6f]">{String(selectedNode.data.sub)}</div>
                   </div>
-                  <button onClick={() => { setSelectedNode(null); setPanelMode(null) }} aria-label="Close"
-                    className="h-8 w-8 flex items-center justify-center hover:bg-[#e8e8e8]"><X className="w-4 h-4" /></button>
+                  <Button kind="ghost" size="sm" hasIconOnly renderIcon={X} iconDescription="Close" tooltipPosition="left"
+                    onClick={() => { setSelectedNode(null); setPanelMode(null) }} />
                 </div>
                 <div className="flex-1 overflow-y-auto px-4 py-4">
                   <div className="mb-5">
-                    <label className="block text-[12px] text-[#525252] mb-1">Step name (shown on canvas)</label>
-                    <input
+                    <TextInput
+                      id="step-display-name"
+                      labelText="Step name (shown on canvas)"
                       value={String((selectedNode.data as any).displayName ?? '')}
                       placeholder={String(selectedNode.data.label)}
-                      onChange={(e) => {
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
                         const newData = { ...selectedNode.data, displayName: e.target.value || undefined }
                         setNodes((nds) => nds.map((n) => (n.id === selectedNode.id ? { ...n, data: newData } : n)))
                         setSelectedNode({ ...selectedNode, data: newData })
                       }}
-                      style={{ width: '100%', padding: '6px 12px' }}
                     />
                   </div>
                   <NodeConfigPanel
@@ -1919,19 +1868,10 @@ export default function FlowBuilder({ flowId }: FlowBuilderProps) {
                   </div>
                 </div>
                 <div className="flex items-center gap-2 px-4 py-3 border-t border-[#e0e0e0]">
-                  <button onClick={() => setPanelMode('palette')}
-                    className="h-8 px-3 text-[13px] flex items-center gap-2 bg-[#161616] text-white hover:bg-[#393939]">
-                    <Plus className="w-4 h-4" /> Add next step
-                  </button>
+                  <Button kind="secondary" size="sm" renderIcon={Plus} onClick={() => setPanelMode('palette')}>Add next step</Button>
                   <div className="flex-1" />
-                  <button onClick={duplicateNode}
-                    className="h-8 px-3 text-[13px] flex items-center gap-2 border border-[#8d8d8d] hover:bg-[#e8e8e8]">
-                    <Copy className="w-4 h-4" /> Duplicate
-                  </button>
-                  <button onClick={deleteNode}
-                    className="h-8 px-3 text-[13px] flex items-center gap-2 border border-[#da1e28] text-[#da1e28] hover:bg-[#da1e28] hover:text-white">
-                    <Trash2 className="w-4 h-4" /> Delete
-                  </button>
+                  <Button kind="ghost" size="sm" hasIconOnly renderIcon={Copy} iconDescription="Duplicate" tooltipPosition="top" onClick={duplicateNode} />
+                  <Button kind="danger--ghost" size="sm" hasIconOnly renderIcon={Trash2} iconDescription="Delete" tooltipPosition="top" onClick={deleteNode} />
                 </div>
               </>
             ) : null}

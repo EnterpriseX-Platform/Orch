@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { Building2, Plus, Trash2, UserPlus } from 'lucide-react'
 import { toast } from 'sonner'
+import { Button, Select, SelectItem, Tag, TextInput, Toggle } from '@carbon/react'
 import { useAuthStore } from '@/stores/authStore'
 import { useTenantStore } from '@/stores/tenantStore'
 
@@ -38,8 +39,6 @@ function useApi() {
 
 const panel = { background: 'var(--t-panel)', borderColor: 'var(--t-border)' }
 const muted = { color: 'var(--t-text-muted)' }
-const inputCls =
-  'h-8 px-3 text-[13px] border-0 border-b border-b-[var(--t-border-strong)] bg-[var(--t-input)] focus:outline-none'
 
 export function TenantsPanel() {
   const api = useApi()
@@ -163,7 +162,7 @@ export function TenantsPanel() {
                     {t.slug} · {t.memberCount} members · {t.projectCount} projects
                   </span>
                 </span>
-                {t.id === current?.id && <span className="cds-tag text-[11px] px-1.5 bg-[#d0e2ff] text-[#0043ce]">Current</span>}
+                {t.id === current?.id && <Tag type="blue" size="sm">Current</Tag>}
               </button>
             </li>
           ))}
@@ -171,13 +170,13 @@ export function TenantsPanel() {
         {isSystemAdmin && (
           <div className="p-4 border-t flex flex-col gap-2" style={{ borderColor: 'var(--t-border)' }}>
             <span className="text-[12px] font-semibold" style={{ color: 'var(--t-text-secondary)' }}>New tenant</span>
-            <input className={inputCls} placeholder="Tenant name" value={newTenant.name}
+            <TextInput id="tenant-new-name" labelText="Tenant name" hideLabel size="sm" placeholder="Tenant name" value={newTenant.name}
               onChange={(e) => setNewTenant({ ...newTenant, name: e.target.value })} />
-            <input className={inputCls} placeholder="slug (optional)" value={newTenant.slug}
+            <TextInput id="tenant-new-slug" labelText="slug (optional)" hideLabel size="sm" placeholder="slug (optional)" value={newTenant.slug}
               onChange={(e) => setNewTenant({ ...newTenant, slug: e.target.value })} />
-            <button onClick={createTenant} className="h-8 px-3 bg-[#0f62fe] hover:bg-[#0353e9] text-white text-[13px] flex items-center gap-2 self-start">
-              <Plus className="w-4 h-4" /> Create
-            </button>
+            <Button kind="primary" size="sm" onClick={createTenant} renderIcon={Plus} className="self-start">
+              Create
+            </Button>
           </div>
         )}
       </section>
@@ -193,21 +192,18 @@ export function TenantsPanel() {
             {features.map((f) => (
               <li key={f.key} className="px-4 h-11 flex items-center gap-3 border-b last:border-0" style={{ borderColor: 'var(--t-border)' }}>
                 <span className="flex-1" style={{ color: 'var(--t-text)' }}>{f.label}</span>
-                <span className="text-[12px] w-16 text-right" style={muted}>{f.enabled ? 'On' : 'Off'}</span>
-                <button
-                  role="switch"
-                  aria-checked={f.enabled}
+                <Toggle
+                  id={`tenant-feature-${f.key}`}
+                  size="sm"
+                  labelText={f.label}
+                  hideLabel
                   aria-label={`${f.label}: ${f.enabled ? 'On' : 'Off'}`}
+                  labelA="Off"
+                  labelB="On"
+                  toggled={f.enabled}
                   disabled={!canManage || savingKey === f.key}
-                  onClick={() => toggle(f.key, !f.enabled)}
-                  className="relative w-10 h-5 rounded-full transition-colors disabled:opacity-50"
-                  style={{ background: f.enabled ? '#24a148' : '#8d8d8d' }}
-                >
-                  <span
-                    className="absolute top-0.5 w-4 h-4 rounded-full bg-white transition-all"
-                    style={{ left: f.enabled ? 22 : 2 }}
-                  />
-                </button>
+                  onToggle={() => toggle(f.key, !f.enabled)}
+                />
               </li>
             ))}
           </ul>
@@ -236,21 +232,22 @@ export function TenantsPanel() {
                   </td>
                   <td className="px-4" style={{ color: 'var(--t-text-secondary)' }}>{m.user.email ?? '—'}</td>
                   <td className="px-4">
-                    <select
+                    <Select
+                      id={`tenant-member-role-${m.id}`}
+                      labelText="Role"
+                      hideLabel
+                      size="sm"
                       value={m.role}
                       disabled={!canManage}
                       onChange={(e) => changeRole(m.user.username, e.target.value)}
-                      className="h-8 px-2 text-[13px] border-0 border-b border-b-[var(--t-border-strong)]"
                     >
-                      {ROLES.map((r) => <option key={r} value={r}>{r}</option>)}
-                    </select>
+                      {ROLES.map((r) => <SelectItem key={r} value={r} text={r} />)}
+                    </Select>
                   </td>
                   <td className="px-2 text-right">
                     {canManage && (
-                      <button onClick={() => removeMember(m.userId)} title="Remove from tenant"
-                        className="h-8 w-8 inline-flex items-center justify-center hover:bg-[#fff1f1] text-[#da1e28]">
-                        <Trash2 className="w-4 h-4" />
-                      </button>
+                      <Button kind="danger--ghost" size="sm" hasIconOnly renderIcon={Trash2}
+                        iconDescription="Remove from tenant" onClick={() => removeMember(m.userId)} />
                     )}
                   </td>
                 </tr>
@@ -259,15 +256,17 @@ export function TenantsPanel() {
           </table>
           {canManage && (
             <div className="p-4 flex flex-wrap items-end gap-2">
-              <input className={inputCls + ' w-56'} placeholder="username" value={newMember.username}
-                onChange={(e) => setNewMember({ ...newMember, username: e.target.value })} />
-              <select value={newMember.role} onChange={(e) => setNewMember({ ...newMember, role: e.target.value })}
-                className="h-8 px-2 text-[13px] border-0 border-b border-b-[var(--t-border-strong)]">
-                {ROLES.map((r) => <option key={r} value={r}>{r}</option>)}
-              </select>
-              <button onClick={addMember} className="h-8 px-3 bg-[#0f62fe] hover:bg-[#0353e9] text-white text-[13px] flex items-center gap-2">
-                <UserPlus className="w-4 h-4" /> Add member
-              </button>
+              <div className="w-56">
+                <TextInput id="tenant-new-member-username" labelText="username" hideLabel size="sm" placeholder="username" value={newMember.username}
+                  onChange={(e) => setNewMember({ ...newMember, username: e.target.value })} />
+              </div>
+              <Select id="tenant-new-member-role" labelText="Role" hideLabel size="sm" value={newMember.role}
+                onChange={(e) => setNewMember({ ...newMember, role: e.target.value })}>
+                {ROLES.map((r) => <SelectItem key={r} value={r} text={r} />)}
+              </Select>
+              <Button kind="primary" size="sm" onClick={addMember} renderIcon={UserPlus}>
+                Add member
+              </Button>
             </div>
           )}
         </section>

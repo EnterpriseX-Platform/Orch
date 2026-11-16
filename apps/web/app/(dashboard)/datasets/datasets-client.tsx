@@ -4,11 +4,12 @@ import { useMemo, useState, useCallback, useRef, useEffect } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { datasetApi } from '@/lib/api'
 import { 
-  Database, Plus, Search, Trash2, AlertCircle,
+  Database, Plus, AlertCircle,
   ChevronRight, ChevronDown, Folder, FileJson, Check, X, Edit3, GripVertical, MoreVertical,
   FolderOpen, CornerDownRight, Home, MoreHorizontal, Plug
 } from 'lucide-react'
 import Link from 'next/link'
+import { Button, OverflowMenu, OverflowMenuItem, Search, Select, SelectItem, TextInput } from '@carbon/react'
 import { cn } from '@/lib/utils'
 import { confirmDialog } from '@/components/common/ConfirmDialog'
 import {
@@ -266,79 +267,62 @@ function InlineAddForm({ parentId, parentName, parentCategory, allSources, allCa
           <Plus className="w-3 h-3" style={{ color: THEME.accent }} />
         </div>
         <div style={{ flex: 1, display: 'grid', gridTemplateColumns: 'minmax(0,3fr) minmax(0,2fr) minmax(0,2fr)', gap: 6, minWidth: 0 }}>
-          <input
-            type="text"
+          <TextInput
+            id={`ds-add-${parentId ?? 'root'}` + '-name'}
+            labelText="Name"
+            hideLabel
+            size="sm"
             value={name}
             onChange={(e) => setName(e.target.value)}
             placeholder="Name..."
-            style={formInputStyle}
-            className="focus:!border-[#0f62fe]"
             autoFocus
           />
-          <select
+          <Select
+            id={`ds-add-${parentId ?? 'root'}` + '-category'}
+            labelText="Category"
+            hideLabel
+            size="sm"
             value={category}
             onChange={(e) => setCategory(e.target.value)}
-            style={formInputStyle}
-            className="focus:!border-[#0f62fe]"
           >
-            <option value="">— Category —</option>
+            <SelectItem value="" text="— Category —" />
             {Object.entries(categoryLabels).map(([k, v]) => (
-              <option key={k} value={k.toUpperCase()}>{v} — {k.toUpperCase()}</option>
+              <SelectItem key={k} value={k.toUpperCase()} text={`${v} — ${k.toUpperCase()}`} />
             ))}
-          </select>
-          <select
+          </Select>
+          <Select
+            id={`ds-add-${parentId ?? 'root'}` + '-source'}
+            labelText="Source table"
+            hideLabel
+            size="sm"
             value={source}
             onChange={(e) => setSource(e.target.value)}
-            style={formInputStyle}
-            className="focus:!border-[#0f62fe]"
           >
-            <option value="">— Source table —</option>
+            <SelectItem value="" text="— Source table —" />
             {(repoTables ?? []).map((t) => (
-              <option key={t.id} value={t.name}>{t.displayName ? `${t.name} — ${t.displayName}` : t.name}</option>
+              <SelectItem key={t.id} value={t.name} text={t.displayName ? `${t.name} — ${t.displayName}` : t.name} />
             ))}
-          </select>
+          </Select>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 4, flexShrink: 0 }}>
-          <button
+          <Button
             type="submit"
+            kind="primary"
+            size="sm"
             disabled={isSubmitting || !name.trim()}
-            style={{
-              padding: '0 12px', height: 32,
-              background: THEME.accent,
-              color: '#FFF',
-              borderRadius: 0,
-              border: 'none',
-              fontSize: 12,
-              fontWeight: 400,
-              opacity: isSubmitting || !name.trim() ? 0.4 : 1,
-              cursor: isSubmitting || !name.trim() ? 'not-allowed' : 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: 4,
-            }}
+            renderIcon={Check}
           >
-            <Check className="w-3 h-3" />
             Save
-          </button>
-          <button
+          </Button>
+          <Button
             type="button"
+            kind="ghost"
+            size="sm"
+            hasIconOnly
+            iconDescription="Cancel"
+            renderIcon={X}
             onClick={onCancel}
-            style={{
-              padding: '5px 10px',
-              background: 'transparent',
-              border: `1px solid ${THEME.border}`,
-              borderRadius: 0,
-              fontSize: 12,
-              color: THEME.text.muted,
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: 3,
-            }}
-            className="hover:border-red-400 hover:text-red-400"
-          >
-            <X className="w-3 h-3" />
-          </button>
+          />
         </div>
       </div>
     </form>
@@ -416,79 +400,62 @@ function InlineEditForm({ dataset, allSources, allCategories, repoTables, onCanc
           <Edit3 className="w-3 h-3" style={{ color: THEME.accent }} />
         </div>
         <div style={{ flex: 1, display: 'grid', gridTemplateColumns: 'minmax(0,3fr) minmax(0,2fr) minmax(0,2fr)', gap: 6, minWidth: 0 }}>
-          <input
-            type="text"
+          <TextInput
+            id={`ds-edit-${dataset.id}` + '-name'}
+            labelText="Name"
+            hideLabel
+            size="sm"
             value={name}
             onChange={(e) => setName(e.target.value)}
             placeholder="Name..."
-            style={formInputStyle}
-            className="focus:!border-[#0f62fe]"
             autoFocus
           />
-          <select
+          <Select
+            id={`ds-edit-${dataset.id}` + '-category'}
+            labelText="Category"
+            hideLabel
+            size="sm"
             value={category}
             onChange={(e) => setCategory(e.target.value)}
-            style={formInputStyle}
-            className="focus:!border-[#0f62fe]"
           >
-            <option value="">— Category —</option>
+            <SelectItem value="" text="— Category —" />
             {Object.entries(categoryLabels).map(([k, v]) => (
-              <option key={k} value={k.toUpperCase()}>{v} — {k.toUpperCase()}</option>
+              <SelectItem key={k} value={k.toUpperCase()} text={`${v} — ${k.toUpperCase()}`} />
             ))}
-          </select>
-          <select
+          </Select>
+          <Select
+            id={`ds-edit-${dataset.id}` + '-source'}
+            labelText="Source table"
+            hideLabel
+            size="sm"
             value={source}
             onChange={(e) => setSource(e.target.value)}
-            style={formInputStyle}
-            className="focus:!border-[#0f62fe]"
           >
-            <option value="">— Source table —</option>
+            <SelectItem value="" text="— Source table —" />
             {(repoTables ?? []).map((t) => (
-              <option key={t.id} value={t.name}>{t.displayName ? `${t.name} — ${t.displayName}` : t.name}</option>
+              <SelectItem key={t.id} value={t.name} text={t.displayName ? `${t.name} — ${t.displayName}` : t.name} />
             ))}
-          </select>
+          </Select>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 4, flexShrink: 0 }}>
-          <button
+          <Button
             type="submit"
+            kind="primary"
+            size="sm"
             disabled={isSubmitting || !name.trim()}
-            style={{
-              padding: '0 12px', height: 32,
-              background: THEME.accent,
-              color: '#FFF',
-              borderRadius: 0,
-              border: 'none',
-              fontSize: 12,
-              fontWeight: 400,
-              opacity: isSubmitting || !name.trim() ? 0.4 : 1,
-              cursor: isSubmitting || !name.trim() ? 'not-allowed' : 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: 4,
-            }}
+            renderIcon={Check}
           >
-            <Check className="w-3 h-3" />
             Save
-          </button>
-          <button
+          </Button>
+          <Button
             type="button"
+            kind="ghost"
+            size="sm"
+            hasIconOnly
+            iconDescription="Cancel"
+            renderIcon={X}
             onClick={onCancel}
-            style={{
-              padding: '5px 10px',
-              background: 'transparent',
-              border: `1px solid ${THEME.border}`,
-              borderRadius: 0,
-              fontSize: 12,
-              color: THEME.text.muted,
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: 3,
-            }}
-            className="hover:border-red-400 hover:text-red-400"
-          >
-            <X className="w-3 h-3" />
-          </button>
+          />
         </div>
       </div>
     </form>
@@ -622,105 +589,29 @@ function SortableTreeNode({
 
         <div style={{ display: 'flex', alignItems: 'center', gap: 4, flex: 1, minWidth: 0 }}>
           {/* Kebab Menu */}
-          <div ref={menuRef} style={{ position: 'relative' }}>
-            <button
-              onClick={(e) => { e.stopPropagation(); setMenuOpen(!menuOpen) }}
-              style={{
-                padding: 2,
-                color: menuOpen ? THEME.accent : THEME.text.muted,
-                borderRadius: 0,
-                background: menuOpen ? '#e0e0e0' : 'transparent',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                cursor: 'pointer',
-              }}
-              className="hover:bg-[var(--t-panel-hover)]"
-              title="Actions"
+          <div ref={menuRef} style={{ position: 'relative' }} onClick={(e) => e.stopPropagation()}>
+            <OverflowMenu
+              size="sm"
+              flipped={false}
+              aria-label="Actions"
+              iconDescription="Actions"
+              renderIcon={MoreVertical}
             >
-              <MoreVertical className="w-3.5 h-3.5" />
-            </button>
-            {menuOpen && (
-              <div style={{
-                position: 'absolute',
-                top: '100%',
-                left: 0,
-                marginTop: 4,
-                background: THEME.panel,
-                border: `1px solid ${THEME.border}`,
-                borderRadius: 0,
-                boxShadow: 'none',
-                zIndex: 50,
-                minWidth: 140,
-                padding: 4,
-                fontFamily: '"IBM Plex Sans Thai", "IBM Plex Sans", "Sarabun", system-ui, sans-serif',
-              }}>
-                <button
-                  onClick={(e) => { e.stopPropagation(); setMenuOpen(false); setShowAddForm(true) }}
-                  style={{
-                    width: '100%',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 8,
-                    padding: '6px 10px',
-                    fontSize: 12,
-                    fontWeight: 500,
-                    color: THEME.accent,
-                    borderRadius: 0,
-                    background: 'transparent',
-                    border: 'none',
-                    cursor: 'pointer',
-                  }}
-                  className="hover:bg-[var(--t-panel-hover)]"
-                >
-                  <Plus className="w-3.5 h-3.5" />
-                  Add Child
-                </button>
-                <button
-                  onClick={(e) => { e.stopPropagation(); setMenuOpen(false); setShowEditForm(!showEditForm); setShowAddForm(false) }}
-                  style={{
-                    width: '100%',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 8,
-                    padding: '6px 10px',
-                    fontSize: 12,
-                    fontWeight: 500,
-                    color: '#0f62fe',
-                    borderRadius: 0,
-                    background: 'transparent',
-                    border: 'none',
-                    cursor: 'pointer',
-                  }}
-                  className="hover:bg-[var(--t-panel-hover)]"
-                >
-                  <Edit3 className="w-3.5 h-3.5" />
-                  Edit
-                </button>
-                <div style={{ height: 1, background: THEME.border, margin: '2px 6px' }} />
-                <button
-                  onClick={(e) => { e.stopPropagation(); setMenuOpen(false); onDelete(dataset.id) }}
-                  style={{
-                    width: '100%',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 8,
-                    padding: '6px 10px',
-                    fontSize: 12,
-                    fontWeight: 500,
-                    color: '#da1e28',
-                    borderRadius: 0,
-                    background: 'transparent',
-                    border: 'none',
-                    cursor: 'pointer',
-                  }}
-                  className="hover:bg-[#e8e8e8]"
-                >
-                  <Trash2 className="w-3.5 h-3.5" />
-                  Delete
-                </button>
-              </div>
-            )}
+              <OverflowMenuItem
+                itemText="Add Child"
+                onClick={(e: React.MouseEvent) => { e.stopPropagation(); setMenuOpen(false); setShowAddForm(true) }}
+              />
+              <OverflowMenuItem
+                itemText="Edit"
+                onClick={(e: React.MouseEvent) => { e.stopPropagation(); setMenuOpen(false); setShowEditForm(!showEditForm); setShowAddForm(false) }}
+              />
+              <OverflowMenuItem
+                itemText="Delete"
+                isDelete
+                hasDivider
+                onClick={(e: React.MouseEvent) => { e.stopPropagation(); setMenuOpen(false); onDelete(dataset.id) }}
+              />
+            </OverflowMenu>
           </div>
 
           {/* Expand/Collapse */}
@@ -1083,63 +974,30 @@ export default function DatasetsClientPage() {
             {stats.total} total • {stats.root} root • {stats.withChildren} with children
           </p>
         </div>
-        <button 
-          onClick={() => setShowRootAddForm(!showRootAddForm)} 
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 4,
-            padding: '0 12px', height: 32,
-            background: THEME.accent,
-            color: '#FFFFFF',
-            borderRadius: 0,
-            fontSize: 13,
-            fontWeight: 400,
-            border: 'none',
-            cursor: 'pointer',
-            transition: 'all 0.15s ease',
-          }}
-          className="hover:bg-[#0f62fe]"
-        >
-          <Plus className="w-3.5 h-3.5" />
+        <Button size="sm" kind="primary" renderIcon={Plus} onClick={() => setShowRootAddForm(!showRootAddForm)}>
           Add Root
-        </button>
+        </Button>
       </div>
 
       {/* Search & Controls */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
         <div style={{ position: 'relative', flex: 1, maxWidth: 280 }}>
-          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5" style={{ color: THEME.text.muted }} />
-          <input 
-            type="text" 
+          <Search
+            id="datasets-search"
+            size="sm"
+            labelText="Search"
             placeholder="Search..."
-            value={searchText} 
-            onChange={(e) => setSearchText(e.target.value)}
-            style={{
-              width: '100%',
-              padding: '6px 10px 6px 28px',
-              background: 'var(--t-input)',
-              border: `1px solid ${THEME.border}`,
-              borderRadius: 0,
-              fontSize: 13,
-              color: THEME.text.primary,
-              outline: 'none',
-            }}
+            value={searchText}
+            onChange={(e) => setSearchText(typeof e === 'string' ? e : e.target.value)}
           />
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-          <button
-            onClick={handleExpandAll}
-            className="h-8 px-3 text-[13px] bg-[var(--t-panel)] border border-[#8d8d8d] text-[#161616] hover:bg-[#e8e8e8]"
-          >
+          <Button size="sm" kind="tertiary" onClick={handleExpandAll}>
             Expand
-          </button>
-          <button
-            onClick={handleCollapseAll}
-            className="h-8 px-3 text-[13px] bg-[var(--t-panel)] border border-[#8d8d8d] text-[#161616] hover:bg-[#e8e8e8]"
-          >
+          </Button>
+          <Button size="sm" kind="tertiary" onClick={handleCollapseAll}>
             Collapse
-          </button>
+          </Button>
         </div>
       </div>
 
@@ -1160,28 +1018,9 @@ export default function DatasetsClientPage() {
       {/* Root Level Add Button */}
       {!showRootAddForm && (
         <div style={{ marginBottom: 8 }}>
-          <button 
-            onClick={() => setShowRootAddForm(true)} 
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 4,
-              padding: '6px 10px',
-              background: 'transparent',
-              border: `1px dashed ${THEME.border}`,
-              borderRadius: 0,
-              fontSize: 13,
-              fontWeight: 600,
-              color: THEME.text.muted,
-              cursor: 'pointer',
-              width: '100%',
-              transition: 'all 0.15s ease',
-            }} 
-            className="hover:border-blue-400 hover:text-blue-400 hover:bg-[#e8e8e8]"
-          >
-            <Plus className="w-3.5 h-3.5" />
+          <Button kind="ghost" size="sm" renderIcon={Plus} onClick={() => setShowRootAddForm(true)} style={{ width: '100%', maxWidth: 'none' }}>
             Add Root
-          </button>
+          </Button>
         </div>
       )}
 

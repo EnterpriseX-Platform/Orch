@@ -23,6 +23,7 @@ import {
   HardDrive,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { Button, Tabs, TabList, Tab, Toggle, Tag } from '@carbon/react';
 import { LiveMetricsChart } from '@/components/monitor/LiveMetricsChart';
 import { WorkerStatusPanel } from '@/components/monitor/WorkerStatusPanel';
 import { useAuthStore } from '@/stores/authStore';
@@ -99,27 +100,20 @@ interface MonitorData {
 
 function StatusBadge({ status, latency }: { status: string; latency?: number }) {
   const config = {
-    online: { icon: CheckCircle, color: '#24a148', bg: '#24a14812', border: '#24a14835' },
-    offline: { icon: XCircle, color: '#da1e28', bg: '#da1e2812', border: '#da1e2835' },
-    error: { icon: AlertCircle, color: '#da1e28', bg: '#da1e2812', border: '#da1e2835' },
-    degraded: { icon: AlertCircle, color: '#ba4e00', bg: '#ba4e0012', border: '#ba4e0035' },
-    unknown: { icon: Clock, color: 'var(--t-text-muted)', bg: '#5A617812', border: '#5A617835' },
-  };
+    online: { icon: CheckCircle, tag: 'green' },
+    offline: { icon: XCircle, tag: 'red' },
+    error: { icon: AlertCircle, tag: 'red' },
+    degraded: { icon: AlertCircle, tag: 'warm-gray' },
+    unknown: { icon: Clock, tag: 'gray' },
+  } as const;
 
-  const { icon: Icon, color, bg, border } = config[status as keyof typeof config] || config.unknown;
+  const { icon: Icon, tag } = config[status as keyof typeof config] || config.unknown;
 
   return (
     <div className="flex items-center gap-2">
-      <div style={{
-        display: 'flex', alignItems: 'center', gap: 4,
-        padding: '2px 8px', borderRadius: 6,
-        background: bg, border: `1px solid ${border}`,
-      }}>
-        <Icon className="w-3 h-3" style={{ color }} />
-        <span style={{ fontSize: 12, fontWeight: 600, color, textTransform: 'capitalize' }}>
-          {status}
-        </span>
-      </div>
+      <Tag size="sm" type={tag} renderIcon={Icon} style={{ textTransform: 'capitalize' }}>
+        {status}
+      </Tag>
       {latency !== undefined && latency >= 0 && (
         <span style={{ fontSize: 11, color: THEME.text.muted }}>
           {latency}ms
@@ -198,6 +192,15 @@ function MiniChart({ data, color }: { data: number[]; color: string }) {
   );
 }
 
+const MONITOR_TABS = [
+  { key: 'overview', label: 'Overview', icon: Activity },
+  { key: 'live', label: 'Live Metrics', icon: Wifi },
+  { key: 'workers', label: 'Workers', icon: Cpu },
+  { key: 'metrics', label: 'Metrics', icon: BarChart3 },
+  { key: 'queue', label: 'Queue Status', icon: Layers },
+  { key: 'errors', label: 'Recent Errors', icon: AlertCircle },
+] as const;
+
 export default function MonitorPage() {
   const [autoRefresh, setAutoRefresh] = useState(true);
   const [activeTab, setActiveTab] = useState<'overview' | 'live' | 'workers' | 'metrics' | 'queue' | 'errors'>('overview');
@@ -253,61 +256,34 @@ export default function MonitorPage() {
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <button
-            onClick={() => setAutoRefresh(!autoRefresh)}
-            style={{
-              display: 'flex', alignItems: 'center', gap: 4,
-              padding: '4px 10px', fontSize: 12,
-              borderRadius: 6, border: `1px solid ${THEME.border}`,
-              background: autoRefresh ? '#24a14812' : THEME.panel,
-              color: autoRefresh ? '#24a148' : THEME.text.secondary,
-            }}
-          >
-            <RefreshCw className={cn("w-3 h-3", autoRefresh && "animate-spin")} />
-            {autoRefresh ? 'Auto' : 'Manual'}
-          </button>
-          <button
-            onClick={() => refetch()}
-            style={{
-              display: 'flex', alignItems: 'center', gap: 4,
-              padding: '4px 10px', fontSize: 12,
-              borderRadius: 6, border: `1px solid ${THEME.border}`,
-              background: THEME.panel, color: THEME.text.secondary,
-            }}
-          >
-            <RefreshCw className="w-3 h-3" />
+          <Toggle
+            id="monitor-auto-refresh"
+            size="sm"
+            labelText="Auto refresh"
+            hideLabel
+            labelA="Manual"
+            labelB="Auto"
+            toggled={autoRefresh}
+            onToggle={(checked: boolean) => setAutoRefresh(checked)}
+          />
+          <Button kind="tertiary" size="sm" renderIcon={RefreshCw} onClick={() => refetch()}>
             Refresh
-          </button>
+          </Button>
         </div>
       </div>
 
       {/* Tabs */}
-      <div className="flex items-center gap-1 mb-4 overflow-x-auto" style={{ borderBottom: `1px solid ${THEME.border}` }}>
-        {[
-          { key: 'overview', label: 'Overview', icon: Activity },
-          { key: 'live', label: 'Live Metrics', icon: Wifi },
-          { key: 'workers', label: 'Workers', icon: Cpu },
-          { key: 'metrics', label: 'Metrics', icon: BarChart3 },
-          { key: 'queue', label: 'Queue Status', icon: Layers },
-          { key: 'errors', label: 'Recent Errors', icon: AlertCircle },
-        ].map(tab => (
-          <button
-            key={tab.key}
-            onClick={() => setActiveTab(tab.key as any)}
-            style={{
-              display: 'flex', alignItems: 'center', gap: 4,
-              padding: '8px 14px', fontSize: 13, fontWeight: 500,
-              borderBottom: `2px solid ${activeTab === tab.key ? '#0f62fe' : 'transparent'}`,
-              color: activeTab === tab.key ? '#0f62fe' : THEME.text.secondary,
-              background: 'transparent',
-              marginBottom: -1,
-              cursor: 'pointer',
-            }}
-          >
-            <tab.icon className="w-3.5 h-3.5" />
-            {tab.label}
-          </button>
-        ))}
+      <div className="mb-4" style={{ maxWidth: '100%', overflowX: 'auto' }}>
+        <Tabs
+          selectedIndex={Math.max(0, MONITOR_TABS.findIndex(t => t.key === activeTab))}
+          onChange={({ selectedIndex }: { selectedIndex: number }) => setActiveTab(MONITOR_TABS[selectedIndex].key)}
+        >
+          <TabList aria-label="System monitor tabs">
+            {MONITOR_TABS.map(tab => (
+              <Tab key={tab.key} renderIcon={tab.icon}>{tab.label}</Tab>
+            ))}
+          </TabList>
+        </Tabs>
       </div>
 
       {/* Overview Tab */}
@@ -698,23 +674,13 @@ export default function MonitorPage() {
                         {new Date(error.timestamp).toLocaleTimeString()}
                       </td>
                       <td className="px-3 py-2">
-                        <span style={{
-                          padding: '1px 5px', borderRadius: 6, fontSize: 11, fontWeight: 600,
-                          background: '#da1e2815', color: '#da1e28', border: '1px solid #da1e2830',
-                        }}>
-                          {error.method}
-                        </span>
+                        <Tag size="sm" type="red">{error.method}</Tag>
                       </td>
                       <td className="px-3 py-2" style={{ fontSize: 12, color: THEME.text.secondary, fontFamily: FONT }}>
                         {error.path}
                       </td>
                       <td className="px-3 py-2 text-center">
-                        <span style={{
-                          padding: '1px 6px', borderRadius: 6, fontSize: 11, fontWeight: 600,
-                          background: '#da1e2815', color: '#da1e28',
-                        }}>
-                          {error.statusCode}
-                        </span>
+                        <Tag size="sm" type="red">{error.statusCode}</Tag>
                       </td>
                       <td className="px-3 py-2 text-right" style={{ fontSize: 12, color: THEME.text.muted }}>
                         {error.responseTime}ms
